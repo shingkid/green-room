@@ -31,6 +31,8 @@ const ServiceNode = memo(function ServiceNode({
   onSelect,
 }: ServiceNodeProps) {
   const statusStyle = STATUS_STYLES[service.status] ?? STATUS_STYLES.active;
+  // Interaction state wins over status styling so selection/impact remains readable even when
+  // ownership and status already contribute their own visual signals.
   const stroke = isHighlight
     ? "#dc2626"
     : isAffected
@@ -54,6 +56,8 @@ const ServiceNode = memo(function ServiceNode({
       />
       {!isInternal ? (
         <rect
+          // Ownership uses an overlay instead of replacing the status fill so external services
+          // still keep the same active/deprecated/migrating color language as internal ones.
           fill="url(#externalNodeStripe)"
           height={height}
           opacity={0.35}

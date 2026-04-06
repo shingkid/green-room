@@ -278,6 +278,8 @@ function nearestLocation(
   pointer: string,
   fallbackRoot: string | null,
 ): string | null {
+  // AJV often reports issues on a missing child path, while the YAML parser only knows about
+  // concrete nodes that exist. Walk upward until we find the closest real source location.
   let current = pointer;
 
   while (true) {
@@ -316,6 +318,8 @@ function collectNodeLocations(
   if (isMap(node)) {
     for (const item of node.items) {
       const key = String(item.key?.value ?? "");
+      // Track value locations, not just keys, so downstream validation errors land on the field
+      // content the user actually needs to edit.
       collectNodeLocations(item.value, [...path, key], lineCounter, locations);
     }
     return;
@@ -339,6 +343,8 @@ function formatSchemaIssue(
     const missingProperty = (error.params as { missingProperty?: string }).missingProperty;
 
     if (missingProperty) {
+      // Required-field errors are reported on the parent object. Point at the missing child path
+      // so the issue label matches the field the user needs to add.
       pointer = `${pointer}/${escapeJsonPointerSegment(missingProperty)}`;
     }
   }
@@ -487,6 +493,8 @@ export function validateRegistryText(sourceText: string): ValidationResult {
   }
 
   const registry = raw as Registry;
+  // Schema validation catches shape issues. Cross-reference validation handles referential
+  // integrity between sections, which JSON Schema alone does not express cleanly here.
   const referenceIssues = validateCrossReferences(registry, locations, rootLocation);
 
   if (referenceIssues.length > 0) {

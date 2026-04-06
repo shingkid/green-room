@@ -57,6 +57,8 @@ export default function App() {
 
     async function load() {
       try {
+        // Prefer a checked-in registry when available, then fall back to any unfinished
+        // in-browser draft before showing the starter template.
         const initialSource = await loadInitialRegistrySource();
         const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
 
@@ -134,6 +136,8 @@ export default function App() {
     setAppliedRegistry(validation.registry);
     setShowEditor(false);
 
+    // Once the user edits a file-backed registry in the browser, keep that provenance visible
+    // instead of pretending the checked-in YAML is still the active source of truth.
     if (!sourceLabel) {
       setSourceLabel("in-browser draft");
     } else if (!REGISTRY_URL_CANDIDATES.includes(sourceLabel)) {

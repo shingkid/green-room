@@ -150,6 +150,8 @@ export function useCatalogViewModel(registry: Registry) {
   useEffect(() => {
     const validDataFlowKeys = new Set(eligibleDataFlowEntries.map(([flowKey]) => flowKey));
 
+    // Data-flow choices depend on both stakeholder and business-flow filters, so clear stale
+    // selections as soon as upstream filters make them invalid.
     if (selectedDataFlow && !validDataFlowKeys.has(selectedDataFlow)) {
       setSelectedDataFlow(null);
     }
@@ -200,12 +202,16 @@ export function useCatalogViewModel(registry: Registry) {
       return {
         affectedSet: flowServices,
         highlightKey: null,
+        // Business Flow mode narrows the graph itself to the selected flow context rather than
+        // merely highlighting matching services within the full topology.
         visibleServices: selectedFlow || selectedStakeholder ? flowServices : allServices,
       };
     }
 
     if (mode === "impact" && selectedService) {
       return {
+        // Impact mode keeps the full visible graph on screen and uses affectedSet/highlightKey
+        // to drive emphasis instead of removing unrelated services from the layout.
         affectedSet: collectReachable(
           selectedService,
           impactDirection === "downstream" ? graph.downstream : graph.upstream,
@@ -330,6 +336,8 @@ export function useCatalogViewModel(registry: Registry) {
         [...affectedSet].filter((serviceKey) => visibleServices.has(serviceKey)),
       );
 
+      // Export only the reachable subgraph, even though the on-screen impact view keeps unrelated
+      // nodes dimmed for context.
       return buildGraphMermaid({
         edges: edges.filter(
           (edge) => impactedServices.has(edge.from) && impactedServices.has(edge.to),
@@ -364,6 +372,8 @@ export function useCatalogViewModel(registry: Registry) {
       selectedDataFlowName ??
       (selectedFlow ? businessFlows[selectedFlow]?.name ?? selectedFlow : "data-lineage");
 
+    // Data mode has no separate graph canvas, so export mirrors the currently visible expanded
+    // filter result rather than any transient UI expansion state.
     return buildDataFlowMermaid({
       dataFlowEntries: filteredDataFlows,
       filenameStem: `${teamSlug}-lineage-${slugify(lineageLabel) || "all"}`,

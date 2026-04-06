@@ -41,6 +41,8 @@ export function buildGraph(services: Record<string, Service>): Graph {
   for (const [serviceKey, service] of Object.entries(services)) {
     for (const dependency of service.upstream ?? []) {
       if (!services[dependency.service]) {
+        // Broken references are surfaced by validation; the graph builder stays defensive so the
+        // UI can still render partially valid drafts while the editor shows the problem.
         continue;
       }
 
@@ -98,6 +100,8 @@ export function computeLayout(
   const remaining = new Set(keys);
 
   while (remaining.size > 0) {
+    // This is a lightweight topological layering pass. When cycles remain, fall back to placing
+    // the rest in one layer instead of trying to solve a harder graph-layout problem in-browser.
     const layer = [...remaining].filter((key) => inDegree[key] === 0);
 
     if (layer.length === 0) {
@@ -165,6 +169,8 @@ export function matchesFuzzy(label: string, query: string, extraSearchText?: str
   const haystack = normalizeSearchText(`${label} ${extraSearchText ?? ""}`);
   const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
 
+  // Treat fuzzy search as unordered token containment. This is intentionally simple and stable
+  // for short option lists without bringing in a heavier ranking library.
   return tokens.every((token) => haystack.includes(token));
 }
 
@@ -269,6 +275,8 @@ export function buildGraphMermaid(params: {
   });
 
   for (const edge of sortedEdges) {
+    // Filter again here so callers can pass the broader visible edge list and let export tighten
+    // it to the exact subgraph being emitted.
     if (!serviceKeys.has(edge.from) || !serviceKeys.has(edge.to)) {
       continue;
     }
@@ -313,6 +321,8 @@ export function buildDataFlowMermaid(params: {
     const flowId = toMermaidId(`flow_${flowKey}`);
     const flowLabel = registry.business_flows[dataFlow.business_flow]?.name ?? dataFlow.business_flow;
 
+    // Emit each visible data flow as its own Mermaid subgraph so a single export can contain the
+    // current filtered lineage view without merging unrelated pipelines into one chain.
     lines.push(`  subgraph ${flowId}["${escapeMermaidLabel(`${dataFlow.name} · ${flowLabel}`)}"]`);
 
     dataFlow.stages.forEach((stage, index) => {

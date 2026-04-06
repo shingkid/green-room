@@ -44,6 +44,8 @@ export function SearchableSelect({
 
     inputRef.current?.focus();
 
+    // Keep the component self-contained: close and reset transient query state on outside click
+    // or Escape so reopening always starts from the full option list.
     function handleClickOutside(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
         setIsOpen(false);
