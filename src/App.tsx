@@ -133,6 +133,15 @@ type SelectOption = {
 };
 
 const ALL_SERVICE_STATUSES: ServiceStatus[] = ["active", "deprecated", "migrating"];
+const ALL_SERVICE_TYPES: ServiceType[] = [
+  "frontend",
+  "backend",
+  "datastore",
+  "infrastructure",
+];
+const ALL_OWNERSHIP_KINDS = ["internal", "external"] as const;
+
+type OwnershipKind = (typeof ALL_OWNERSHIP_KINDS)[number];
 
 const STATUS_STYLES: Record<ServiceStatus, StatusStyle> = {
   active: { bg: "#16a34a", border: "#15803d", text: "#fff" },
@@ -1254,6 +1263,12 @@ function CatalogView({
   const [visibleStatuses, setVisibleStatuses] = useState<Set<ServiceStatus>>(
     () => new Set(ALL_SERVICE_STATUSES),
   );
+  const [visibleTypes, setVisibleTypes] = useState<Set<ServiceType>>(
+    () => new Set(ALL_SERVICE_TYPES),
+  );
+  const [visibleOwnershipKinds, setVisibleOwnershipKinds] = useState<Set<OwnershipKind>>(
+    () => new Set(ALL_OWNERSHIP_KINDS),
+  );
   const [selectedStakeholder, setSelectedStakeholder] = useState<string | null>(null);
   const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -1338,14 +1353,22 @@ function CatalogView({
   );
   const isGraphMode = graphModes.includes(mode);
   const visibleStatusSet = useMemo(() => new Set(visibleStatuses), [visibleStatuses]);
-  const isStatusVisible = useCallback(
-    (status: ServiceStatus) => visibleStatusSet.has(status),
-    [visibleStatusSet],
+  const visibleTypeSet = useMemo(() => new Set(visibleTypes), [visibleTypes]);
+  const visibleOwnershipSet = useMemo(
+    () => new Set(visibleOwnershipKinds),
+    [visibleOwnershipKinds],
   );
   const getOwnershipKind = useCallback(
     (service: Service) =>
       service.owner === registry.metadata.team_id ? "internal" : "external",
     [registry.metadata.team_id],
+  );
+  const isServiceVisibleInGraph = useCallback(
+    (service: Service) =>
+      visibleStatusSet.has(service.status) &&
+      visibleTypeSet.has(service.type) &&
+      visibleOwnershipSet.has(getOwnershipKind(service)),
+    [getOwnershipKind, visibleOwnershipSet, visibleStatusSet, visibleTypeSet],
   );
 
   useEffect(() => {
@@ -1366,16 +1389,16 @@ function CatalogView({
     if (
       selectedService &&
       isGraphMode &&
-      !isStatusVisible(services[selectedService]?.status ?? "active")
+      !isServiceVisibleInGraph(services[selectedService])
     ) {
       setSelectedService(null);
     }
-  }, [isGraphMode, isStatusVisible, selectedService, services]);
+  }, [isGraphMode, isServiceVisibleInGraph, selectedService, services]);
 
   const { affectedSet, highlightKey, visibleServices } = useMemo(() => {
     const allServices = new Set(
       Object.entries(services)
-        .filter(([, service]) => visibleStatusSet.has(service.status))
+        .filter(([, service]) => isServiceVisibleInGraph(service))
         .map(([serviceKey]) => serviceKey),
     );
 
@@ -1383,7 +1406,7 @@ function CatalogView({
       const flowServices = new Set(
         Object.entries(services)
           .filter(([, service]) => {
-            if (!visibleStatusSet.has(service.status)) {
+            if (!isServiceVisibleInGraph(service)) {
               return false;
             }
 
@@ -1434,7 +1457,7 @@ function CatalogView({
     selectedService,
     selectedStakeholder,
     services,
-    visibleStatusSet,
+    isServiceVisibleInGraph,
   ]);
 
   const layout = useMemo(
@@ -1551,6 +1574,34 @@ function CatalogView({
       }
 
       return nextStatuses;
+    });
+  }, []);
+
+  const handleToggleType = useCallback((type: ServiceType) => {
+    setVisibleTypes((currentTypes) => {
+      const nextTypes = new Set(currentTypes);
+
+      if (nextTypes.has(type)) {
+        nextTypes.delete(type);
+      } else {
+        nextTypes.add(type);
+      }
+
+      return nextTypes;
+    });
+  }, []);
+
+  const handleToggleOwnership = useCallback((ownershipKind: OwnershipKind) => {
+    setVisibleOwnershipKinds((currentKinds) => {
+      const nextKinds = new Set(currentKinds);
+
+      if (nextKinds.has(ownershipKind)) {
+        nextKinds.delete(ownershipKind);
+      } else {
+        nextKinds.add(ownershipKind);
+      }
+
+      return nextKinds;
     });
   }, []);
 
@@ -1928,14 +1979,24 @@ function CatalogView({
                   {status}
                 </button>
               )),
-              <span className="legend-item" key="internal-owner">
+              <button
+                className={`legend-item legend-toggle${visibleOwnershipSet.has("internal") ? "" : " legend-toggle-off"}`}
+                key="internal-owner"
+                onClick={() => handleToggleOwnership("internal")}
+                type="button"
+              >
                 <span className="legend-node-sample legend-node-sample-internal" />
                 team-owned
-              </span>,
-              <span className="legend-item" key="external-owner">
+              </button>,
+              <button
+                className={`legend-item legend-toggle${visibleOwnershipSet.has("external") ? "" : " legend-toggle-off"}`}
+                key="external-owner"
+                onClick={() => handleToggleOwnership("external")}
+                type="button"
+              >
                 <span className="legend-node-sample legend-node-sample-external" />
                 external
-              </span>,
+              </button>,
               <span className="legend-item" key="hard">
                 <span className="legend-line legend-line-hard" />
                 hard
@@ -1945,9 +2006,14 @@ function CatalogView({
                 soft
               </span>,
               ...Object.entries(TYPE_ICONS).map(([type, icon]) => (
-                <span key={type}>
+                <button
+                  className={`legend-item legend-toggle${visibleTypeSet.has(type as ServiceType) ? "" : " legend-toggle-off"}`}
+                  key={type}
+                  onClick={() => handleToggleType(type as ServiceType)}
+                  type="button"
+                >
                   {icon} {type}
-                </span>
+                </button>
               )),
             ]
           : Object.entries(ACTION_COLORS).map(([action, color]) => (
