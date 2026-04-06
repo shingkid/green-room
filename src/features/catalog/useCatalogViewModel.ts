@@ -27,6 +27,9 @@ export function useCatalogViewModel(registry: Registry) {
   const services = registry.services;
   const businessFlows = registry.business_flows;
   const dataFlows = registry.data_flows;
+  const serviceEntries = useMemo(() => Object.entries(services), [services]);
+  const businessFlowEntries = useMemo(() => Object.entries(businessFlows), [businessFlows]);
+  const dataFlowEntries = useMemo(() => Object.entries(dataFlows), [dataFlows]);
 
   const [mode, setMode] = useState<Mode>("overview");
   const [impactDirection, setImpactDirection] = useState<ImpactDirection>("downstream");
@@ -49,7 +52,7 @@ export function useCatalogViewModel(registry: Registry) {
   const stakeholderOptions = useMemo(() => {
     const stakeholders = new Set<string>();
 
-    for (const flow of Object.values(businessFlows)) {
+    for (const [, flow] of businessFlowEntries) {
       for (const stakeholder of flow.stakeholders) {
         stakeholders.add(stakeholder);
       }
@@ -61,14 +64,14 @@ export function useCatalogViewModel(registry: Registry) {
         label: stakeholder,
         value: stakeholder,
       }));
-  }, [businessFlows]);
+  }, [businessFlowEntries]);
   const eligibleFlowEntries = useMemo(
     () =>
-      Object.entries(businessFlows).filter(
+      businessFlowEntries.filter(
         ([, flow]) =>
           !selectedStakeholder || flow.stakeholders.includes(selectedStakeholder),
       ),
-    [businessFlows, selectedStakeholder],
+    [businessFlowEntries, selectedStakeholder],
   );
   const eligibleFlowKeys = useMemo(
     () => new Set(eligibleFlowEntries.map(([flowKey]) => flowKey)),
@@ -94,23 +97,23 @@ export function useCatalogViewModel(registry: Registry) {
   );
   const serviceOptions = useMemo(
     () =>
-      Object.entries(services)
+      serviceEntries
         .map(([serviceKey, service]) => ({
           label: service.name,
           searchText: `${serviceKey} ${service.type} ${service.status} ${service.description}`,
           value: serviceKey,
         }))
         .sort((left, right) => left.label.localeCompare(right.label)),
-    [services],
+    [serviceEntries],
   );
   const eligibleDataFlowEntries = useMemo(
     () =>
-      Object.entries(dataFlows).filter(
+      dataFlowEntries.filter(
         ([, dataFlow]) =>
           eligibleFlowKeys.has(dataFlow.business_flow) &&
           (!selectedFlow || dataFlow.business_flow === selectedFlow),
       ),
-    [dataFlows, eligibleFlowKeys, selectedFlow],
+    [dataFlowEntries, eligibleFlowKeys, selectedFlow],
   );
   const dataFlowOptions = useMemo(
     () =>
@@ -122,12 +125,9 @@ export function useCatalogViewModel(registry: Registry) {
     [eligibleDataFlowEntries],
   );
   const isGraphMode = GRAPH_MODES.includes(mode);
-  const visibleStatusSet = useMemo(() => new Set(visibleStatuses), [visibleStatuses]);
-  const visibleTypeSet = useMemo(() => new Set(visibleTypes), [visibleTypes]);
-  const visibleOwnershipSet = useMemo(
-    () => new Set(visibleOwnershipKinds),
-    [visibleOwnershipKinds],
-  );
+  const visibleStatusSet = visibleStatuses;
+  const visibleTypeSet = visibleTypes;
+  const visibleOwnershipSet = visibleOwnershipKinds;
   const getOwnershipKind = useCallback(
     (service: Service) =>
       service.owner === registry.metadata.team_id ? "internal" : "external",
@@ -156,10 +156,12 @@ export function useCatalogViewModel(registry: Registry) {
   }, [eligibleDataFlowEntries, selectedDataFlow]);
 
   useEffect(() => {
+    const service = selectedService ? services[selectedService] : null;
+
     if (
-      selectedService &&
+      service &&
       isGraphMode &&
-      !isServiceVisibleInGraph(services[selectedService])
+      !isServiceVisibleInGraph(service)
     ) {
       setSelectedService(null);
     }
@@ -167,14 +169,14 @@ export function useCatalogViewModel(registry: Registry) {
 
   const { affectedSet, highlightKey, visibleServices } = useMemo(() => {
     const allServices = new Set(
-      Object.entries(services)
+      serviceEntries
         .filter(([, service]) => isServiceVisibleInGraph(service))
         .map(([serviceKey]) => serviceKey),
     );
 
     if (mode === "flow") {
       const flowServices = new Set(
-        Object.entries(services)
+        serviceEntries
           .filter(([, service]) => {
             if (!isServiceVisibleInGraph(service)) {
               return false;
@@ -226,7 +228,7 @@ export function useCatalogViewModel(registry: Registry) {
     selectedFlow,
     selectedService,
     selectedStakeholder,
-    services,
+    serviceEntries,
     isServiceVisibleInGraph,
   ]);
 
@@ -244,7 +246,7 @@ export function useCatalogViewModel(registry: Registry) {
       isActive: boolean;
     }> = [];
 
-    for (const [serviceKey, service] of Object.entries(services)) {
+    for (const [serviceKey, service] of serviceEntries) {
       for (const dependency of service.upstream ?? []) {
         if (
           visibleServices.has(serviceKey) &&
@@ -264,7 +266,7 @@ export function useCatalogViewModel(registry: Registry) {
     }
 
     return result;
-  }, [affectedSet, layout.positions, services, visibleServices]);
+  }, [affectedSet, layout.positions, serviceEntries, visibleServices]);
 
   const affectedBusinessFlows = useMemo(() => {
     if (!selectedService || mode === "overview" || mode === "data") {

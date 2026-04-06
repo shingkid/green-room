@@ -22,6 +22,10 @@ import { GraphCanvas } from "./components/GraphCanvas";
 import { useCatalogViewModel } from "./useCatalogViewModel";
 import styles from "./CatalogView.module.css";
 
+const STATUS_STYLE_ENTRIES = Object.entries(STATUS_STYLES);
+const TYPE_ICON_ENTRIES = Object.entries(TYPE_ICONS);
+const ACTION_COLOR_ENTRIES = Object.entries(ACTION_COLORS);
+
 type CatalogViewProps = {
   theme: Theme;
   registry: Registry;
@@ -39,6 +43,12 @@ export function CatalogView({
 }: CatalogViewProps) {
   const explorerTitle = getExplorerTitle(registry.metadata.team);
   const viewModel = useCatalogViewModel(registry);
+  const {
+    setExpandedDataFlow,
+    setImpactDirection,
+    setSelectedDataFlow,
+    setSelectedFlow,
+  } = viewModel;
 
   const handleCopyMermaid = useCallback(async () => {
     if (!viewModel.mermaidExport) {
@@ -47,6 +57,26 @@ export function CatalogView({
 
     await navigator.clipboard.writeText(viewModel.mermaidExport.source);
   }, [viewModel.mermaidExport]);
+  const handleDataBusinessFlowChange = useCallback(
+    (value: string | null) => {
+      setSelectedFlow(value);
+      setSelectedDataFlow(null);
+    },
+    [setSelectedDataFlow, setSelectedFlow],
+  );
+  const handleDataFlowChange = useCallback(
+    (value: string | null) => {
+      setSelectedDataFlow(value);
+      setExpandedDataFlow(value);
+    },
+    [setExpandedDataFlow, setSelectedDataFlow],
+  );
+  const handleSetDownstreamDirection = useCallback(() => {
+    setImpactDirection("downstream");
+  }, [setImpactDirection]);
+  const handleSetUpstreamDirection = useCallback(() => {
+    setImpactDirection("upstream");
+  }, [setImpactDirection]);
 
   return (
     <div className="app-shell" data-theme={theme}>
@@ -134,10 +164,7 @@ export function CatalogView({
               allLabel="All business flows"
               ariaLabel="business flows"
               emptyMessage="No business flows match."
-              onChange={(value) => {
-                viewModel.setSelectedFlow(value);
-                viewModel.setSelectedDataFlow(null);
-              }}
+              onChange={handleDataBusinessFlowChange}
               options={viewModel.dataBusinessFlowOptions}
               placeholder="Filter business flows"
               value={viewModel.selectedFlow}
@@ -146,10 +173,7 @@ export function CatalogView({
               allLabel="All data flows"
               ariaLabel="data flows"
               emptyMessage="No data flows match."
-              onChange={(value) => {
-                viewModel.setSelectedDataFlow(value);
-                viewModel.setExpandedDataFlow(value);
-              }}
+              onChange={handleDataFlowChange}
               options={viewModel.dataFlowOptions}
               placeholder="Filter data flows"
               value={viewModel.selectedDataFlow}
@@ -171,14 +195,14 @@ export function CatalogView({
             <div aria-label="impact direction" className={styles.directionToggle} role="group">
               <button
                 className={`${styles.directionToggleButton}${viewModel.impactDirection === "downstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
-                onClick={() => viewModel.setImpactDirection("downstream")}
+                onClick={handleSetDownstreamDirection}
                 type="button"
               >
                 Downstream
               </button>
               <button
                 className={`${styles.directionToggleButton}${viewModel.impactDirection === "upstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
-                onClick={() => viewModel.setImpactDirection("upstream")}
+                onClick={handleSetUpstreamDirection}
                 type="button"
               >
                 Upstream
@@ -364,7 +388,7 @@ export function CatalogView({
       <footer className={styles.footer}>
         {viewModel.mode !== "data"
           ? [
-              ...Object.entries(STATUS_STYLES).map(([status, style]) => (
+              ...STATUS_STYLE_ENTRIES.map(([status, style]) => (
                 <button
                   className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleStatusSet.has(status as ServiceStatus) ? "" : ` ${styles.legendToggleOff}`}`}
                   key={status}
@@ -404,7 +428,7 @@ export function CatalogView({
                 <span className={`${styles.legendLine} ${styles.legendLineSoft}`} />
                 soft
               </span>,
-              ...Object.entries(TYPE_ICONS).map(([type, icon]) => (
+              ...TYPE_ICON_ENTRIES.map(([type, icon]) => (
                 <button
                   className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleTypeSet.has(type as ServiceType) ? "" : ` ${styles.legendToggleOff}`}`}
                   key={type}
@@ -415,7 +439,7 @@ export function CatalogView({
                 </button>
               )),
             ]
-          : Object.entries(ACTION_COLORS).map(([action, color]) => (
+          : ACTION_COLOR_ENTRIES.map(([action, color]) => (
               <span className={styles.legendItem} key={action}>
                 <span
                   className={styles.legendSwatch}

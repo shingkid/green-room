@@ -1,3 +1,5 @@
+import { memo, useMemo } from "react";
+
 import type { Mode, Service } from "../../../domain/registry";
 import { STATUS_STYLES, TYPE_ICONS } from "../../../domain/registry";
 import { formatServiceLabel, getNodeRadius, type DependencyCriticality, type Layout } from "../../../domain/catalog";
@@ -16,7 +18,7 @@ type ServiceNodeProps = {
   onSelect: (serviceKey: string) => void;
 };
 
-function ServiceNode({
+const ServiceNode = memo(function ServiceNode({
   id,
   service,
   position,
@@ -83,7 +85,7 @@ function ServiceNode({
       </text>
     </g>
   );
-}
+});
 
 type ServiceEdgeProps = {
   from: { x: number; y: number };
@@ -94,7 +96,14 @@ type ServiceEdgeProps = {
   isDimmed: boolean;
 };
 
-function ServiceEdge({ from, to, protocol, criticality, isActive, isDimmed }: ServiceEdgeProps) {
+const ServiceEdge = memo(function ServiceEdge({
+  from,
+  to,
+  protocol,
+  criticality,
+  isActive,
+  isDimmed,
+}: ServiceEdgeProps) {
   const midY = (from.y + to.y) / 2;
   const path = `M${from.x},${from.y} C${from.x},${midY} ${to.x},${midY} ${to.x},${to.y}`;
 
@@ -121,7 +130,7 @@ function ServiceEdge({ from, to, protocol, criticality, isActive, isDimmed }: Se
       ) : null}
     </g>
   );
-}
+});
 
 type GraphCanvasProps = {
   edges: Array<{
@@ -152,6 +161,72 @@ export function GraphCanvas({
   getOwnershipKind,
   onSelectService,
 }: GraphCanvasProps) {
+  const renderedEdges = useMemo(
+    () =>
+      edges.map((edge, index) => {
+        const from = layout.positions[edge.from];
+        const to = layout.positions[edge.to];
+
+        if (!from || !to) {
+          return null;
+        }
+
+        return (
+          <ServiceEdge
+            criticality={edge.criticality}
+            from={{ x: from.x + layout.nodeW / 2, y: from.y + layout.nodeH }}
+            isActive={edge.isActive}
+            isDimmed={mode !== "overview" && !edge.isActive}
+            key={`${edge.from}-${edge.to}-${index}`}
+            protocol={edge.protocol}
+            to={{ x: to.x + layout.nodeW / 2, y: to.y }}
+          />
+        );
+      }),
+    [edges, layout.nodeH, layout.nodeW, layout.positions, mode],
+  );
+  const visibleServiceKeys = useMemo(() => [...visibleServices], [visibleServices]);
+  const renderedNodes = useMemo(
+    () =>
+      visibleServiceKeys.map((serviceKey) => {
+        const position = layout.positions[serviceKey];
+
+        if (!position) {
+          return null;
+        }
+
+        const service = services[serviceKey];
+
+        return (
+          <ServiceNode
+            height={layout.nodeH}
+            id={serviceKey}
+            isAffected={affectedSet.has(serviceKey)}
+            isDimmed={mode !== "overview" && !affectedSet.has(serviceKey)}
+            isHighlight={serviceKey === highlightKey}
+            isInternal={getOwnershipKind(service) === "internal"}
+            key={serviceKey}
+            onSelect={onSelectService}
+            position={position}
+            service={service}
+            width={layout.nodeW}
+          />
+        );
+      }),
+    [
+      affectedSet,
+      getOwnershipKind,
+      highlightKey,
+      layout.nodeH,
+      layout.nodeW,
+      layout.positions,
+      mode,
+      onSelectService,
+      services,
+      visibleServiceKeys,
+    ],
+  );
+
   return (
     <section className={styles.graphSection}>
       <svg className={styles.graphCanvas} height={layout.svgH} width={layout.svgW}>
@@ -178,49 +253,8 @@ export function GraphCanvas({
             <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--graph-arrow)" />
           </marker>
         </defs>
-        {edges.map((edge, index) => {
-          const from = layout.positions[edge.from];
-          const to = layout.positions[edge.to];
-
-          if (!from || !to) {
-            return null;
-          }
-
-          return (
-            <ServiceEdge
-              criticality={edge.criticality}
-              from={{ x: from.x + layout.nodeW / 2, y: from.y + layout.nodeH }}
-              isActive={edge.isActive}
-              isDimmed={mode !== "overview" && !edge.isActive}
-              key={`${edge.from}-${edge.to}-${index}`}
-              protocol={edge.protocol}
-              to={{ x: to.x + layout.nodeW / 2, y: to.y }}
-            />
-          );
-        })}
-        {[...visibleServices].map((serviceKey) => {
-          const position = layout.positions[serviceKey];
-
-          if (!position) {
-            return null;
-          }
-
-          return (
-            <ServiceNode
-              height={layout.nodeH}
-              id={serviceKey}
-              isAffected={affectedSet.has(serviceKey)}
-              isDimmed={mode !== "overview" && !affectedSet.has(serviceKey)}
-              isHighlight={serviceKey === highlightKey}
-              isInternal={getOwnershipKind(services[serviceKey]) === "internal"}
-              key={serviceKey}
-              onSelect={onSelectService}
-              position={position}
-              service={services[serviceKey]}
-              width={layout.nodeW}
-            />
-          );
-        })}
+        {renderedEdges}
+        {renderedNodes}
       </svg>
     </section>
   );
