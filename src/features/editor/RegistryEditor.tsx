@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ChangeEvent } from "react";
 
 import type { Theme, ValidationIssue } from "../../domain/registry";
 import { pointerToLabel } from "../../domain/registry";
@@ -17,6 +17,7 @@ type RegistryEditorProps = {
   onToggleTheme: () => void;
   canApply: boolean;
   sourceLabel: string | null;
+  focusLine?: number;
 };
 
 export function RegistryEditor({
@@ -32,10 +33,26 @@ export function RegistryEditor({
   onToggleTheme,
   canApply,
   sourceLabel,
+  focusLine,
 }: RegistryEditorProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const lineNumberRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!focusLine || !textareaRef.current) return;
+    const lines = draftText.split("\n");
+    const charOffset =
+      lines.slice(0, focusLine - 1).join("\n").length + (focusLine > 1 ? 1 : 0);
+    const lineHeight = 19;
+    textareaRef.current.focus();
+    textareaRef.current.setSelectionRange(charOffset, charOffset + (lines[focusLine - 1]?.length ?? 0));
+    const scrollTop = Math.max(0, (focusLine - 5) * lineHeight);
+    textareaRef.current.scrollTop = scrollTop;
+    if (lineNumberRef.current) {
+      lineNumberRef.current.scrollTop = scrollTop;
+    }
+  }, [focusLine]); // eslint-disable-line react-hooks/exhaustive-deps
   const lineNumbers = useMemo(
     () => Array.from({ length: draftText.split("\n").length }, (_, index) => index + 1),
     [draftText],

@@ -1,12 +1,30 @@
-import { ACTION_COLORS, type DataFlow, type Service } from "../../../domain/registry";
+import { useState } from "react";
+
+import { ACTION_COLORS, type DataFlow, type DataFlowAction, type DataFlowStage, type Service } from "../../../domain/registry";
 import { formatServiceLabel } from "../../../domain/catalog";
 import styles from "./DataFlowPipeline.module.css";
 
+const ALL_ACTIONS: DataFlowAction[] = [
+  "produces",
+  "transforms",
+  "stores",
+  "indexes",
+  "enriches",
+  "caches",
+  "serves",
+  "consumes",
+];
+
 type DataFlowPipelineProps = {
   dataFlow: DataFlow;
+  dataFlowKey: string;
   selectedService: string | null;
   services: Record<string, Service>;
   onSelectService: (serviceKey: string) => void;
+  editMode?: boolean;
+  onReorderStages?: (newStages: DataFlowStage[]) => void;
+  onAddStage?: (stage: DataFlowStage, atIndex: number) => void;
+  availableServices?: string[];
 };
 
 export function DataFlowPipeline({
@@ -14,7 +32,183 @@ export function DataFlowPipeline({
   selectedService,
   services,
   onSelectService,
+  editMode = false,
+  onReorderStages,
+  onAddStage,
+  availableServices = [],
 }: DataFlowPipelineProps) {
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [insertAt, setInsertAt] = useState<number | null>(null);
+  const [newServiceKey, setNewServiceKey] = useState<string>(() => availableServices[0] ?? "");
+  const [newAction, setNewAction] = useState<DataFlowAction>("produces");
+
+  function handleDragStart(index: number) {
+    setDragIndex(index);
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    setDragOverIndex(index);
+  }
+
+  function handleDrop(e: React.DragEvent, targetIndex: number) {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === targetIndex) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const newStages = [...dataFlow.stages];
+    const [moved] = newStages.splice(dragIndex, 1);
+    newStages.splice(targetIndex, 0, moved);
+    onReorderStages?.(newStages);
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }
+
+  function handleConfirmAdd() {
+    if (!newServiceKey || insertAt === null) return;
+    onAddStage?.({ service: newServiceKey, action: newAction }, insertAt);
+    setInsertAt(null);
+    setNewServiceKey(availableServices[0] ?? "");
+    setNewAction("produces");
+  }
+
+  if (editMode) {
+    return (
+      <div className={styles.pipelineScroll}>
+        <div className={styles.editPipeline}>
+          {dataFlow.stages.map((stage, index) => {
+            const service = services[stage.service];
+            const isDropTarget = dragOverIndex === index && dragIndex !== null && dragIndex !== index;
+            const isDragging = dragIndex === index;
+
+            return (
+              <div key={`${stage.service}-${index}`} className={styles.editStageWrapper}>
+                {isDropTarget && dragIndex !== null && dragIndex > index ? (
+                  <div className={styles.dropIndicator} />
+                ) : null}
+                <div
+                  className={`${styles.editStage}${isDragging ? ` ${styles.editStageDragging}` : ""}`}
+                  draggable
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragStart={() => handleDragStart(index)}
+                  onDrop={(e) => handleDrop(e, index)}
+                >
+                  <div
+                    className={styles.editStageAction}
+                    style={{ background: ACTION_COLORS[stage.action] ?? "#64748b" }}
+                  >
+                    {stage.action.toUpperCase()}
+                  </div>
+                  <div className={styles.editStageName}>
+                    {formatServiceLabel(service?.name ?? stage.service, 18)}
+                  </div>
+                  {stage.format ? (
+                    <div className={styles.editStageFormat}>{stage.format}</div>
+                  ) : null}
+                  <div className={styles.dragHandle} title="Drag to reorder">⠿</div>
+                </div>
+                {isDropTarget && dragIndex !== null && dragIndex < index ? (
+                  <div className={styles.dropIndicator} />
+                ) : null}
+                {onAddStage && insertAt !== index + 1 ? (
+                  <button
+                    className={styles.addStageBtn}
+                    onClick={() => {
+                      setInsertAt(index + 1);
+                      setNewServiceKey(availableServices[0] ?? "");
+                      setNewAction("produces");
+                    }}
+                    title="Insert stage after this one"
+                    type="button"
+                  >
+                    +
+                  </button>
+                ) : null}
+                {insertAt === index + 1 ? (
+                  <div className={styles.addStageForm}>
+                    <select
+                      onChange={(e) => setNewServiceKey(e.target.value)}
+                      value={newServiceKey}
+                    >
+                      {availableServices.map((key) => (
+                        <option key={key} value={key}>
+                          {services[key]?.name ?? key}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      onChange={(e) => setNewAction(e.target.value as DataFlowAction)}
+                      value={newAction}
+                    >
+                      {ALL_ACTIONS.map((a) => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                    <button className="primary-button" onClick={handleConfirmAdd} type="button">
+                      Add
+                    </button>
+                    <button className="secondary-button" onClick={() => setInsertAt(null)} type="button">
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+          {onAddStage && insertAt !== 0 ? (
+            <button
+              className={styles.addStageBtnFirst}
+              onClick={() => {
+                setInsertAt(0);
+                setNewServiceKey(availableServices[0] ?? "");
+                setNewAction("produces");
+              }}
+              title="Insert stage at beginning"
+              type="button"
+            >
+              + Add first stage
+            </button>
+          ) : null}
+          {insertAt === 0 ? (
+            <div className={styles.addStageForm}>
+              <select onChange={(e) => setNewServiceKey(e.target.value)} value={newServiceKey}>
+                {availableServices.map((key) => (
+                  <option key={key} value={key}>
+                    {services[key]?.name ?? key}
+                  </option>
+                ))}
+              </select>
+              <select
+                onChange={(e) => setNewAction(e.target.value as DataFlowAction)}
+                value={newAction}
+              >
+                {ALL_ACTIONS.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+              <button className="primary-button" onClick={handleConfirmAdd} type="button">
+                Add
+              </button>
+              <button className="secondary-button" onClick={() => setInsertAt(null)} type="button">
+                Cancel
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  // Non-edit mode: original SVG rendering
   const stageW = 130;
   const stageH = 72;
   const arrowW = 40;

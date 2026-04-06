@@ -4,6 +4,8 @@ import {
   ACTION_COLORS,
   DATA_TYPE_ICONS,
   FLOW_COLORS,
+  type DataFlowAction,
+  type DataFlowStage,
   type Registry,
   type ServiceStatus,
   SENSITIVITY_COLORS,
@@ -30,16 +32,26 @@ type CatalogViewProps = {
   theme: Theme;
   registry: Registry;
   sourceLabel: string | null;
+  editMode: boolean;
   onEditRegistry: () => void;
+  onToggleEditMode: () => void;
   onToggleTheme: () => void;
+  onEditEntity: (keyPath: string[]) => void;
+  onReorderStages: (flowKey: string, newStages: DataFlowStage[]) => void;
+  onAddStage: (flowKey: string, stage: DataFlowStage, atIndex: number) => void;
 };
 
 export function CatalogView({
   theme,
   registry,
   sourceLabel,
+  editMode,
   onEditRegistry,
+  onToggleEditMode,
   onToggleTheme,
+  onEditEntity,
+  onReorderStages,
+  onAddStage,
 }: CatalogViewProps) {
   const explorerTitle = getExplorerTitle(registry.metadata.team);
   const viewModel = useCatalogViewModel(registry);
@@ -100,6 +112,14 @@ export function CatalogView({
               type="button"
             >
               Copy Mermaid
+            </button>
+            <button
+              aria-pressed={editMode}
+              className={editMode ? "primary-button" : "secondary-button"}
+              onClick={onToggleEditMode}
+              type="button"
+            >
+              {editMode ? "Exit edit mode" : "Edit mode"}
             </button>
             <button
               className="secondary-button"
@@ -226,11 +246,13 @@ export function CatalogView({
       {viewModel.isGraphMode ? (
         <GraphCanvas
           affectedSet={viewModel.affectedSet}
+          editMode={editMode}
           edges={viewModel.edges}
           getOwnershipKind={viewModel.getOwnershipKind}
           highlightKey={viewModel.highlightKey}
           layout={viewModel.layout}
           mode={viewModel.mode}
+          onEditNode={(id) => onEditEntity(["services", id])}
           onSelectService={viewModel.handleServiceClick}
           services={viewModel.services}
           visibleServices={viewModel.visibleServices}
@@ -255,6 +277,20 @@ export function CatalogView({
                 >
                   <div className={styles.panelHeaderMain}>
                     <span className={styles.panelTitle}>{dataFlow.name}</span>
+                    {editMode ? (
+                      <button
+                        className="secondary-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditEntity(["data_flows", flowKey]);
+                        }}
+                        style={{ fontSize: "11px", padding: "2px 8px" }}
+                        title="Edit this data flow in YAML"
+                        type="button"
+                      >
+                        ✎ Edit YAML
+                      </button>
+                    ) : null}
                     <Badge color={FLOW_COLORS[dataFlow.business_flow] ?? "#475569"}>
                       {viewModel.businessFlows[dataFlow.business_flow]?.name ??
                         dataFlow.business_flow}
@@ -277,7 +313,12 @@ export function CatalogView({
                   <div className={styles.panelBody}>
                     <div className={styles.panelDescription}>{dataFlow.description}</div>
                     <DataFlowPipeline
+                      availableServices={Object.keys(viewModel.services)}
                       dataFlow={dataFlow}
+                      dataFlowKey={flowKey}
+                      editMode={editMode}
+                      onAddStage={(stage, atIndex) => onAddStage(flowKey, stage, atIndex)}
+                      onReorderStages={(newStages) => onReorderStages(flowKey, newStages)}
                       onSelectService={viewModel.setSelectedService}
                       selectedService={viewModel.selectedService}
                       services={viewModel.services}

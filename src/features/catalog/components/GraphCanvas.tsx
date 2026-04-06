@@ -1,8 +1,8 @@
 import { memo, useMemo } from "react";
 
-import type { Mode, Service } from "../../../domain/registry";
+import type { DependencyCriticality, Mode, Service } from "../../../domain/registry";
 import { STATUS_STYLES, TYPE_ICONS } from "../../../domain/registry";
-import { formatServiceLabel, getNodeRadius, type DependencyCriticality, type Layout } from "../../../domain/catalog";
+import { formatServiceLabel, getNodeRadius, type Layout } from "../../../domain/catalog";
 import styles from "./GraphCanvas.module.css";
 
 type ServiceNodeProps = {
@@ -15,7 +15,9 @@ type ServiceNodeProps = {
   isHighlight: boolean;
   isAffected: boolean;
   isDimmed: boolean;
+  editMode: boolean;
   onSelect: (serviceKey: string) => void;
+  onEdit: (serviceKey: string) => void;
 };
 
 const ServiceNode = memo(function ServiceNode({
@@ -28,7 +30,9 @@ const ServiceNode = memo(function ServiceNode({
   isHighlight,
   isAffected,
   isDimmed,
+  editMode,
   onSelect,
+  onEdit,
 }: ServiceNodeProps) {
   const statusStyle = STATUS_STYLES[service.status] ?? STATUS_STYLES.active;
   // Interaction state wins over status styling so selection/impact remains readable even when
@@ -42,7 +46,7 @@ const ServiceNode = memo(function ServiceNode({
   return (
     <g
       className={styles.serviceNode}
-      onClick={() => onSelect(id)}
+      onClick={() => (editMode ? onEdit(id) : onSelect(id))}
       opacity={isDimmed ? 0.15 : 1}
       transform={`translate(${position.x},${position.y})`}
     >
@@ -50,7 +54,8 @@ const ServiceNode = memo(function ServiceNode({
         fill={statusStyle.bg}
         height={height}
         rx={getNodeRadius(service.type)}
-        stroke={stroke}
+        stroke={editMode ? "#7c3aed" : stroke}
+        strokeDasharray={editMode ? "3 2" : "none"}
         strokeWidth={isHighlight ? 3 : isAffected ? 2 : 1}
         width={width}
       />
@@ -87,6 +92,19 @@ const ServiceNode = memo(function ServiceNode({
       >
         {service.status !== "active" ? service.status.toUpperCase() : service.type}
       </text>
+      {editMode ? (
+        <text
+          fill="rgba(255,255,255,0.9)"
+          fontFamily="system-ui"
+          fontSize="11"
+          textAnchor="end"
+          x={width - 4}
+          y={14}
+        >
+          <title>Edit in YAML</title>
+          ✎
+        </text>
+      ) : null}
     </g>
   );
 });
@@ -152,6 +170,8 @@ type GraphCanvasProps = {
   services: Record<string, Service>;
   getOwnershipKind: (service: Service) => "internal" | "external";
   onSelectService: (serviceKey: string) => void;
+  editMode?: boolean;
+  onEditNode?: (serviceKey: string) => void;
 };
 
 export function GraphCanvas({
@@ -164,6 +184,8 @@ export function GraphCanvas({
   services,
   getOwnershipKind,
   onSelectService,
+  editMode = false,
+  onEditNode,
 }: GraphCanvasProps) {
   const renderedEdges = useMemo(
     () =>
@@ -190,6 +212,10 @@ export function GraphCanvas({
     [edges, layout.nodeH, layout.nodeW, layout.positions, mode],
   );
   const visibleServiceKeys = useMemo(() => [...visibleServices], [visibleServices]);
+  const onEditResolved = useMemo(
+    () => onEditNode ?? onSelectService,
+    [onEditNode, onSelectService],
+  );
   const renderedNodes = useMemo(
     () =>
       visibleServiceKeys.map((serviceKey) => {
@@ -203,6 +229,7 @@ export function GraphCanvas({
 
         return (
           <ServiceNode
+            editMode={editMode}
             height={layout.nodeH}
             id={serviceKey}
             isAffected={affectedSet.has(serviceKey)}
@@ -210,6 +237,7 @@ export function GraphCanvas({
             isHighlight={serviceKey === highlightKey}
             isInternal={getOwnershipKind(service) === "internal"}
             key={serviceKey}
+            onEdit={onEditResolved}
             onSelect={onSelectService}
             position={position}
             service={service}
@@ -219,12 +247,14 @@ export function GraphCanvas({
       }),
     [
       affectedSet,
+      editMode,
       getOwnershipKind,
       highlightKey,
       layout.nodeH,
       layout.nodeW,
       layout.positions,
       mode,
+      onEditResolved,
       onSelectService,
       services,
       visibleServiceKeys,
