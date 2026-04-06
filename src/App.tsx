@@ -294,15 +294,6 @@ function getNodeRadius(type: ServiceType) {
   return 10;
 }
 
-function panelStyle(extra?: CSSProperties): CSSProperties {
-  return {
-    background: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: 8,
-    ...extra,
-  };
-}
-
 type BadgeProps = {
   color: string;
   children: ReactNode;
@@ -312,17 +303,9 @@ type BadgeProps = {
 function Badge({ color, children, onClick }: BadgeProps) {
   return (
     <span
+      className={`badge${onClick ? " badge-clickable" : ""}`}
       onClick={onClick}
-      style={{
-        background: color,
-        borderRadius: 3,
-        color: "#fff",
-        cursor: onClick ? "pointer" : "default",
-        fontSize: "10px",
-        fontWeight: 500,
-        padding: "2px 8px",
-        whiteSpace: "nowrap",
-      }}
+      style={{ "--badge-color": color } as CSSProperties}
     >
       {children}
     </span>
@@ -336,17 +319,7 @@ type TagProps = {
 
 function Tag({ children, color = "#334155" }: TagProps) {
   return (
-    <span
-      style={{
-        background: color,
-        borderRadius: 3,
-        color: "#e2e8f0",
-        fontFamily: "monospace",
-        fontSize: "9px",
-        padding: "1px 6px",
-        whiteSpace: "nowrap",
-      }}
-    >
+    <span className="tag" style={{ "--tag-color": color } as CSSProperties}>
       {children}
     </span>
   );
@@ -380,9 +353,9 @@ function ServiceNode({
 
   return (
     <g
+      className="service-node"
       onClick={() => onSelect(id)}
       opacity={isDimmed ? 0.15 : 1}
-      style={{ cursor: "pointer" }}
       transform={`translate(${position.x},${position.y})`}
     >
       <rect
@@ -470,8 +443,8 @@ function DataFlowPipeline({ dataFlow, selectedService, onSelectService }: DataFl
   const totalW = dataFlow.stages.length * (stageW + arrowW + gap) - arrowW - gap;
 
   return (
-    <div style={{ overflowX: "auto", padding: "8px 16px" }}>
-      <svg height={stageH + 20} style={{ display: "block" }} width={Math.max(totalW + 40, 300)}>
+    <div className="pipeline-scroll">
+      <svg height={stageH + 20} width={Math.max(totalW + 40, 300)}>
         <defs>
           <marker
             id="pipeArrow"
@@ -492,7 +465,7 @@ function DataFlowPipeline({ dataFlow, selectedService, onSelectService }: DataFl
 
           return (
             <g key={`${stage.service}-${index}`}>
-              <g onClick={() => onSelectService(stage.service)} style={{ cursor: "pointer" }}>
+              <g className="pipeline-stage" onClick={() => onSelectService(stage.service)}>
                 <rect
                   fill={isSelected ? "#1e293b" : "#0f172a"}
                   height={stageH}
@@ -713,70 +686,33 @@ export default function App() {
   }, []);
 
   return (
-    <div
-      style={{
-        background: "#0f172a",
-        color: "#e2e8f0",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        minHeight: "100vh",
-      }}
-    >
-      <header style={{ borderBottom: "1px solid #1e293b", padding: "16px 20px" }}>
-        <div style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "-0.02em" }}>
-          Service Dependency Explorer
-        </div>
-        <div style={{ color: "#64748b", fontSize: "11px", marginTop: 2 }}>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-title">Service Dependency Explorer</div>
+        <div className="app-subtitle">
           Click a service for blast radius and affected data flows, powered by
           {" "}
           `service_registry.yaml`
         </div>
       </header>
 
-      <nav
-        style={{
-          borderBottom: "1px solid #1e293b",
-          display: "flex",
-          gap: 1,
-          overflowX: "auto",
-          padding: "12px 20px 0",
-        }}
-      >
+      <nav className="app-tabs">
         {TABS.map((tab) => (
           <button
+            className={`app-tab${mode === tab.key ? " app-tab-active" : ""}`}
             key={tab.key}
             onClick={() => handleTabChange(tab.key)}
-            style={{
-              background: "none",
-              border: "none",
-              borderBottom:
-                mode === tab.key ? "2px solid #3b82f6" : "2px solid transparent",
-              color: mode === tab.key ? "#e2e8f0" : "#64748b",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              fontSize: "12px",
-              fontWeight: 500,
-              padding: "8px 14px",
-              whiteSpace: "nowrap",
-            }}
           >
             {tab.label}
           </button>
         ))}
       </nav>
 
-      <section
-        style={{
-          alignItems: "center",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          padding: "12px 20px",
-        }}
-      >
+      <section className="control-bar">
         {mode === "flow" ? (
           <select
+            className="app-select"
             onChange={(event) => setSelectedFlow(event.target.value || null)}
-            style={selectStyle}
             value={selectedFlow ?? ""}
           >
             <option value="">All business flows</option>
@@ -791,11 +727,11 @@ export default function App() {
         {mode === "data" ? (
           <>
             <select
+              className="app-select"
               onChange={(event) => {
                 setSelectedFlow(event.target.value || null);
                 setSelectedDataFlow(null);
               }}
-              style={selectStyle}
               value={selectedFlow ?? ""}
             >
               <option value="">All business flows</option>
@@ -806,12 +742,12 @@ export default function App() {
               ))}
             </select>
             <select
+              className="app-select"
               onChange={(event) => {
                 const value = event.target.value || null;
                 setSelectedDataFlow(value);
                 setExpandedDataFlow(value);
               }}
-              style={selectStyle}
               value={selectedDataFlow ?? ""}
             >
               <option value="">All data flows</option>
@@ -828,8 +764,8 @@ export default function App() {
 
         {mode === "blast" || mode === "upstream" ? (
           <select
+            className="app-select"
             onChange={(event) => setSelectedService(event.target.value || null)}
-            style={selectStyle}
             value={selectedService ?? ""}
           >
             <option value="">Select a service…</option>
@@ -842,25 +778,8 @@ export default function App() {
         ) : null}
 
         {affectedBusinessFlows.length > 0 ? (
-          <div
-            style={{
-              alignItems: "center",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 4,
-              marginLeft: "auto",
-            }}
-          >
-            <span
-              style={{
-                color: "#94a3b8",
-                fontSize: "10px",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-              }}
-            >
-              Affected flows:
-            </span>
+          <div className="flow-summary">
+            <span className="overline">Affected flows:</span>
             {affectedBusinessFlows.map((flowKey) => (
               <Badge color={FLOW_COLORS[flowKey] ?? "#475569"} key={flowKey}>
                 {BUSINESS_FLOWS[flowKey]?.name ?? flowKey}
@@ -871,8 +790,8 @@ export default function App() {
       </section>
 
       {isGraphMode ? (
-        <section style={{ overflow: "auto", padding: "0 20px" }}>
-          <svg height={layout.svgH} style={{ display: "block", margin: "0 auto" }} width={layout.svgW}>
+        <section className="graph-section">
+          <svg className="graph-canvas" height={layout.svgH} width={layout.svgW}>
             <defs>
               <marker
                 id="arrow"
@@ -933,30 +852,22 @@ export default function App() {
       ) : null}
 
       {mode === "data" ? (
-        <section style={{ padding: "0 20px 20px" }}>
+        <section className="data-section">
           {filteredDataFlows.length === 0 ? (
-            <div style={{ color: "#64748b", padding: 40, textAlign: "center" }}>
-              No data flows found for this filter.
-            </div>
+            <div className="empty-state">No data flows found for this filter.</div>
           ) : null}
 
           {filteredDataFlows.map(([flowKey, dataFlow]) => {
             const isExpanded = expandedDataFlow === flowKey || selectedDataFlow === flowKey;
 
             return (
-              <div key={flowKey} style={{ ...panelStyle({ marginBottom: 12 }), overflow: "hidden" }}>
+              <div className="panel" key={flowKey} style={{ marginBottom: 12, overflow: "hidden" }}>
                 <div
+                  className="panel-header"
                   onClick={() => setExpandedDataFlow(isExpanded ? null : flowKey)}
-                  style={{
-                    alignItems: "center",
-                    cursor: "pointer",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "12px 16px",
-                  }}
                 >
-                  <div style={{ alignItems: "center", display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    <span style={{ fontSize: "13px", fontWeight: 600 }}>{dataFlow.name}</span>
+                  <div className="panel-header-main">
+                    <span className="panel-title">{dataFlow.name}</span>
                     <Badge color={FLOW_COLORS[dataFlow.business_flow] ?? "#475569"}>
                       {BUSINESS_FLOWS[dataFlow.business_flow]?.name ?? dataFlow.business_flow}
                     </Badge>
@@ -969,80 +880,51 @@ export default function App() {
                     <Tag>{dataFlow.freshness}</Tag>
                     <Tag color="#334155">{dataFlow.stages.length} stages</Tag>
                   </div>
-                  <span
-                    style={{
-                      color: "#64748b",
-                      fontSize: "16px",
-                      transform: isExpanded ? "rotate(180deg)" : "rotate(0)",
-                      transition: "transform 0.2s",
-                    }}
-                  >
+                  <span className={`panel-chevron${isExpanded ? " panel-chevron-expanded" : ""}`}>
                     ▾
                   </span>
                 </div>
 
                 {isExpanded ? (
-                  <div style={{ borderTop: "1px solid #334155" }}>
-                    <div style={{ color: "#94a3b8", fontSize: "11px", padding: "8px 16px" }}>
-                      {dataFlow.description}
-                    </div>
+                  <div className="panel-body">
+                    <div className="panel-description">{dataFlow.description}</div>
                     <DataFlowPipeline
                       dataFlow={dataFlow}
                       onSelectService={setSelectedService}
                       selectedService={selectedService}
                     />
-                    <div style={{ overflowX: "auto", padding: "0 16px 12px" }}>
-                      <table style={{ borderCollapse: "collapse", fontSize: "10px", width: "100%" }}>
+                    <div className="table-scroll">
+                      <table className="dataflow-table">
                         <thead>
-                          <tr
-                            style={{
-                              color: "#64748b",
-                              letterSpacing: "0.05em",
-                              textTransform: "uppercase",
-                            }}
-                          >
+                          <tr className="dataflow-header">
                             {["#", "Service", "Action", "Format", "Notes"].map((heading) => (
-                              <th
-                                key={heading}
-                                style={{
-                                  borderBottom: "1px solid #334155",
-                                  padding: "4px 8px",
-                                  textAlign: "left",
-                                }}
-                              >
-                                {heading}
-                              </th>
+                              <th key={heading}>{heading}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {dataFlow.stages.map((stage, index) => (
                             <tr
+                              className="dataflow-row"
                               key={`${stage.service}-${index}`}
                               onClick={() => setSelectedService(stage.service)}
-                              style={{ color: "#cbd5e1", cursor: "pointer" }}
                             >
-                              <td style={tableCellStyle}>{index + 1}</td>
-                              <td style={{ ...tableCellStyle, fontWeight: 600 }}>
+                              <td>{index + 1}</td>
+                              <td className="dataflow-service-cell">
                                 {SERVICES[stage.service]?.name ?? stage.service}
                               </td>
-                              <td style={tableCellStyle}>
+                              <td>
                                 <span
-                                  style={{
-                                    background: ACTION_COLORS[stage.action] ?? "#475569",
-                                    borderRadius: 3,
-                                    color: "#fff",
-                                    fontSize: "9px",
-                                    padding: "1px 6px",
-                                  }}
+                                  className="action-pill"
+                                  style={
+                                    { "--action-color": ACTION_COLORS[stage.action] ?? "#475569" } as CSSProperties
+                                  }
                                 >
                                   {stage.action}
                                 </span>
                               </td>
-                              <td style={{ ...tableCellStyle, fontFamily: "monospace" }}>
-                                {stage.format}
-                              </td>
-                              <td style={{ ...tableCellStyle, color: "#94a3b8" }}>{stage.notes}</td>
+                              <td className="mono-cell">{stage.format}</td>
+                              <td className="muted-cell">{stage.notes}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1057,19 +939,11 @@ export default function App() {
       ) : null}
 
       {selectedServiceDetails && isGraphMode && (mode === "blast" || mode === "upstream") ? (
-        <section style={{ ...panelStyle({ margin: "16px 20px", padding: "14px 18px" }) }}>
-          <div
-            style={{
-              alignItems: "start",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              justifyContent: "space-between",
-            }}
-          >
+        <section className="panel details-panel">
+          <div className="details-header">
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 600 }}>{selectedServiceDetails.name}</div>
-              <div style={{ color: "#94a3b8", fontSize: "11px", marginTop: 2 }}>
+              <div className="details-title">{selectedServiceDetails.name}</div>
+              <div className="details-meta">
                 {selectedServiceDetails.type} · {selectedServiceDetails.status}
               </div>
             </div>
@@ -1081,9 +955,9 @@ export default function App() {
           </div>
 
           {(selectedServiceDetails.upstream?.length ?? 0) > 0 ? (
-            <div style={{ marginTop: 10 }}>
-              <div style={sectionLabelStyle}>Direct dependencies</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            <div className="details-section">
+              <div className="overline">Direct dependencies</div>
+              <div className="tag-row">
                 {selectedServiceDetails.upstream?.map((dependency) => (
                   <Tag
                     color={dependency.criticality === "hard" ? "#991b1b" : "#44403c"}
@@ -1097,26 +971,17 @@ export default function App() {
           ) : null}
 
           {affectedDataFlows.length > 0 ? (
-            <div style={{ marginTop: 12 }}>
-              <div style={sectionLabelStyle}>Data flows through this service</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            <div className="details-section">
+              <div className="overline">Data flows through this service</div>
+              <div className="tag-row">
                 {affectedDataFlows.map(([flowKey, dataFlow]) => (
                   <span
+                    className="link-tag"
                     key={flowKey}
                     onClick={() => {
                       setMode("data");
                       setSelectedDataFlow(flowKey);
                       setExpandedDataFlow(flowKey);
-                    }}
-                    style={{
-                      background: "#0f172a",
-                      border: "1px solid #475569",
-                      borderRadius: 4,
-                      color: "#e2e8f0",
-                      cursor: "pointer",
-                      fontSize: "10px",
-                      fontWeight: 500,
-                      padding: "3px 10px",
                     }}
                   >
                     {DATA_TYPE_ICONS[dataFlow.data_type] ?? "?"} {dataFlow.name}
@@ -1128,41 +993,24 @@ export default function App() {
         </section>
       ) : null}
 
-      <footer
-        style={{
-          borderTop: "1px solid #1e293b",
-          color: "#64748b",
-          display: "flex",
-          flexWrap: "wrap",
-          fontSize: "10px",
-          gap: 12,
-          padding: "12px 20px",
-        }}
-      >
+      <footer className="app-footer">
         {mode !== "data"
           ? [
               ...Object.entries(STATUS_STYLES).map(([status, style]) => (
-                <span
-                  key={status}
-                  style={{ alignItems: "center", display: "flex", gap: 4 }}
-                >
+                <span className="legend-item" key={status}>
                   <span
-                    style={{
-                      background: style.bg,
-                      borderRadius: 2,
-                      height: 10,
-                      width: 10,
-                    }}
+                    className="legend-swatch"
+                    style={{ "--legend-color": style.bg } as CSSProperties}
                   />
                   {status}
                 </span>
               )),
-              <span key="hard" style={{ alignItems: "center", display: "flex", gap: 4 }}>
-                <span style={{ borderBottom: "2px solid #94a3b8", width: 16 }} />
+              <span className="legend-item" key="hard">
+                <span className="legend-line legend-line-hard" />
                 hard
               </span>,
-              <span key="soft" style={{ alignItems: "center", display: "flex", gap: 4 }}>
-                <span style={{ borderBottom: "2px dashed #94a3b8", width: 16 }} />
+              <span className="legend-item" key="soft">
+                <span className="legend-line legend-line-soft" />
                 soft
               </span>,
               ...Object.entries(TYPE_ICONS).map(([type, icon]) => (
@@ -1172,8 +1020,11 @@ export default function App() {
               )),
             ]
           : Object.entries(ACTION_COLORS).map(([action, color]) => (
-              <span key={action} style={{ alignItems: "center", display: "flex", gap: 4 }}>
-                <span style={{ background: color, borderRadius: 2, height: 10, width: 10 }} />
+              <span className="legend-item" key={action}>
+                <span
+                  className="legend-swatch"
+                  style={{ "--legend-color": color } as CSSProperties}
+                />
                 {action}
               </span>
             ))}
@@ -1181,26 +1032,3 @@ export default function App() {
     </div>
   );
 }
-
-const selectStyle: CSSProperties = {
-  background: "#1e293b",
-  border: "1px solid #334155",
-  borderRadius: 4,
-  color: "#e2e8f0",
-  fontFamily: "inherit",
-  fontSize: "12px",
-  padding: "6px 10px",
-};
-
-const tableCellStyle: CSSProperties = {
-  borderBottom: "1px solid #1e293b",
-  padding: "4px 8px",
-};
-
-const sectionLabelStyle: CSSProperties = {
-  color: "#64748b",
-  fontSize: "10px",
-  letterSpacing: "0.05em",
-  marginBottom: 4,
-  textTransform: "uppercase",
-};
