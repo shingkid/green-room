@@ -720,6 +720,30 @@ textarea {
   outline: none;
 }
 
+.editor-codeframe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 70vh;
+  flex: 1 1 auto;
+}
+
+.editor-line-numbers {
+  overflow: hidden;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-panel-strong);
+  color: var(--text-subtle);
+  padding: 14px 10px 14px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+  user-select: none;
+}
+
+.editor-line-number {
+  min-width: 2.5em;
+}
+
 .validation-list {
   display: flex;
   flex-direction: column;
@@ -799,6 +823,7 @@ textarea {
     min-height: 40vh;
   }
 
+  .editor-codeframe,
   .editor-textarea {
     min-height: 40vh;
   }

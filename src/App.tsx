@@ -1150,6 +1150,20 @@ function RegistryEditor({
   sourceLabel,
 }: RegistryEditorProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const lineNumberRef = useRef<HTMLDivElement | null>(null);
+  const lineNumbers = useMemo(
+    () => Array.from({ length: draftText.split("\n").length }, (_, index) => index + 1),
+    [draftText],
+  );
+
+  const handleEditorScroll = useCallback(() => {
+    if (!textareaRef.current || !lineNumberRef.current) {
+      return;
+    }
+
+    lineNumberRef.current.scrollTop = textareaRef.current.scrollTop;
+  }, []);
 
   return (
     <div className="editor-shell">
@@ -1199,12 +1213,23 @@ function RegistryEditor({
       <div className="editor-layout">
         <section className="editor-pane">
           <div className="pane-title">YAML</div>
-          <textarea
-            className="editor-textarea"
-            onChange={(event) => onChange(event.target.value)}
-            spellCheck={false}
-            value={draftText}
-          />
+          <div className="editor-codeframe">
+            <div aria-hidden="true" className="editor-line-numbers" ref={lineNumberRef}>
+              {lineNumbers.map((lineNumber) => (
+                <div className="editor-line-number" key={lineNumber}>
+                  {lineNumber}
+                </div>
+              ))}
+            </div>
+            <textarea
+              className="editor-textarea"
+              onChange={(event) => onChange(event.target.value)}
+              onScroll={handleEditorScroll}
+              ref={textareaRef}
+              spellCheck={false}
+              value={draftText}
+            />
+          </div>
         </section>
 
         <section className="editor-pane">
