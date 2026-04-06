@@ -190,6 +190,7 @@ export default function App() {
         ) : null}
         <RegistryEditor
           canApply={validation.registry !== null}
+          checklist={validation.checklist}
           draftText={draftText}
           issues={validation.issues}
           onApply={handleApplyRegistry}

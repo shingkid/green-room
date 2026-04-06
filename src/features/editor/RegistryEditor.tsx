@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
 
-import type { Theme, ValidationIssue } from "../../domain/registry";
+import type { ChecklistGroup, Theme, ValidationIssue } from "../../domain/registry";
 import { pointerToLabel } from "../../domain/registry";
 import styles from "./RegistryEditor.module.css";
 
 type RegistryEditorProps = {
   theme: Theme;
   title: string;
+  checklist: ChecklistGroup[];
   draftText: string;
   issues: ValidationIssue[];
   onApply: () => void;
@@ -22,6 +23,7 @@ type RegistryEditorProps = {
 export function RegistryEditor({
   theme,
   title,
+  checklist,
   draftText,
   issues,
   onApply,
@@ -118,6 +120,24 @@ export function RegistryEditor({
 
         <section className={styles.pane}>
           <div className={styles.paneTitle}>Validation</div>
+          <div className={styles.checklist}>
+            {checklist.map((group) => (
+              <div className={styles.checklistGroup} key={group.title}>
+                <div className={styles.checklistGroupTitle}>{group.title}</div>
+                {group.items.map((item) => (
+                  <div
+                    className={`${styles.checklistItem} ${item.checked ? styles.checklistItemChecked : styles.checklistItemUnchecked}`}
+                    key={item.label}
+                  >
+                    <span aria-hidden="true" className={styles.checklistIcon}>
+                      {item.checked ? "✓" : "○"}
+                    </span>
+                    <span className={styles.checklistLabel}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
           {issues.length === 0 ? (
             <div className={styles.validationOk}>
               <div className={styles.validationOkTitle}>Schema validation passed.</div>
