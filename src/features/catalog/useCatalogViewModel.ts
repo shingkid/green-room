@@ -314,7 +314,7 @@ export function useCatalogViewModel(registry: Registry) {
 
   const selectedServiceDetails = selectedService ? services[selectedService] : null;
   const mermaidExport = useMemo(() => {
-    const teamSlug = slugify(registry.metadata.team) || "service-catalog";
+    const teamSlug = slugify(registry.metadata.team) || "green-room";
 
     if (mode === "overview") {
       return buildGraphMermaid({

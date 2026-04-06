@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "./service_registry.schema.json",
   "title": "Service Registry",
-  "description": "Schema for service_registry.yaml used by the service catalog explorer.",
+  "description": "Schema for service_registry.yaml used by the Green Room explorer.",
   "type": "object",
   "additionalProperties": false,
   "required": ["metadata", "business_flows", "data_flows", "services"],

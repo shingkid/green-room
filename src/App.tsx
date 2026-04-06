@@ -14,7 +14,7 @@ import {
 } from "./domain/registry";
 import { downloadTextFile } from "./shared/browser";
 
-const LOCAL_STORAGE_THEME_KEY = "service-catalog.theme";
+const LOCAL_STORAGE_THEME_KEY = "green-room.theme";
 
 function getPreferredTheme(): Theme {
   if (typeof window === "undefined") {

@@ -176,7 +176,7 @@ export const TABS: Array<{ key: Mode; label: string }> = [
 
 export const GRAPH_MODES: Mode[] = ["overview", "impact", "flow"];
 export const REGISTRY_URL_CANDIDATES = ["/service_registry.yaml", "/service-registry.yaml"];
-export const LOCAL_STORAGE_DRAFT_KEY = "service-catalog.registry-draft";
+export const LOCAL_STORAGE_DRAFT_KEY = "green-room.registry-draft";
 export const DEFAULT_REGISTRY_TEMPLATE = `metadata:
   team: Platform Engineering
   team_id: platform_engineering
