@@ -1,70 +1,75 @@
-# Service Catalog
+# Green Room
 
-Service Catalog is a lightweight Vite + React app for exploring a service dependency registry stored in YAML. The repository has two distinct outputs:
+Green Room is a lightweight Vite + React service catalog and dependency explorer built for small teams. It pairs a browser-first UI with a JSON Schema for the registry so you can validate service metadata, upstream links, and data flows without the ops overhead of a bigger platform.
 
-- a browser UI for graphing services, blast radius, upstream causes, and data flows
-- a machine-readable schema for validating the registry format
+## What’s in this repo
 
-## Files
+- `public/service_registry.yaml`: optional registry data loaded when present
+- `service_registry.schema.json`: draft-2020-12 JSON Schema for the registry format
+- `src`: typed Vite + React app with split domains/features/shared modules
+- `src/main.tsx`: Vite entrypoint
 
-- [`public/service_registry.yaml`](./public/service_registry.yaml): runtime-loaded registry data when present
-- [`service_registry.schema.json`](./service_registry.schema.json): JSON Schema for the YAML registry
-- [`src/App.tsx`](./src/App.tsx): typed React application
-- [`src/main.tsx`](./src/main.tsx): Vite entrypoint
+## Registry model
 
-## Registry Model
+Top-level sections you can edit in `service_registry.yaml`:
 
-The registry has four top-level sections:
+- `metadata`: team display name (`metadata.team`), canonical identifier (`metadata.team_id`), maintainers, and last-updated date
+- `business_flows`: named journeys, used for tagging services and data flows
+- `data_flows`: ordered stage pipelines with `service`, `action`, `format`, and optional `notes`
+- `services`: definitions with `type`, `status`, optional `owner`, `upstream` dependencies, and business-flow tags
 
-- `metadata`: team ownership and maintainers; `metadata.team` is the display name used in the UI and `metadata.team_id` is the canonical identifier used to determine whether a service is team-owned
-- `business_flows`: named business journeys such as `research_search`
-- `data_flows`: ordered stage pipelines that show how data moves between services
-- `services`: service definitions with upstream dependencies and ownership metadata
+Schema constraints:
 
-### Schema
+- keys use `snake_case`, enums match the supported sets (`type`, `status`, `action`, `criticality`, etc.)
+- services may declare extra fields, but required fields must exist
+- `metadata.team_id` is used everywhere to tell whether a service is team-owned
+- downstream references are validated in-app (see below)
 
-- registry keys must use `snake_case`
-- service `type` is one of `frontend`, `backend`, `datastore`, or `infrastructure`
-- service `status` is one of `active`, `deprecated`, or `migrating`
-- service `owner` is a canonical identifier; compare it to `metadata.team_id` to distinguish team-owned services from external dependencies
-- service `port` is optional
-- extra custom fields are allowed on service entries
-- dependency `criticality` is `hard` or `soft`
-- data-flow `action` is one of `produces`, `transforms`, `stores`, `indexes`, `enriches`, `caches`, `serves`, or `consumes`
-- `last_updated` is an ISO date string
+## Validation and references
 
-## Local Development
+Validation happens in two tiers:
 
-Install dependencies and start the Vite app:
+1. JSON Schema checks structural correctness and primitive enums.
+2. `src/domain/registry.ts` runs `validateCrossReferences(...)` to ensure every `business_flow` reference (in service tags or `data_flows`) exists in `business_flows`, every upstream `service` exists, and every `data_flow` stage references a known service.
+
+When runtime registry data is missing or invalid, the app opens the editor pane that runs this validation live and keeps the draft in `localStorage`.
+
+## Development
+
+Install dependencies and start the Vite dev server:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Create a production build:
+Create production build:
 
 ```bash
 npm run build
 ```
 
-The app entrypoint is [`index.html`](./index.html), which loads [`src/main.tsx`](./src/main.tsx). The UI fetches the YAML registry at runtime from [`public/service_registry.yaml`](./public/service_registry.yaml) when present.
+## Project structure & design notes
 
-## Schema Usage
+- `src/App.tsx` is the composition root; it keeps theme/local-storage state, loads the registry via `loadInitialRegistrySource()`, saves drafts, and switches between the editor and catalog views.
+- `src/domain/` contains the pure registry/catalog logic (types, schema validation, graph helpers, Mermaid export helpers) so the views stay focused on presentation.
+- `src/features/` holds screen modules (`catalog`, `editor`). Each feature imports its own CSS Module.
+- `src/shared/` exposes reusable UI helpers (`SearchableSelect`, `Badge`, `Tag`) plus browser utilities (`downloadTextFile`).
+- Theme tokens and resets live in `src/styles/{tokens,base}.css`; other styles are CSS Modules colocated with the consuming component to prevent global breakage.
 
-The repository includes a JSON Schema artifact for `service_registry.yaml`. Any schema-aware editor or CI validator that supports JSON Schema draft 2020-12 can use it.
+### Guidance for contributors
 
-Typical validation flow:
+- For UI tweaks, edit the relevant component under `src/features` or `src/shared/components` and adjust its CSS Module.
+- For new registry validation/browser logic, update `src/domain/registry.ts` so the rules stay testable and reusable.
+- Keep shared tokens in `src/styles/tokens.css` and base layout in `src/styles/base.css`; avoid touching global CSS as much as possible.
+- Run `npm run build` before merging to ensure the typed modules and CSS Modules compile.
 
-1. Load [`public/service_registry.yaml`](./public/service_registry.yaml) when present
-2. Validate it against [`service_registry.schema.json`](./service_registry.schema.json)
-3. Fail changes that introduce unsupported enum values, missing required fields, or invalid key shapes
+## Schema usage
 
-This repo does not yet include a dedicated validation script, but the schema is ready to be used by CI or editor tooling.
+Use the JSON Schema for editor or CI validation:
 
-## Notes
+1. Load `public/service_registry.yaml` if present (or paste your own registry into the editor during development).
+2. Run it through `service_registry.schema.json`.
+3. If the schema passes, the UI still checks cross references via `validateCrossReferences(...)` in `src/domain/registry.ts`.
 
-- The frontend is fully rewired to TypeScript.
-- The app now tries to fetch `service_registry.yaml` at runtime. If it is missing or invalid, the browser UI opens an editor with live validation feedback.
-- The schema is strict everywhere except service entries, which may include additional custom fields.
-- Cross-reference integrity such as “every `business_flow` value must exist in `business_flows`” is documented by convention, but not enforced by plain JSON Schema in this version.
+The schema is ready for integration into CI—even though there’s no dedicated script in this repo yet, you can point tools such as `ajv` or editor extensions to `service_registry.schema.json`.
