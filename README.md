@@ -7,7 +7,7 @@ Service Catalog is a lightweight Vite + React app for exploring a service depend
 
 ## Files
 
-- [`src/service_registry.yaml`](./src/service_registry.yaml): source-of-truth registry data
+- [`public/service_registry.yaml`](./public/service_registry.yaml): runtime-loaded registry data when present
 - [`service_registry.schema.json`](./service_registry.schema.json): JSON Schema for the YAML registry
 - [`src/App.tsx`](./src/App.tsx): typed React application
 - [`src/main.tsx`](./src/main.tsx): Vite entrypoint
@@ -53,7 +53,7 @@ The repository includes a JSON Schema artifact for `service_registry.yaml`. Any 
 
 Typical validation flow:
 
-1. Load [`src/service_registry.yaml`](./src/service_registry.yaml)
+1. Load [`public/service_registry.yaml`](./public/service_registry.yaml) when present
 2. Validate it against [`service_registry.schema.json`](./service_registry.schema.json)
 3. Fail changes that introduce unsupported enum values, missing required fields, or invalid key shapes
 
@@ -62,6 +62,6 @@ This repo does not yet include a dedicated validation script, but the schema is 
 ## Notes
 
 - The frontend is fully rewired to TypeScript.
-- The YAML file includes a `yaml-language-server` schema directive for editor support.
+- The app now tries to fetch `service_registry.yaml` at runtime. If it is missing or invalid, the browser UI opens an editor with live validation feedback.
 - The schema is strict by design: unknown fields are rejected inside typed objects.
 - Cross-reference integrity such as “every `business_flow` value must exist in `business_flows`” is documented by convention, but not enforced by plain JSON Schema in this version.

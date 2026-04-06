@@ -37,6 +37,21 @@ textarea {
   padding: 16px 20px;
 }
 
+.header-row,
+.editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .app-title {
   font-size: 15px;
   font-weight: 700;
@@ -71,6 +86,34 @@ textarea {
 
 .app-tab-active {
   border-bottom-color: #3b82f6;
+  color: #e2e8f0;
+}
+
+.primary-button,
+.secondary-button {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.primary-button {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #eff6ff;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  border-color: #334155;
+  background: #1e293b;
+  color: #64748b;
+}
+
+.secondary-button {
+  border: 1px solid #334155;
+  background: #0f172a;
   color: #e2e8f0;
 }
 
@@ -349,4 +392,160 @@ textarea {
 
 .legend-line-soft {
   border-bottom-style: dashed;
+}
+
+.startup-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background: #0f172a;
+}
+
+.startup-card {
+  width: min(480px, 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #111827;
+  padding: 20px;
+}
+
+.load-error-banner {
+  padding: 12px 20px;
+  border-bottom: 1px solid #7f1d1d;
+  background: #450a0a;
+  color: #fecaca;
+  font-size: 12px;
+}
+
+.editor-shell {
+  padding: 20px;
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.editor-pane {
+  display: flex;
+  min-height: 70vh;
+  flex-direction: column;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: #111827;
+  overflow: hidden;
+}
+
+.pane-title {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e293b;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.editor-textarea {
+  min-height: 70vh;
+  flex: 1 1 auto;
+  border: 0;
+  background: transparent;
+  color: #e2e8f0;
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: none;
+}
+
+.editor-textarea:focus {
+  outline: none;
+}
+
+.validation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.validation-item {
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  background: #18181b;
+  padding: 12px;
+}
+
+.validation-item-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.validation-severity {
+  color: #fca5a5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.validation-location {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.validation-message {
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.validation-path {
+  margin-top: 6px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+.validation-ok {
+  padding: 14px;
+}
+
+.validation-ok-title {
+  color: #86efac;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.validation-ok-body {
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-pane {
+    min-height: 40vh;
+  }
+
+  .editor-textarea {
+    min-height: 40vh;
+  }
 }
