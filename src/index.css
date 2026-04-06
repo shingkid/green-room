@@ -28,6 +28,7 @@
   --graph-edge: #94a3b8;
   --graph-edge-active: #f97316;
   --graph-edge-label: #94a3b8;
+  --graph-external-border: #cbd5e1;
   --pipeline-stage-bg: #0f172a;
   --pipeline-stage-bg-selected: #1e293b;
   --pipeline-stage-stroke: #334155;
@@ -73,6 +74,7 @@
   --graph-edge: #64748b;
   --graph-edge-active: #ea580c;
   --graph-edge-label: #475569;
+  --graph-external-border: #64748b;
   --pipeline-stage-bg: #f8fafc;
   --pipeline-stage-bg-selected: #dbeafe;
   --pipeline-stage-stroke: #cbd5e1;
@@ -562,6 +564,23 @@ textarea {
   gap: 4px;
 }
 
+.legend-toggle {
+  cursor: pointer;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.legend-toggle:hover {
+  color: var(--text-primary);
+}
+
+.legend-toggle-off {
+  opacity: 0.45;
+}
+
 .legend-swatch {
   width: 10px;
   height: 10px;
@@ -578,6 +597,21 @@ textarea {
 
 .legend-line-soft {
   border-bottom-style: dashed;
+}
+
+.legend-node-sample {
+  width: 16px;
+  height: 10px;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.legend-node-sample-internal {
+  border: 2px solid var(--accent-primary-strong);
+}
+
+.legend-node-sample-external {
+  border: 2px dashed var(--graph-external-border);
 }
 
 .startup-shell {

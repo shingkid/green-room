@@ -131,6 +131,8 @@ type SelectOption = {
   value: string;
 };
 
+const ALL_SERVICE_STATUSES: ServiceStatus[] = ["active", "deprecated", "migrating"];
+
 const STATUS_STYLES: Record<ServiceStatus, StatusStyle> = {
   active: { bg: "#16a34a", border: "#15803d", text: "#fff" },
   deprecated: { bg: "#d97706", border: "#b45309", text: "#fff" },
@@ -873,6 +875,7 @@ type ServiceNodeProps = {
   position: { x: number; y: number };
   width: number;
   height: number;
+  isInternal: boolean;
   isHighlight: boolean;
   isAffected: boolean;
   isDimmed: boolean;
@@ -885,13 +888,21 @@ function ServiceNode({
   position,
   width,
   height,
+  isInternal,
   isHighlight,
   isAffected,
   isDimmed,
   onSelect,
 }: ServiceNodeProps) {
   const statusStyle = STATUS_STYLES[service.status] ?? STATUS_STYLES.active;
-  const stroke = isHighlight ? "#dc2626" : isAffected ? "#f97316" : statusStyle.border;
+  const stroke = isHighlight
+    ? "#dc2626"
+    : isAffected
+      ? "#f97316"
+      : isInternal
+        ? statusStyle.border
+        : "var(--graph-external-border)";
+  const strokeDasharray = !isHighlight && !isAffected && !isInternal ? "5 3" : "none";
 
   return (
     <g
@@ -905,6 +916,7 @@ function ServiceNode({
         height={height}
         rx={getNodeRadius(service.type)}
         stroke={stroke}
+        strokeDasharray={strokeDasharray}
         strokeWidth={isHighlight ? 3 : isAffected ? 2 : 1}
         width={width}
       />
@@ -1232,6 +1244,9 @@ function CatalogView({
   const explorerTitle = getExplorerTitle(registry.metadata.team);
 
   const [mode, setMode] = useState<Mode>("overview");
+  const [visibleStatuses, setVisibleStatuses] = useState<Set<ServiceStatus>>(
+    () => new Set(ALL_SERVICE_STATUSES),
+  );
   const [selectedStakeholder, setSelectedStakeholder] = useState<string | null>(null);
   const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -1314,6 +1329,17 @@ function CatalogView({
       })),
     [eligibleDataFlowEntries],
   );
+  const isGraphMode = graphModes.includes(mode);
+  const visibleStatusSet = useMemo(() => new Set(visibleStatuses), [visibleStatuses]);
+  const isStatusVisible = useCallback(
+    (status: ServiceStatus) => visibleStatusSet.has(status),
+    [visibleStatusSet],
+  );
+  const getOwnershipKind = useCallback(
+    (service: Service) =>
+      service.owner === registry.metadata.team_id ? "internal" : "external",
+    [registry.metadata.team_id],
+  );
 
   useEffect(() => {
     if (selectedFlow && !eligibleFlowKeys.has(selectedFlow)) {
@@ -1329,13 +1355,31 @@ function CatalogView({
     }
   }, [eligibleDataFlowEntries, selectedDataFlow]);
 
+  useEffect(() => {
+    if (
+      selectedService &&
+      isGraphMode &&
+      !isStatusVisible(services[selectedService]?.status ?? "active")
+    ) {
+      setSelectedService(null);
+    }
+  }, [isGraphMode, isStatusVisible, selectedService, services]);
+
   const { affectedSet, highlightKey, visibleServices } = useMemo(() => {
-    const allServices = new Set(Object.keys(services));
+    const allServices = new Set(
+      Object.entries(services)
+        .filter(([, service]) => visibleStatusSet.has(service.status))
+        .map(([serviceKey]) => serviceKey),
+    );
 
     if (mode === "flow") {
       const flowServices = new Set(
         Object.entries(services)
           .filter(([, service]) => {
+            if (!visibleStatusSet.has(service.status)) {
+              return false;
+            }
+
             const flowKeys = service.business_flows ?? [];
 
             if (selectedFlow) {
@@ -1374,7 +1418,16 @@ function CatalogView({
       highlightKey: null,
       visibleServices: allServices,
     };
-  }, [eligibleFlowKeys, graph, mode, selectedFlow, selectedService, selectedStakeholder, services]);
+  }, [
+    eligibleFlowKeys,
+    graph,
+    mode,
+    selectedFlow,
+    selectedService,
+    selectedStakeholder,
+    services,
+    visibleStatusSet,
+  ]);
 
   const layout = useMemo(
     () => computeLayout(visibleServices, services, graph),
@@ -1451,7 +1504,6 @@ function CatalogView({
   }, [eligibleDataFlowEntries, selectedDataFlow]);
 
   const selectedServiceDetails = selectedService ? services[selectedService] : null;
-  const isGraphMode = graphModes.includes(mode);
 
   const handleServiceClick = useCallback(
     (serviceKey: string) => {
@@ -1477,6 +1529,20 @@ function CatalogView({
     if (nextMode === "data") {
       setSelectedDataFlow(null);
     }
+  }, []);
+
+  const handleToggleStatus = useCallback((status: ServiceStatus) => {
+    setVisibleStatuses((currentStatuses) => {
+      const nextStatuses = new Set(currentStatuses);
+
+      if (nextStatuses.has(status)) {
+        nextStatuses.delete(status);
+      } else {
+        nextStatuses.add(status);
+      }
+
+      return nextStatuses;
+    });
   }, []);
 
   return (
@@ -1645,6 +1711,7 @@ function CatalogView({
                 <ServiceNode
                   height={layout.nodeH}
                   id={serviceKey}
+                  isInternal={getOwnershipKind(services[serviceKey]) === "internal"}
                   isAffected={affectedSet.has(serviceKey)}
                   isDimmed={mode !== "overview" && !affectedSet.has(serviceKey)}
                   isHighlight={serviceKey === highlightKey}
@@ -1754,7 +1821,7 @@ function CatalogView({
             <div>
               <div className="details-title">{selectedServiceDetails.name}</div>
               <div className="details-meta">
-                {selectedServiceDetails.type} · {selectedServiceDetails.status}
+                {selectedServiceDetails.type} · {selectedServiceDetails.status} · {getOwnershipKind(selectedServiceDetails)}
               </div>
             </div>
             <Badge color={mode === "blast" ? "#dc2626" : "#2563eb"}>
@@ -1811,14 +1878,27 @@ function CatalogView({
         {mode !== "data"
           ? [
               ...Object.entries(STATUS_STYLES).map(([status, style]) => (
-                <span className="legend-item" key={status}>
+                <button
+                  className={`legend-item legend-toggle${visibleStatusSet.has(status as ServiceStatus) ? "" : " legend-toggle-off"}`}
+                  key={status}
+                  onClick={() => handleToggleStatus(status as ServiceStatus)}
+                  type="button"
+                >
                   <span
                     className="legend-swatch"
                     style={{ "--legend-color": style.bg } as CSSProperties}
                   />
                   {status}
-                </span>
+                </button>
               )),
+              <span className="legend-item" key="internal-owner">
+                <span className="legend-node-sample legend-node-sample-internal" />
+                team-owned
+              </span>,
+              <span className="legend-item" key="external-owner">
+                <span className="legend-node-sample legend-node-sample-external" />
+                external
+              </span>,
               <span className="legend-item" key="hard">
                 <span className="legend-line legend-line-hard" />
                 hard
