@@ -30,6 +30,7 @@ type DataType = "dataset" | "event" | "metric" | "config" | "auth_token";
 type Sensitivity = "public" | "internal" | "confidential" | "restricted";
 
 type Mode = "overview" | "blast" | "upstream" | "flow" | "data";
+type Theme = "light" | "dark";
 
 type Dependency = {
   service: string;
@@ -186,6 +187,7 @@ const TABS: Array<{ key: Mode; label: string }> = [
 const graphModes: Mode[] = ["overview", "blast", "upstream", "flow"];
 const REGISTRY_URL_CANDIDATES = ["/service_registry.yaml", "/service-registry.yaml"];
 const LOCAL_STORAGE_DRAFT_KEY = "service-catalog.registry-draft";
+const LOCAL_STORAGE_THEME_KEY = "service-catalog.theme";
 
 const DEFAULT_REGISTRY_TEMPLATE = `metadata:
   team: Platform Engineering
@@ -257,6 +259,20 @@ const ajv = new Ajv2020({
 addFormats(ajv);
 
 const validateSchema = ajv.compile(registrySchema);
+
+function getPreferredTheme(): Theme {
+  if (typeof window === "undefined") {
+    return "dark";
+  }
+
+  const storedTheme = window.localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
+
+  if (storedTheme === "light" || storedTheme === "dark") {
+    return storedTheme;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 function escapeJsonPointerSegment(segment: string) {
   return segment.replaceAll("~", "~0").replaceAll("/", "~1");
@@ -707,7 +723,7 @@ type TagProps = {
   color?: string;
 };
 
-function Tag({ children, color = "#334155" }: TagProps) {
+function Tag({ children, color = "var(--tag-neutral)" }: TagProps) {
   return (
     <span className="tag" style={{ "--tag-color": color } as CSSProperties}>
       {children}
@@ -926,13 +942,13 @@ function ServiceEdge({ from, to, protocol, criticality, isActive, isDimmed }: Se
         d={path}
         fill="none"
         markerEnd="url(#arrow)"
-        stroke={isActive ? "#f97316" : "#94a3b8"}
+        stroke={isActive ? "var(--graph-edge-active)" : "var(--graph-edge)"}
         strokeDasharray={criticality === "soft" ? "4 3" : "none"}
         strokeWidth={isActive ? 2 : 1}
       />
       {protocol && isActive ? (
         <text
-          fill="#94a3b8"
+          fill="var(--graph-edge-label)"
           fontFamily="system-ui"
           fontSize="8"
           x={(from.x + to.x) / 2 + 8}
@@ -977,7 +993,7 @@ function DataFlowPipeline({
             refY="5"
             viewBox="0 0 10 10"
           >
-            <path d="M0 0 L10 5 L0 10 z" fill="#475569" />
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--pipeline-arrow)" />
           </marker>
         </defs>
         {dataFlow.stages.map((stage, index) => {
@@ -989,10 +1005,18 @@ function DataFlowPipeline({
             <g key={`${stage.service}-${index}`}>
               <g className="pipeline-stage" onClick={() => onSelectService(stage.service)}>
                 <rect
-                  fill={isSelected ? "#1e293b" : "#0f172a"}
+                  fill={
+                    isSelected
+                      ? "var(--pipeline-stage-bg-selected)"
+                      : "var(--pipeline-stage-bg)"
+                  }
                   height={stageH}
                   rx={8}
-                  stroke={isSelected ? "#f97316" : "#334155"}
+                  stroke={
+                    isSelected
+                      ? "var(--pipeline-stage-stroke-selected)"
+                      : "var(--pipeline-stage-stroke)"
+                  }
                   strokeWidth={isSelected ? 2 : 1}
                   width={stageW}
                   x={x}
@@ -1019,7 +1043,7 @@ function DataFlowPipeline({
                   {stage.action.toUpperCase()}
                 </text>
                 <text
-                  fill="#e2e8f0"
+                  fill="var(--text-primary)"
                   fontFamily="system-ui"
                   fontSize="10"
                   fontWeight="600"
@@ -1030,7 +1054,7 @@ function DataFlowPipeline({
                   {formatServiceLabel(service?.name ?? stage.service, 18)}
                 </text>
                 <text
-                  fill="#64748b"
+                  fill="var(--text-subtle)"
                   fontFamily="system-ui"
                   fontSize="8"
                   textAnchor="middle"
@@ -1043,7 +1067,7 @@ function DataFlowPipeline({
               {index < dataFlow.stages.length - 1 ? (
                 <line
                   markerEnd="url(#pipeArrow)"
-                  stroke="#475569"
+                  stroke="var(--pipeline-arrow)"
                   strokeWidth={1.5}
                   x1={x + stageW + 2}
                   x2={x + stageW + arrowW + gap - 2}
@@ -1060,6 +1084,7 @@ function DataFlowPipeline({
 }
 
 type RegistryEditorProps = {
+  theme: Theme;
   draftText: string;
   issues: ValidationIssue[];
   onApply: () => void;
@@ -1067,11 +1092,13 @@ type RegistryEditorProps = {
   onClose?: () => void;
   onDownload: () => void;
   onImport: (event: ChangeEvent<HTMLInputElement>) => void;
+  onToggleTheme: () => void;
   canApply: boolean;
   sourceLabel: string | null;
 };
 
 function RegistryEditor({
+  theme,
   draftText,
   issues,
   onApply,
@@ -1079,6 +1106,7 @@ function RegistryEditor({
   onClose,
   onDownload,
   onImport,
+  onToggleTheme,
   canApply,
   sourceLabel,
 }: RegistryEditorProps) {
@@ -1096,6 +1124,15 @@ function RegistryEditor({
           </div>
         </div>
         <div className="header-actions">
+          <button
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            aria-pressed={theme === "dark"}
+            className="secondary-button theme-toggle-button"
+            onClick={onToggleTheme}
+            type="button"
+          >
+            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+          </button>
           <button className="secondary-button" onClick={() => inputRef.current?.click()} type="button">
             Import YAML
           </button>
@@ -1163,12 +1200,20 @@ function RegistryEditor({
 }
 
 type CatalogViewProps = {
+  theme: Theme;
   registry: Registry;
   sourceLabel: string | null;
   onEditRegistry: () => void;
+  onToggleTheme: () => void;
 };
 
-function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps) {
+function CatalogView({
+  theme,
+  registry,
+  sourceLabel,
+  onEditRegistry,
+  onToggleTheme,
+}: CatalogViewProps) {
   const services = registry.services;
   const businessFlows = registry.business_flows;
   const dataFlows = registry.data_flows;
@@ -1422,7 +1467,7 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
   }, []);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       <header className="app-header">
         <div className="header-row">
           <div>
@@ -1434,6 +1479,15 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
             </div>
           </div>
           <div className="header-actions">
+            <button
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              aria-pressed={theme === "dark"}
+              className="secondary-button theme-toggle-button"
+              onClick={onToggleTheme}
+              type="button"
+            >
+              <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+            </button>
             <button className="secondary-button" onClick={onEditRegistry} type="button">
               Edit registry
             </button>
@@ -1544,7 +1598,7 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
                 refY="5"
                 viewBox="0 0 10 10"
               >
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--graph-arrow)" />
               </marker>
             </defs>
             {edges.map((edge, index) => {
@@ -1620,7 +1674,7 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
                       {dataFlow.sensitivity}
                     </Tag>
                     <Tag>{dataFlow.freshness}</Tag>
-                    <Tag color="#334155">{dataFlow.stages.length} stages</Tag>
+                    <Tag color="var(--tag-neutral)">{dataFlow.stages.length} stages</Tag>
                   </div>
                   <span className={`panel-chevron${isExpanded ? " panel-chevron-expanded" : ""}`}>
                     ▾
@@ -1703,7 +1757,11 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
               <div className="tag-row">
                 {selectedServiceDetails.upstream?.map((dependency) => (
                   <Tag
-                    color={dependency.criticality === "hard" ? "#991b1b" : "#44403c"}
+                    color={
+                      dependency.criticality === "hard"
+                        ? "var(--tag-critical)"
+                        : "var(--tag-muted)"
+                    }
                     key={`${selectedService}-${dependency.service}`}
                   >
                     {dependency.service} ({dependency.protocol}, {dependency.criticality})
@@ -1777,12 +1835,19 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [draftText, setDraftText] = useState("");
   const [appliedRegistry, setAppliedRegistry] = useState<Registry | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.body.dataset.theme = theme;
+    window.localStorage.setItem(LOCAL_STORAGE_THEME_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1902,9 +1967,13 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [draftText]);
 
+  const handleToggleTheme = useCallback(() => {
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
+  }, []);
+
   if (isLoading) {
     return (
-      <div className="startup-shell">
+      <div className="startup-shell" data-theme={theme}>
         <div className="startup-card">
           <div className="app-title">Service Dependency Explorer</div>
           <div className="app-subtitle">Loading registry…</div>
@@ -1915,7 +1984,7 @@ export default function App() {
 
   if (showEditor || !appliedRegistry) {
     return (
-      <div className="app-shell">
+      <div className="app-shell" data-theme={theme}>
         {loadError ? (
           <div className="load-error-banner">
             {loadError}
@@ -1930,7 +1999,9 @@ export default function App() {
           onClose={appliedRegistry ? () => setShowEditor(false) : undefined}
           onDownload={handleDownload}
           onImport={handleImport}
+          onToggleTheme={handleToggleTheme}
           sourceLabel={sourceLabel}
+          theme={theme}
         />
       </div>
     );
@@ -1939,8 +2010,10 @@ export default function App() {
   return (
     <CatalogView
       onEditRegistry={() => setShowEditor(true)}
+      onToggleTheme={handleToggleTheme}
       registry={appliedRegistry}
       sourceLabel={sourceLabel}
+      theme={theme}
     />
   );
 }
