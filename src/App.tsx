@@ -123,6 +123,12 @@ type InitialLoadResult = {
   sourceText: string;
 };
 
+type SelectOption = {
+  label: string;
+  searchText?: string;
+  value: string;
+};
+
 const STATUS_STYLES: Record<ServiceStatus, StatusStyle> = {
   active: { bg: "#16a34a", border: "#15803d", text: "#fff" },
   deprecated: { bg: "#d97706", border: "#b45309", text: "#fff" },
@@ -649,6 +655,23 @@ function formatServiceLabel(name: string, limit: number) {
   return name.length > limit ? `${name.slice(0, limit - 1)}…` : name;
 }
 
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replaceAll(/[^a-z0-9]+/g, " ").trim();
+}
+
+function matchesFuzzy(label: string, query: string, extraSearchText?: string) {
+  const normalizedQuery = normalizeSearchText(query);
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const haystack = normalizeSearchText(`${label} ${extraSearchText ?? ""}`);
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+
+  return tokens.every((token) => haystack.includes(token));
+}
+
 function getNodeRadius(type: ServiceType) {
   if (type === "datastore") {
     return 20;
@@ -689,6 +712,132 @@ function Tag({ children, color = "#334155" }: TagProps) {
     <span className="tag" style={{ "--tag-color": color } as CSSProperties}>
       {children}
     </span>
+  );
+}
+
+type SearchableSelectProps = {
+  allLabel: string;
+  ariaLabel: string;
+  emptyMessage: string;
+  onChange: (value: string | null) => void;
+  options: SelectOption[];
+  placeholder: string;
+  value: string | null;
+};
+
+function SearchableSelect({
+  allLabel,
+  ariaLabel,
+  emptyMessage,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: SearchableSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const selectedOption = options.find((option) => option.value === value) ?? null;
+  const filteredOptions = useMemo(
+    () =>
+      options.filter((option) =>
+        matchesFuzzy(option.label, query, option.searchText),
+      ),
+    [options, query],
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    inputRef.current?.focus();
+
+    function handleClickOutside(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+        setQuery("");
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        setQuery("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  const handleSelect = useCallback(
+    (nextValue: string | null) => {
+      onChange(nextValue);
+      setIsOpen(false);
+      setQuery("");
+    },
+    [onChange],
+  );
+
+  return (
+    <div className="searchable-select" ref={rootRef}>
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`searchable-select-trigger${isOpen ? " searchable-select-trigger-open" : ""}`}
+        onClick={() => setIsOpen((open) => !open)}
+        type="button"
+      >
+        <span className={selectedOption ? "" : "searchable-select-placeholder"}>
+          {selectedOption?.label ?? placeholder}
+        </span>
+        <span className="searchable-select-chevron">▾</span>
+      </button>
+
+      {isOpen ? (
+        <div className="searchable-select-menu">
+          <input
+            aria-label={ariaLabel}
+            className="searchable-select-input"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={`Search ${ariaLabel.toLowerCase()}...`}
+            ref={inputRef}
+            value={query}
+          />
+          <div className="searchable-select-options" role="listbox">
+            <button
+              className={`searchable-select-option${value === null ? " searchable-select-option-active" : ""}`}
+              onClick={() => handleSelect(null)}
+              type="button"
+            >
+              {allLabel}
+            </button>
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  className={`searchable-select-option${option.value === value ? " searchable-select-option-active" : ""}`}
+                  key={option.value}
+                  onClick={() => handleSelect(option.value)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))
+            ) : (
+              <div className="searchable-select-empty">{emptyMessage}</div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1025,27 +1174,129 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
   const dataFlows = registry.data_flows;
 
   const [mode, setMode] = useState<Mode>("overview");
+  const [selectedStakeholder, setSelectedStakeholder] = useState<string | null>(null);
   const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedDataFlow, setSelectedDataFlow] = useState<string | null>(null);
   const [expandedDataFlow, setExpandedDataFlow] = useState<string | null>(null);
 
   const graph = useMemo(() => buildGraph(services), [services]);
+  const stakeholderOptions = useMemo(() => {
+    const stakeholders = new Set<string>();
+
+    for (const flow of Object.values(businessFlows)) {
+      for (const stakeholder of flow.stakeholders) {
+        stakeholders.add(stakeholder);
+      }
+    }
+
+    return [...stakeholders]
+      .sort((left, right) => left.localeCompare(right))
+      .map((stakeholder) => ({
+        label: stakeholder,
+        value: stakeholder,
+      }));
+  }, [businessFlows]);
+  const eligibleFlowEntries = useMemo(
+    () =>
+      Object.entries(businessFlows).filter(
+        ([, flow]) =>
+          !selectedStakeholder || flow.stakeholders.includes(selectedStakeholder),
+      ),
+    [businessFlows, selectedStakeholder],
+  );
+  const eligibleFlowKeys = useMemo(
+    () => new Set(eligibleFlowEntries.map(([flowKey]) => flowKey)),
+    [eligibleFlowEntries],
+  );
+  const businessFlowOptions = useMemo(
+    () =>
+      eligibleFlowEntries.map(([flowKey, flow]) => ({
+        label: `${flow.name} (${flow.priority})`,
+        searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
+        value: flowKey,
+      })),
+    [eligibleFlowEntries],
+  );
+  const dataBusinessFlowOptions = useMemo(
+    () =>
+      eligibleFlowEntries.map(([flowKey, flow]) => ({
+        label: flow.name,
+        searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
+        value: flowKey,
+      })),
+    [eligibleFlowEntries],
+  );
+  const serviceOptions = useMemo(
+    () =>
+      Object.entries(services)
+        .map(([serviceKey, service]) => ({
+          label: service.name,
+          searchText: `${serviceKey} ${service.type} ${service.status} ${service.description}`,
+          value: serviceKey,
+        }))
+        .sort((left, right) => left.label.localeCompare(right.label)),
+    [services],
+  );
+  const eligibleDataFlowEntries = useMemo(
+    () =>
+      Object.entries(dataFlows).filter(
+        ([, dataFlow]) =>
+          eligibleFlowKeys.has(dataFlow.business_flow) &&
+          (!selectedFlow || dataFlow.business_flow === selectedFlow),
+      ),
+    [dataFlows, eligibleFlowKeys, selectedFlow],
+  );
+  const dataFlowOptions = useMemo(
+    () =>
+      eligibleDataFlowEntries.map(([flowKey, dataFlow]) => ({
+        label: dataFlow.name,
+        searchText: `${flowKey} ${dataFlow.description} ${dataFlow.data_type} ${dataFlow.sensitivity}`,
+        value: flowKey,
+      })),
+    [eligibleDataFlowEntries],
+  );
+
+  useEffect(() => {
+    if (selectedFlow && !eligibleFlowKeys.has(selectedFlow)) {
+      setSelectedFlow(null);
+    }
+  }, [eligibleFlowKeys, selectedFlow]);
+
+  useEffect(() => {
+    const validDataFlowKeys = new Set(eligibleDataFlowEntries.map(([flowKey]) => flowKey));
+
+    if (selectedDataFlow && !validDataFlowKeys.has(selectedDataFlow)) {
+      setSelectedDataFlow(null);
+    }
+  }, [eligibleDataFlowEntries, selectedDataFlow]);
 
   const { affectedSet, highlightKey, visibleServices } = useMemo(() => {
     const allServices = new Set(Object.keys(services));
 
-    if (mode === "flow" && selectedFlow) {
+    if (mode === "flow") {
       const flowServices = new Set(
         Object.entries(services)
-          .filter(([, service]) => (service.business_flows ?? []).includes(selectedFlow))
+          .filter(([, service]) => {
+            const flowKeys = service.business_flows ?? [];
+
+            if (selectedFlow) {
+              return flowKeys.includes(selectedFlow);
+            }
+
+            if (selectedStakeholder) {
+              return flowKeys.some((flowKey) => eligibleFlowKeys.has(flowKey));
+            }
+
+            return true;
+          })
           .map(([key]) => key),
       );
 
       return {
         affectedSet: flowServices,
         highlightKey: null,
-        visibleServices: flowServices,
+        visibleServices: selectedFlow || selectedStakeholder ? flowServices : allServices,
       };
     }
 
@@ -1065,7 +1316,7 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
       highlightKey: null,
       visibleServices: allServices,
     };
-  }, [graph, mode, selectedFlow, selectedService, services]);
+  }, [eligibleFlowKeys, graph, mode, selectedFlow, selectedService, selectedStakeholder, services]);
 
   const layout = useMemo(
     () => computeLayout(visibleServices, services, graph),
@@ -1132,16 +1383,14 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
   }, [dataFlows, mode, selectedService]);
 
   const filteredDataFlows = useMemo(() => {
-    let entries = Object.entries(dataFlows);
+    let entries = eligibleDataFlowEntries;
 
     if (selectedDataFlow) {
       entries = entries.filter(([key]) => key === selectedDataFlow);
-    } else if (selectedFlow && mode === "data") {
-      entries = entries.filter(([, dataFlow]) => dataFlow.business_flow === selectedFlow);
     }
 
     return entries;
-  }, [dataFlows, mode, selectedDataFlow, selectedFlow]);
+  }, [eligibleDataFlowEntries, selectedDataFlow]);
 
   const selectedServiceDetails = selectedService ? services[selectedService] : null;
   const isGraphMode = graphModes.includes(mode);
@@ -1161,6 +1410,7 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
     setMode(nextMode);
 
     if (nextMode === "overview") {
+      setSelectedStakeholder(null);
       setSelectedService(null);
       setSelectedFlow(null);
       setSelectedDataFlow(null);
@@ -1204,72 +1454,69 @@ function CatalogView({ registry, sourceLabel, onEditRegistry }: CatalogViewProps
       </nav>
 
       <section className="control-bar">
+        {mode === "flow" || mode === "data" ? (
+          <SearchableSelect
+            allLabel="All stakeholders"
+            ariaLabel="stakeholders"
+            emptyMessage="No stakeholders match."
+            onChange={setSelectedStakeholder}
+            options={stakeholderOptions}
+            placeholder="Filter by stakeholder"
+            value={selectedStakeholder}
+          />
+        ) : null}
+
         {mode === "flow" ? (
-          <select
-            className="app-select"
-            onChange={(event) => setSelectedFlow(event.target.value || null)}
-            value={selectedFlow ?? ""}
-          >
-            <option value="">All business flows</option>
-            {Object.entries(businessFlows).map(([flowKey, flow]) => (
-              <option key={flowKey} value={flowKey}>
-                {flow.name} ({flow.priority})
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            allLabel="All business flows"
+            ariaLabel="business flows"
+            emptyMessage="No business flows match."
+            onChange={setSelectedFlow}
+            options={businessFlowOptions}
+            placeholder="Filter business flows"
+            value={selectedFlow}
+          />
         ) : null}
 
         {mode === "data" ? (
           <>
-            <select
-              className="app-select"
-              onChange={(event) => {
-                setSelectedFlow(event.target.value || null);
+            <SearchableSelect
+              allLabel="All business flows"
+              ariaLabel="business flows"
+              emptyMessage="No business flows match."
+              onChange={(value) => {
+                setSelectedFlow(value);
                 setSelectedDataFlow(null);
               }}
-              value={selectedFlow ?? ""}
-            >
-              <option value="">All business flows</option>
-              {Object.entries(businessFlows).map(([flowKey, flow]) => (
-                <option key={flowKey} value={flowKey}>
-                  {flow.name}
-                </option>
-              ))}
-            </select>
-            <select
-              className="app-select"
-              onChange={(event) => {
-                const value = event.target.value || null;
+              options={dataBusinessFlowOptions}
+              placeholder="Filter business flows"
+              value={selectedFlow}
+            />
+            <SearchableSelect
+              allLabel="All data flows"
+              ariaLabel="data flows"
+              emptyMessage="No data flows match."
+              onChange={(value) => {
                 setSelectedDataFlow(value);
                 setExpandedDataFlow(value);
               }}
-              value={selectedDataFlow ?? ""}
-            >
-              <option value="">All data flows</option>
-              {Object.entries(dataFlows)
-                .filter(([, dataFlow]) => !selectedFlow || dataFlow.business_flow === selectedFlow)
-                .map(([flowKey, dataFlow]) => (
-                  <option key={flowKey} value={flowKey}>
-                    {dataFlow.name}
-                  </option>
-                ))}
-            </select>
+              options={dataFlowOptions}
+              placeholder="Filter data flows"
+              value={selectedDataFlow}
+            />
           </>
         ) : null}
 
         {mode === "blast" || mode === "upstream" ? (
-          <select
-            className="app-select"
-            onChange={(event) => setSelectedService(event.target.value || null)}
-            value={selectedService ?? ""}
-          >
-            <option value="">Select a service…</option>
-            {Object.entries(services).map(([serviceKey, service]) => (
-              <option key={serviceKey} value={serviceKey}>
-                {service.name}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            allLabel="All services"
+            ariaLabel="services"
+            emptyMessage="No services match."
+            onChange={setSelectedService}
+            options={serviceOptions}
+            placeholder="Select a service"
+            value={selectedService}
+          />
         ) : null}
 
         {affectedBusinessFlows.length > 0 ? (
