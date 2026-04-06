@@ -92,9 +92,13 @@ export type ValidationIssue = {
 };
 
 export type ValidationResult = {
+  checklist: ChecklistGroup[];
   issues: ValidationIssue[];
   registry: Registry | null;
 };
+
+export type ChecklistItem = { label: string; checked: boolean };
+export type ChecklistGroup = { title: string; items: ChecklistItem[] };
 
 export type InitialLoadResult = {
   sourceLabel: string;
@@ -444,6 +448,52 @@ function validateCrossReferences(
   return issues;
 }
 
+function buildChecklist(raw: unknown): ChecklistGroup[] {
+  const root =
+    raw != null && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
+
+  const meta =
+    root["metadata"] != null &&
+    typeof root["metadata"] === "object" &&
+    !Array.isArray(root["metadata"])
+      ? (root["metadata"] as Record<string, unknown>)
+      : {};
+
+  const nonEmptyStr = (v: unknown) => typeof v === "string" && v.trim().length > 0;
+
+  const hasEntries = (key: string) => {
+    const val = root[key];
+    return (
+      val != null &&
+      typeof val === "object" &&
+      !Array.isArray(val) &&
+      Object.keys(val as object).length > 0
+    );
+  };
+
+  return [
+    {
+      title: "Metadata",
+      items: [
+        { label: "team",                checked: nonEmptyStr(meta["team"]) },
+        { label: "team_id",             checked: nonEmptyStr(meta["team_id"]) },
+        { label: "last_updated",        checked: nonEmptyStr(meta["last_updated"]) },
+        { label: "maintainers (min 1)", checked: Array.isArray(meta["maintainers"]) && (meta["maintainers"] as unknown[]).length > 0 },
+      ],
+    },
+    {
+      title: "Sections",
+      items: [
+        { label: "business_flows (min 1)", checked: hasEntries("business_flows") },
+        { label: "data_flows (min 1)",     checked: hasEntries("data_flows") },
+        { label: "services (min 1)",       checked: hasEntries("services") },
+      ],
+    },
+  ];
+}
+
 export function validateRegistryText(sourceText: string): ValidationResult {
   const lineCounter = new LineCounter();
   const doc = parseDocument(sourceText, {
@@ -458,6 +508,12 @@ export function validateRegistryText(sourceText: string): ValidationResult {
   }
 
   const rootLocation = locations.get("") ?? null;
+
+  // Best-effort parse for checklist — works even when the document has errors.
+  let rawForChecklist: unknown = null;
+  try { rawForChecklist = doc.toJS(); } catch { /* leave null */ }
+  const checklist = buildChecklist(rawForChecklist);
+
   const parseIssues: ValidationIssue[] = (doc.errors ?? []).map((error: any) => {
     const position =
       typeof error.pos?.[0] === "number" ? lineCounter.linePos(error.pos[0]) : null;
@@ -471,13 +527,10 @@ export function validateRegistryText(sourceText: string): ValidationResult {
   });
 
   if (parseIssues.length > 0) {
-    return {
-      issues: parseIssues,
-      registry: null,
-    };
+    return { checklist, issues: parseIssues, registry: null };
   }
 
-  const raw = doc.toJS();
+  const raw = rawForChecklist;
   const isValid = validateSchema(raw);
   const schemaIssues = !isValid
     ? (validateSchema.errors ?? []).map((error) =>
@@ -486,10 +539,7 @@ export function validateRegistryText(sourceText: string): ValidationResult {
     : [];
 
   if (schemaIssues.length > 0) {
-    return {
-      issues: schemaIssues,
-      registry: null,
-    };
+    return { checklist, issues: schemaIssues, registry: null };
   }
 
   const registry = raw as Registry;
@@ -498,16 +548,10 @@ export function validateRegistryText(sourceText: string): ValidationResult {
   const referenceIssues = validateCrossReferences(registry, locations, rootLocation);
 
   if (referenceIssues.length > 0) {
-    return {
-      issues: referenceIssues,
-      registry: null,
-    };
+    return { checklist, issues: referenceIssues, registry: null };
   }
 
-  return {
-    issues: [],
-    registry,
-  };
+  return { checklist, issues: [], registry };
 }
 
 export async function loadInitialRegistrySource(): Promise<InitialLoadResult | null> {
