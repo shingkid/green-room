@@ -2,6 +2,8 @@
 
 Green Room is a lightweight Vite + React service catalog and dependency explorer built for small teams. It pairs a browser-first UI with a JSON Schema for the registry so you can validate service metadata, upstream links, and data flows without the ops overhead of a bigger platform.
 
+![demo](./public/demo.gif)
+
 ## What’s in this repo
 
 - `public/service_registry.yaml`: optional registry data loaded when present

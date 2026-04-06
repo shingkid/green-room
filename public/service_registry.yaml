@@ -1,0 +1,339 @@
+# yaml-language-server: $schema=../service_registry.schema.json
+# ============================================================
+# Service Dependency Registry - Recipe Recommendation Team
+# ============================================================
+# Single source of truth for services, data flows, and
+# business flows. Keep in version control.
+#
+# Sections:
+#   1. metadata        — team info, maintainers
+#   2. business_flows  — high-level business processes
+#   3. data_flows      — how data moves between services
+#   4. services        — individual service definitions
+# ============================================================
+
+metadata:
+  team: "Recipe Recommendation Team"
+  team_id: "recipe_rec_team"
+  last_updated: "2024-02-10"
+  maintainers:
+    - name: "Elena Vasquez"
+      slack: "@evasquez"
+    - name: "David Kim"
+      slack: "@dkim"
+    - name: "Fatima Al-Rashid"
+      slack: "@falrashid"
+
+# ============================================================
+# Business Flows
+# ============================================================
+business_flows:
+  meal_planning:
+    name: "Meal Planning & Discovery"
+    description: "Core user experience for discovering recipes, planning meals, and generating shopping lists"
+    priority: "P1"
+    stakeholders:
+      - "Product Team"
+      - "Nutrition Team"
+      - "User Experience Team"
+  personalized_recommendations:
+    name: "Personalized Recipe Recommendations"
+    description: "ML-powered recipe suggestions based on user preferences, dietary restrictions, and cooking history"
+    priority: "P1"
+    stakeholders:
+      - "Data Science Team"
+      - "ML Engineering Team"
+      - "Product Team"
+  ingredient_optimization:
+    name: "Ingredient Optimization"
+    description: "Smart shopping list generation, waste reduction, and pantry inventory management"
+    priority: "P2"
+    stakeholders:
+      - "Operations Team"
+      - "Supply Chain Team"
+      - "Sustainability Team"
+  community_features:
+    name: "Community & Social Features"
+    description: "User-generated content, recipe sharing, ratings, and community-driven recipe discovery"
+    priority: "P2"
+    stakeholders:
+      - "Community Team"
+      - "Content Moderation Team"
+      - "Marketing Team"
+
+# ============================================================
+# Data Flows
+# ============================================================
+data_flows:
+  user_cooking_sessions:
+    name: "User Cooking Session Tracking"
+    description: "Captures detailed cooking activity, recipe completion rates, and ingredient usage patterns"
+    business_flow: "personalized_recommendations"
+    data_type: "event"
+    sensitivity: "internal"
+    freshness: "real-time"
+    stages:
+      - service: "meal_planner_app"
+        action: "produces"
+        format: "JSON"
+        notes: "Mobile app tracks cooking steps and completion"
+      - service: "recipe_api"
+        action: "transforms"
+        format: "Structured Events"
+        notes: "Validates and enriches cooking session data"
+      - service: "user_behavior_warehouse"
+        action: "stores"
+        format: "Parquet"
+        notes: "Long-term storage for ML model training"
+  recipe_content_pipeline:
+    name: "Recipe Content Ingestion & Processing"
+    description: "New recipes from chefs, users, and partners get processed, tagged, and made searchable"
+    business_flow: "meal_planning"
+    data_type: "dataset"
+    sensitivity: "internal"
+    freshness: "daily"
+    stages:
+      - service: "content_submission_api"
+        action: "produces"
+        format: "JSON"
+        notes: "Chefs and users submit recipe content"
+      - service: "recipe_processing_service"
+        action: "transforms"
+        format: "Normalized Recipe Schema"
+        notes: "Validates ingredients, nutritional analysis, difficulty scoring"
+      - service: "recipe_database"
+        action: "stores"
+        format: "PostgreSQL"
+        notes: "Primary recipe catalog with full metadata"
+      - service: "recipe_search_index"
+        action: "indexes"
+        format: "Elasticsearch"
+        notes: "Searchable recipe index with filters"
+  recommendation_training_data:
+    name: "Recommendation Model Training Pipeline"
+    description: "Aggregated user behavior data feeds into ML models for personalized recipe suggestions"
+    business_flow: "personalized_recommendations"
+    data_type: "dataset"
+    sensitivity: "confidential"
+    freshness: "weekly"
+    stages:
+      - service: "user_behavior_warehouse"
+        action: "produces"
+        format: "CSV"
+        notes: "Exports anonymized user interaction data"
+      - service: "recommendation_engine"
+        action: "transforms"
+        format: "Feature Vectors"
+        notes: "Preprocesses data for ML training"
+      - service: "ml_training_pipeline"
+        action: "consumes"
+        format: "TensorFlow Records"
+        notes: "Trains and deploys recommendation models"
+
+# ============================================================
+# Services
+# ============================================================
+services:
+  meal_planner_app:
+    name: "Meal Planner Mobile App"
+    description: "React Native app for meal planning, recipe browsing, and cooking guidance"
+    type: "frontend"
+    status: "active"
+    upstream:
+      - service: "recipe_api"
+        protocol: "HTTPS/GraphQL"
+        criticality: "hard"
+      - service: "recommendation_engine"
+        protocol: "HTTPS/gRPC"
+        criticality: "soft"
+      - service: "user_auth_service"
+        protocol: "HTTPS/OAuth"
+        criticality: "hard"
+    business_flows:
+      - "meal_planning"
+      - "personalized_recommendations"
+      - "community_features"
+    owner: "mobile_team"
+    runbook: "https://wiki.mealplanner.com/mobile-app-runbook"
+    health_check: "https://mealplanner-app.com/health"
+    port: 443
+  recipe_api:
+    name: "Recipe API Gateway"
+    description: "GraphQL API providing recipe data, user profiles, and meal planning functionality"
+    type: "backend"
+    status: "active"
+    upstream:
+      - service: "recipe_database"
+        protocol: "PostgreSQL"
+        criticality: "hard"
+      - service: "recipe_search_index"
+        protocol: "Elasticsearch"
+        criticality: "hard"
+      - service: "user_auth_service"
+        protocol: "HTTPS/OAuth"
+        criticality: "hard"
+      - service: "recommendation_engine"
+        protocol: "gRPC"
+        criticality: "soft"
+    business_flows:
+      - "meal_planning"
+      - "personalized_recommendations"
+      - "community_features"
+    owner: "recipe_rec_team"
+    runbook: "https://wiki.mealplanner.com/recipe-api-runbook"
+    health_check: "https://api.mealplanner.com/health"
+    port: 8080
+  recommendation_engine:
+    name: "Recipe Recommendation Engine"
+    description: "Machine learning service using collaborative filtering and content-based recommendations"
+    type: "backend"
+    status: "active"
+    upstream:
+      - service: "user_behavior_warehouse"
+        protocol: "PostgreSQL"
+        criticality: "hard"
+      - service: "recipe_database"
+        protocol: "PostgreSQL"
+        criticality: "soft"
+    business_flows:
+      - "personalized_recommendations"
+    owner: "recipe_rec_team"
+    runbook: "https://wiki.mealplanner.com/recommendation-engine-runbook"
+    health_check: "https://recommendation.mealplanner.com/health"
+    port: 5000
+  recipe_database:
+    name: "Recipe Database"
+    description: "PostgreSQL database storing recipes, ingredients, nutritional data, and user-generated content"
+    type: "datastore"
+    status: "active"
+    upstream: []
+    business_flows:
+      - "meal_planning"
+      - "personalized_recommendations"
+      - "community_features"
+    owner: "recipe_rec_team"
+    runbook: "https://wiki.mealplanner.com/recipe-db-runbook"
+    health_check: "https://recipe-db.mealplanner.com/health"
+    port: 5432
+  user_behavior_warehouse:
+    name: "User Behavior Data Warehouse"
+    description: "Analytics database storing cooking sessions, preferences, and interaction patterns"
+    type: "datastore"
+    status: "active"
+    upstream: []
+    business_flows:
+      - "personalized_recommendations"
+      - "ingredient_optimization"
+    owner: "analytics_team"
+    runbook: "https://wiki.mealplanner.com/behavior-warehouse-runbook"
+    health_check: "https://behavior-warehouse.mealplanner.com/health"
+    port: 5432
+  recipe_search_index:
+    name: "Recipe Search Index"
+    description: "Elasticsearch cluster for recipe search with filtering by cuisine, dietary restrictions, and ingredients"
+    type: "datastore"
+    status: "active"
+    upstream: []
+    business_flows:
+      - "meal_planning"
+      - "personalized_recommendations"
+    owner: "recipe_rec_team"
+    runbook: "https://wiki.mealplanner.com/search-index-runbook"
+    health_check: "https://search.mealplanner.com/health"
+    port: 9200
+  recipe_processing_service:
+    name: "Recipe Processing Service"
+    description: "Batch processing service for recipe validation, nutritional analysis, and content moderation"
+    type: "backend"
+    status: "migrating"
+    upstream:
+      - service: "recipe_database"
+        protocol: "PostgreSQL"
+        criticality: "hard"
+      - service: "content_moderation_api"
+        protocol: "HTTPS/REST"
+        criticality: "soft"
+    business_flows:
+      - "meal_planning"
+      - "community_features"
+    owner: "recipe_rec_team"
+    runbook: "https://wiki.mealplanner.com/recipe-processing-runbook"
+    health_check: "https://processing.mealplanner.com/health"
+    port: 8081
+  ml_training_pipeline:
+    name: "ML Training Pipeline"
+    description: "Automated pipeline for training and deploying recommendation models"
+    type: "backend"
+    status: "deprecated"
+    upstream:
+      - service: "user_behavior_warehouse"
+        protocol: "PostgreSQL"
+        criticality: "hard"
+    business_flows:
+      - "personalized_recommendations"
+    owner: "ml_engineering_team"
+    runbook: "https://wiki.mealplanner.com/ml-training-runbook"
+    health_check: "https://ml-training.mealplanner.com/health"
+    port: 8082
+  content_submission_api:
+    name: "Content Submission API"
+    description: "API for chefs and users to submit new recipes and recipe modifications"
+    type: "backend"
+    status: "active"
+    upstream:
+      - service: "user_auth_service"
+        protocol: "HTTPS/OAuth"
+        criticality: "hard"
+      - service: "recipe_processing_service"
+        protocol: "HTTPS/REST"
+        criticality: "hard"
+    business_flows:
+      - "community_features"
+      - "meal_planning"
+    owner: "recipe_rec_team"
+    runbook: "https://wiki.mealplanner.com/content-submission-runbook"
+    health_check: "https://submission.mealplanner.com/health"
+    port: 8083
+  user_auth_service:
+    name: "User Authentication Service"
+    description: "Centralized authentication and user profile management"
+    type: "backend"
+    status: "active"
+    upstream:
+      - service: "user_profile_db"
+        protocol: "PostgreSQL"
+        criticality: "hard"
+    business_flows:
+      - "meal_planning"
+      - "personalized_recommendations"
+      - "community_features"
+    owner: "platform_team"
+    runbook: "https://wiki.mealplanner.com/auth-service-runbook"
+    health_check: "https://auth.mealplanner.com/health"
+    port: 8084
+  user_profile_db:
+    name: "User Profile Database"
+    description: "Database storing user accounts, preferences, dietary restrictions, and profile data"
+    type: "datastore"
+    status: "active"
+    upstream: []
+    business_flows:
+      - "meal_planning"
+      - "personalized_recommendations"
+      - "community_features"
+    owner: "platform_team"
+    runbook: "https://wiki.mealplanner.com/user-db-runbook"
+    health_check: "https://user-db.mealplanner.com/health"
+    port: 5433
+  content_moderation_api:
+    name: "Content Moderation API"
+    description: "AI-powered service for moderating user-generated recipe content"
+    type: "backend"
+    status: "deprecated"
+    upstream: []
+    business_flows:
+      - "community_features"
+    owner: "content_team"
+    runbook: "https://wiki.mealplanner.com/moderation-runbook"
+    health_check: "https://moderation.mealplanner.com/health"
+    port: 8085
