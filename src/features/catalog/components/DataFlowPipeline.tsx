@@ -1,5 +1,6 @@
 import { ACTION_COLORS, type DataFlow, type Service } from "../../../domain/registry";
 import { formatServiceLabel } from "../../../domain/catalog";
+import styles from "./DataFlowPipeline.module.css";
 
 type DataFlowPipelineProps = {
   dataFlow: DataFlow;
@@ -21,7 +22,7 @@ export function DataFlowPipeline({
   const totalW = dataFlow.stages.length * (stageW + arrowW + gap) - arrowW - gap;
 
   return (
-    <div className="pipeline-scroll">
+    <div className={styles.pipelineScroll}>
       <svg height={stageH + 20} width={Math.max(totalW + 40, 300)}>
         <defs>
           <marker
@@ -43,7 +44,7 @@ export function DataFlowPipeline({
 
           return (
             <g key={`${stage.service}-${index}`}>
-              <g className="pipeline-stage" onClick={() => onSelectService(stage.service)}>
+              <g className={styles.pipelineStage} onClick={() => onSelectService(stage.service)}>
                 <rect
                   fill={
                     isSelected

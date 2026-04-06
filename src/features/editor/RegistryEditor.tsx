@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
 
 import type { Theme, ValidationIssue } from "../../domain/registry";
 import { pointerToLabel } from "../../domain/registry";
+import styles from "./RegistryEditor.module.css";
 
 type RegistryEditorProps = {
   theme: Theme;
@@ -49,8 +50,8 @@ export function RegistryEditor({
   }, []);
 
   return (
-    <div className="editor-shell">
-      <div className="editor-header">
+    <div className={styles.shell}>
+      <div className={styles.header}>
         <div>
           <div className="app-title">{title}</div>
           <div className="app-subtitle">
@@ -85,7 +86,7 @@ export function RegistryEditor({
           </button>
           <input
             accept=".yaml,.yml,text/yaml,text/x-yaml"
-            className="hidden-file-input"
+            className={styles.hiddenFileInput}
             onChange={onImport}
             ref={inputRef}
             type="file"
@@ -93,19 +94,19 @@ export function RegistryEditor({
         </div>
       </div>
 
-      <div className="editor-layout">
-        <section className="editor-pane">
-          <div className="pane-title">YAML</div>
-          <div className="editor-codeframe">
-            <div aria-hidden="true" className="editor-line-numbers" ref={lineNumberRef}>
+      <div className={styles.layout}>
+        <section className={styles.pane}>
+          <div className={styles.paneTitle}>YAML</div>
+          <div className={styles.codeframe}>
+            <div aria-hidden="true" className={styles.lineNumbers} ref={lineNumberRef}>
               {lineNumbers.map((lineNumber) => (
-                <div className="editor-line-number" key={lineNumber}>
+                <div className={styles.lineNumber} key={lineNumber}>
                   {lineNumber}
                 </div>
               ))}
             </div>
             <textarea
-              className="editor-textarea"
+              className={styles.textarea}
               onChange={(event) => onChange(event.target.value)}
               onScroll={handleEditorScroll}
               ref={textareaRef}
@@ -115,27 +116,27 @@ export function RegistryEditor({
           </div>
         </section>
 
-        <section className="editor-pane">
-          <div className="pane-title">Validation</div>
+        <section className={styles.pane}>
+          <div className={styles.paneTitle}>Validation</div>
           {issues.length === 0 ? (
-            <div className="validation-ok">
-              <div className="validation-ok-title">Schema validation passed.</div>
-              <div className="validation-ok-body">
+            <div className={styles.validationOk}>
+              <div className={styles.validationOkTitle}>Schema validation passed.</div>
+              <div className={styles.validationOkBody}>
                 The registry is syntactically valid, matches the schema, and all known references resolve.
               </div>
             </div>
           ) : (
-            <div className="validation-list">
+            <div className={styles.validationList}>
               {issues.map((issue, index) => (
-                <div className="validation-item" key={`${issue.path}-${issue.message}-${index}`}>
-                  <div className="validation-item-header">
-                    <span className="validation-severity">Error</span>
+                <div className={styles.validationItem} key={`${issue.path}-${issue.message}-${index}`}>
+                  <div className={styles.validationItemHeader}>
+                    <span className={styles.validationSeverity}>Error</span>
                     {issue.location ? (
-                      <span className="validation-location">{issue.location}</span>
+                      <span className={styles.validationLocation}>{issue.location}</span>
                     ) : null}
                   </div>
-                  <div className="validation-message">{issue.message}</div>
-                  <div className="validation-path">{pointerToLabel(issue.path)}</div>
+                  <div className={styles.validationMessage}>{issue.message}</div>
+                  <div className={styles.validationPath}>{pointerToLabel(issue.path)}</div>
                 </div>
               ))}
             </div>

@@ -1,5 +1,2 @@
 @import "./styles/tokens.css";
 @import "./styles/base.css";
-@import "./shared/styles/components.css";
-@import "./features/catalog/catalog.css";
-@import "./features/editor/editor.css";

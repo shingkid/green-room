@@ -1,15 +1,23 @@
-.editor-shell {
+.shell {
   padding: 20px;
 }
 
-.editor-layout {
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.layout {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
   gap: 16px;
   margin-top: 16px;
 }
 
-.editor-pane {
+.pane {
   display: flex;
   min-height: 70vh;
   flex-direction: column;
@@ -19,7 +27,7 @@
   overflow: hidden;
 }
 
-.pane-title {
+.paneTitle {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-muted);
@@ -29,7 +37,7 @@
   text-transform: uppercase;
 }
 
-.editor-textarea {
+.textarea {
   min-height: 70vh;
   flex: 1 1 auto;
   border: 0;
@@ -42,18 +50,18 @@
   resize: none;
 }
 
-.editor-textarea:focus {
+.textarea:focus {
   outline: none;
 }
 
-.editor-codeframe {
+.codeframe {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   min-height: 70vh;
   flex: 1 1 auto;
 }
 
-.editor-line-numbers {
+.lineNumbers {
   overflow: hidden;
   border-right: 1px solid var(--border-subtle);
   background: var(--surface-panel-strong);
@@ -66,11 +74,11 @@
   user-select: none;
 }
 
-.editor-line-number {
+.lineNumber {
   min-width: 2.5em;
 }
 
-.validation-list {
+.validationList {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -78,14 +86,14 @@
   overflow: auto;
 }
 
-.validation-item {
+.validationItem {
   border: 1px solid var(--validation-item-border);
   border-radius: 8px;
   background: var(--validation-item-bg);
   padding: 12px;
 }
 
-.validation-item-header {
+.validationItemHeader {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -93,7 +101,7 @@
   justify-content: space-between;
 }
 
-.validation-severity {
+.validationSeverity {
   color: var(--validation-severity);
   font-size: 10px;
   font-weight: 700;
@@ -101,56 +109,56 @@
   text-transform: uppercase;
 }
 
-.validation-location {
+.validationLocation {
   color: var(--text-muted);
   font-size: 11px;
 }
 
-.validation-message {
+.validationMessage {
   margin-top: 8px;
   color: var(--text-strong);
   font-size: 13px;
   font-weight: 500;
 }
 
-.validation-path {
+.validationPath {
   margin-top: 6px;
   color: var(--text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
 }
 
-.validation-ok {
+.validationOk {
   padding: 14px;
 }
 
-.validation-ok-title {
+.validationOkTitle {
   color: var(--validation-success);
   font-size: 13px;
   font-weight: 700;
 }
 
-.validation-ok-body {
+.validationOkBody {
   margin-top: 6px;
   color: var(--text-muted);
   font-size: 12px;
 }
 
-.hidden-file-input {
+.hiddenFileInput {
   display: none;
 }
 
 @media (max-width: 960px) {
-  .editor-layout {
+  .layout {
     grid-template-columns: 1fr;
   }
 
-  .editor-pane {
+  .pane {
     min-height: 40vh;
   }
 
-  .editor-codeframe,
-  .editor-textarea {
+  .codeframe,
+  .textarea {
     min-height: 40vh;
   }
 }

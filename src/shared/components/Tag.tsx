@@ -1,5 +1,7 @@
 import { type CSSProperties, type ReactNode } from "react";
 
+import styles from "./Tag.module.css";
+
 type TagProps = {
   children: ReactNode;
   color?: string;
@@ -7,7 +9,7 @@ type TagProps = {
 
 export function Tag({ children, color = "var(--tag-neutral)" }: TagProps) {
   return (
-    <span className="tag" style={{ "--tag-color": color } as CSSProperties}>
+    <span className={styles.tag} style={{ "--tag-color": color } as CSSProperties}>
       {children}
     </span>
   );

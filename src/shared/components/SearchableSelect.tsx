@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { matchesFuzzy } from "../../domain/catalog";
 import type { SelectOption } from "../../domain/registry";
+import styles from "./SearchableSelect.module.css";
 
 type SearchableSelectProps = {
   allLabel: string;
@@ -76,33 +77,33 @@ export function SearchableSelect({
   );
 
   return (
-    <div className="searchable-select" ref={rootRef}>
+    <div className={styles.root} ref={rootRef}>
       <button
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className={`searchable-select-trigger${isOpen ? " searchable-select-trigger-open" : ""}`}
+        className={`${styles.trigger}${isOpen ? ` ${styles.triggerOpen}` : ""}`}
         onClick={() => setIsOpen((open) => !open)}
         type="button"
       >
-        <span className={selectedOption ? "" : "searchable-select-placeholder"}>
+        <span className={selectedOption ? "" : styles.placeholder}>
           {selectedOption?.label ?? placeholder}
         </span>
-        <span className="searchable-select-chevron">▾</span>
+        <span className={styles.chevron}>▾</span>
       </button>
 
       {isOpen ? (
-        <div className="searchable-select-menu">
+        <div className={styles.menu}>
           <input
             aria-label={ariaLabel}
-            className="searchable-select-input"
+            className={styles.input}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={`Search ${ariaLabel.toLowerCase()}...`}
             ref={inputRef}
             value={query}
           />
-          <div className="searchable-select-options" role="listbox">
+          <div className={styles.options} role="listbox">
             <button
-              className={`searchable-select-option${value === null ? " searchable-select-option-active" : ""}`}
+              className={`${styles.option}${value === null ? ` ${styles.optionActive}` : ""}`}
               onClick={() => handleSelect(null)}
               type="button"
             >
@@ -111,7 +112,7 @@ export function SearchableSelect({
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <button
-                  className={`searchable-select-option${option.value === value ? " searchable-select-option-active" : ""}`}
+                  className={`${styles.option}${option.value === value ? ` ${styles.optionActive}` : ""}`}
                   key={option.value}
                   onClick={() => handleSelect(option.value)}
                   type="button"
@@ -120,7 +121,7 @@ export function SearchableSelect({
                 </button>
               ))
             ) : (
-              <div className="searchable-select-empty">{emptyMessage}</div>
+              <div className={styles.empty}>{emptyMessage}</div>
             )}
           </div>
         </div>

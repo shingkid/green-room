@@ -1,5 +1,7 @@
 import { type CSSProperties, type ReactNode } from "react";
 
+import styles from "./Badge.module.css";
+
 type BadgeProps = {
   color: string;
   children: ReactNode;
@@ -9,7 +11,7 @@ type BadgeProps = {
 export function Badge({ color, children, onClick }: BadgeProps) {
   return (
     <span
-      className={`badge${onClick ? " badge-clickable" : ""}`}
+      className={`${styles.badge}${onClick ? ` ${styles.clickable}` : ""}`}
       onClick={onClick}
       style={{ "--badge-color": color } as CSSProperties}
     >

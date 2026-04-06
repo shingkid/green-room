@@ -38,8 +38,7 @@ textarea {
   padding: 16px 20px;
 }
 
-.header-row,
-.editor-header {
+.header-row {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -105,25 +104,6 @@ textarea {
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
-}
-
-.panel {
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  background: var(--surface-panel);
-}
-
-.empty-state {
-  padding: 40px;
-  color: var(--text-subtle);
-  text-align: center;
-}
-
-.overline {
-  color: var(--text-muted);
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .startup-shell {

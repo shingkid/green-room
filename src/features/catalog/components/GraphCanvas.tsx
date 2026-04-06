@@ -1,6 +1,7 @@
 import type { Mode, Service } from "../../../domain/registry";
 import { STATUS_STYLES, TYPE_ICONS } from "../../../domain/registry";
 import { formatServiceLabel, getNodeRadius, type DependencyCriticality, type Layout } from "../../../domain/catalog";
+import styles from "./GraphCanvas.module.css";
 
 type ServiceNodeProps = {
   id: string;
@@ -36,7 +37,7 @@ function ServiceNode({
 
   return (
     <g
-      className="service-node"
+      className={styles.serviceNode}
       onClick={() => onSelect(id)}
       opacity={isDimmed ? 0.15 : 1}
       transform={`translate(${position.x},${position.y})`}
@@ -152,8 +153,8 @@ export function GraphCanvas({
   onSelectService,
 }: GraphCanvasProps) {
   return (
-    <section className="graph-section">
-      <svg className="graph-canvas" height={layout.svgH} width={layout.svgW}>
+    <section className={styles.graphSection}>
+      <svg className={styles.graphCanvas} height={layout.svgH} width={layout.svgW}>
         <defs>
           <pattern
             id="externalNodeStripe"

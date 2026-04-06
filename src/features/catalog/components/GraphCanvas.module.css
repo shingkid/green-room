@@ -1,0 +1,13 @@
+.graphSection {
+  overflow: auto;
+  padding: 0 20px;
+}
+
+.graphCanvas {
+  display: block;
+  margin: 0 auto;
+}
+
+.serviceNode {
+  cursor: pointer;
+}

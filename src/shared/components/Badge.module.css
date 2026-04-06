@@ -1,0 +1,14 @@
+.badge {
+  display: inline-block;
+  border-radius: 3px;
+  background: var(--badge-color);
+  color: #fff;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.clickable {
+  cursor: pointer;
+}

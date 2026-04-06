@@ -1,0 +1,12 @@
+.pipelineScroll {
+  overflow-x: auto;
+  padding: 8px 16px;
+}
+
+.pipelineScroll svg {
+  display: block;
+}
+
+.pipelineStage {
+  cursor: pointer;
+}

@@ -21,6 +21,7 @@ import { Tag } from "../../shared/components/Tag";
 import { DataFlowPipeline } from "./components/DataFlowPipeline";
 import { GraphCanvas } from "./components/GraphCanvas";
 import { useCatalogViewModel } from "./useCatalogViewModel";
+import styles from "./CatalogView.module.css";
 
 type CatalogViewProps = {
   theme: Theme;
@@ -103,10 +104,10 @@ export function CatalogView({
         </div>
       </header>
 
-      <nav className="app-tabs">
+      <nav className={styles.tabs}>
         {TABS.map((tab) => (
           <button
-            className={`app-tab${viewModel.mode === tab.key ? " app-tab-active" : ""}`}
+            className={`${styles.tab}${viewModel.mode === tab.key ? ` ${styles.tabActive}` : ""}`}
             key={tab.key}
             onClick={() => viewModel.handleTabChange(tab.key)}
           >
@@ -115,7 +116,7 @@ export function CatalogView({
         ))}
       </nav>
 
-      <section className="control-bar">
+      <section className={styles.controlBar}>
         {viewModel.mode === "flow" || viewModel.mode === "data" ? (
           <SearchableSelect
             allLabel="All stakeholders"
@@ -180,16 +181,16 @@ export function CatalogView({
               placeholder="Select a service"
               value={viewModel.selectedService}
             />
-            <div aria-label="impact direction" className="direction-toggle" role="group">
+            <div aria-label="impact direction" className={styles.directionToggle} role="group">
               <button
-                className={`direction-toggle-button${viewModel.impactDirection === "downstream" ? " direction-toggle-button-active" : ""}`}
+                className={`${styles.directionToggleButton}${viewModel.impactDirection === "downstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
                 onClick={() => viewModel.setImpactDirection("downstream")}
                 type="button"
               >
                 Downstream
               </button>
               <button
-                className={`direction-toggle-button${viewModel.impactDirection === "upstream" ? " direction-toggle-button-active" : ""}`}
+                className={`${styles.directionToggleButton}${viewModel.impactDirection === "upstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
                 onClick={() => viewModel.setImpactDirection("upstream")}
                 type="button"
               >
@@ -200,8 +201,8 @@ export function CatalogView({
         ) : null}
 
         {viewModel.affectedBusinessFlows.length > 0 ? (
-          <div className="flow-summary">
-            <span className="overline">Affected flows:</span>
+          <div className={styles.flowSummary}>
+            <span className={styles.overline}>Affected flows:</span>
             {viewModel.affectedBusinessFlows.map((flowKey) => (
               <Badge color={FLOW_COLORS[flowKey] ?? "#475569"} key={flowKey}>
                 {viewModel.businessFlows[flowKey]?.name ?? flowKey}
@@ -226,9 +227,9 @@ export function CatalogView({
       ) : null}
 
       {viewModel.mode === "data" ? (
-        <section className="data-section">
+        <section className={styles.dataSection}>
           {viewModel.filteredDataFlows.length === 0 ? (
-            <div className="empty-state">No data flows found for this filter.</div>
+            <div className={styles.emptyState}>No data flows found for this filter.</div>
           ) : null}
 
           {viewModel.filteredDataFlows.map(([flowKey, dataFlow]) => {
@@ -236,13 +237,13 @@ export function CatalogView({
               viewModel.expandedDataFlow === flowKey || viewModel.selectedDataFlow === flowKey;
 
             return (
-              <div className="panel" key={flowKey} style={{ marginBottom: 12, overflow: "hidden" }}>
+              <div className={styles.panel} key={flowKey} style={{ marginBottom: 12, overflow: "hidden" }}>
                 <div
-                  className="panel-header"
+                  className={styles.panelHeader}
                   onClick={() => viewModel.setExpandedDataFlow(isExpanded ? null : flowKey)}
                 >
-                  <div className="panel-header-main">
-                    <span className="panel-title">{dataFlow.name}</span>
+                  <div className={styles.panelHeaderMain}>
+                    <span className={styles.panelTitle}>{dataFlow.name}</span>
                     <Badge color={FLOW_COLORS[dataFlow.business_flow] ?? "#475569"}>
                       {viewModel.businessFlows[dataFlow.business_flow]?.name ??
                         dataFlow.business_flow}
@@ -256,24 +257,24 @@ export function CatalogView({
                     <Tag>{dataFlow.freshness}</Tag>
                     <Tag color="var(--tag-neutral)">{dataFlow.stages.length} stages</Tag>
                   </div>
-                  <span className={`panel-chevron${isExpanded ? " panel-chevron-expanded" : ""}`}>
+                  <span className={`${styles.panelChevron}${isExpanded ? ` ${styles.panelChevronExpanded}` : ""}`}>
                     ▾
                   </span>
                 </div>
 
                 {isExpanded ? (
-                  <div className="panel-body">
-                    <div className="panel-description">{dataFlow.description}</div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.panelDescription}>{dataFlow.description}</div>
                     <DataFlowPipeline
                       dataFlow={dataFlow}
                       onSelectService={viewModel.setSelectedService}
                       selectedService={viewModel.selectedService}
                       services={viewModel.services}
                     />
-                    <div className="table-scroll">
-                      <table className="dataflow-table">
+                    <div className={styles.tableScroll}>
+                      <table className={styles.dataflowTable}>
                         <thead>
-                          <tr className="dataflow-header">
+                          <tr className={styles.dataflowHeader}>
                             {["#", "Service", "Action", "Format", "Notes"].map((heading) => (
                               <th key={heading}>{heading}</th>
                             ))}
@@ -282,24 +283,24 @@ export function CatalogView({
                         <tbody>
                           {dataFlow.stages.map((stage, index) => (
                             <tr
-                              className="dataflow-row"
+                              className={styles.dataflowRow}
                               key={`${stage.service}-${index}`}
                               onClick={() => viewModel.setSelectedService(stage.service)}
                             >
                               <td>{index + 1}</td>
-                              <td className="dataflow-service-cell">
+                              <td className={styles.dataflowServiceCell}>
                                 {viewModel.services[stage.service]?.name ?? stage.service}
                               </td>
                               <td>
                                 <span
-                                  className="action-pill"
+                                  className={styles.actionPill}
                                   style={{ "--action-color": ACTION_COLORS[stage.action] ?? "#475569" } as CSSProperties}
                                 >
                                   {stage.action}
                                 </span>
                               </td>
-                              <td className="mono-cell">{stage.format}</td>
-                              <td className="muted-cell">{stage.notes}</td>
+                              <td className={styles.monoCell}>{stage.format}</td>
+                              <td className={styles.mutedCell}>{stage.notes}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -314,11 +315,11 @@ export function CatalogView({
       ) : null}
 
       {viewModel.selectedServiceDetails && viewModel.isGraphMode && viewModel.mode === "impact" ? (
-        <section className="panel details-panel">
-          <div className="details-header">
+        <section className={`${styles.panel} ${styles.detailsPanel}`}>
+          <div className={styles.detailsHeader}>
             <div>
-              <div className="details-title">{viewModel.selectedServiceDetails.name}</div>
-              <div className="details-meta">
+              <div className={styles.detailsTitle}>{viewModel.selectedServiceDetails.name}</div>
+              <div className={styles.detailsMeta}>
                 {viewModel.selectedServiceDetails.type} · {viewModel.selectedServiceDetails.status} ·{" "}
                 {viewModel.getOwnershipKind(viewModel.selectedServiceDetails)}
               </div>
@@ -331,9 +332,9 @@ export function CatalogView({
           </div>
 
           {(viewModel.selectedServiceDetails.upstream?.length ?? 0) > 0 ? (
-            <div className="details-section">
-              <div className="overline">Direct dependencies</div>
-              <div className="tag-row">
+            <div className={styles.detailsSection}>
+              <div className={styles.overline}>Direct dependencies</div>
+              <div className={styles.tagRow}>
                 {viewModel.selectedServiceDetails.upstream?.map((dependency) => (
                   <Tag
                     color={
@@ -351,12 +352,12 @@ export function CatalogView({
           ) : null}
 
           {viewModel.affectedDataFlows.length > 0 ? (
-            <div className="details-section">
-              <div className="overline">Data flows through this service</div>
-              <div className="tag-row">
+            <div className={styles.detailsSection}>
+              <div className={styles.overline}>Data flows through this service</div>
+              <div className={styles.tagRow}>
                 {viewModel.affectedDataFlows.map(([flowKey, dataFlow]) => (
                   <span
-                    className="link-tag"
+                    className={styles.linkTag}
                     key={flowKey}
                     onClick={() => {
                       viewModel.handleTabChange("data");
@@ -373,52 +374,52 @@ export function CatalogView({
         </section>
       ) : null}
 
-      <footer className="app-footer">
+      <footer className={styles.footer}>
         {viewModel.mode !== "data"
           ? [
               ...Object.entries(STATUS_STYLES).map(([status, style]) => (
                 <button
-                  className={`legend-item legend-toggle${viewModel.visibleStatusSet.has(status as ServiceStatus) ? "" : " legend-toggle-off"}`}
+                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleStatusSet.has(status as ServiceStatus) ? "" : ` ${styles.legendToggleOff}`}`}
                   key={status}
                   onClick={() => viewModel.handleToggleStatus(status as ServiceStatus)}
                   type="button"
                 >
                   <span
-                    className="legend-swatch"
+                    className={styles.legendSwatch}
                     style={{ "--legend-color": style.bg } as CSSProperties}
                   />
                   {status}
                 </button>
               )),
               <button
-                className={`legend-item legend-toggle${viewModel.visibleOwnershipSet.has("internal") ? "" : " legend-toggle-off"}`}
+                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("internal") ? "" : ` ${styles.legendToggleOff}`}`}
                 key="internal-owner"
                 onClick={() => viewModel.handleToggleOwnership("internal")}
                 type="button"
               >
-                <span className="legend-node-sample legend-node-sample-internal" />
+                <span className={`${styles.legendNodeSample} ${styles.legendNodeSampleInternal}`} />
                 team-owned
               </button>,
               <button
-                className={`legend-item legend-toggle${viewModel.visibleOwnershipSet.has("external") ? "" : " legend-toggle-off"}`}
+                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("external") ? "" : ` ${styles.legendToggleOff}`}`}
                 key="external-owner"
                 onClick={() => viewModel.handleToggleOwnership("external")}
                 type="button"
               >
-                <span className="legend-node-sample legend-node-sample-external" />
+                <span className={`${styles.legendNodeSample} ${styles.legendNodeSampleExternal}`} />
                 external
               </button>,
-              <span className="legend-item" key="hard">
-                <span className="legend-line legend-line-hard" />
+              <span className={styles.legendItem} key="hard">
+                <span className={styles.legendLine} />
                 hard
               </span>,
-              <span className="legend-item" key="soft">
-                <span className="legend-line legend-line-soft" />
+              <span className={styles.legendItem} key="soft">
+                <span className={`${styles.legendLine} ${styles.legendLineSoft}`} />
                 soft
               </span>,
               ...Object.entries(TYPE_ICONS).map(([type, icon]) => (
                 <button
-                  className={`legend-item legend-toggle${viewModel.visibleTypeSet.has(type as ServiceType) ? "" : " legend-toggle-off"}`}
+                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleTypeSet.has(type as ServiceType) ? "" : ` ${styles.legendToggleOff}`}`}
                   key={type}
                   onClick={() => viewModel.handleToggleType(type as ServiceType)}
                   type="button"
@@ -428,9 +429,9 @@ export function CatalogView({
               )),
             ]
           : Object.entries(ACTION_COLORS).map(([action, color]) => (
-              <span className="legend-item" key={action}>
+              <span className={styles.legendItem} key={action}>
                 <span
-                  className="legend-swatch"
+                  className={styles.legendSwatch}
                   style={{ "--legend-color": color } as CSSProperties}
                 />
                 {action}
