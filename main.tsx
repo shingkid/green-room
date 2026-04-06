@@ -1,0 +1,11 @@
+import { createRoot } from "react-dom/client";
+
+import App from "./service_explorer";
+
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error('Missing root element with id "root"');
+}
+
+createRoot(rootElement).render(<App />);
