@@ -709,6 +709,186 @@ function getExplorerTitle(teamName?: string | null) {
     : "Service Dependency Explorer";
 }
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+}
+
+function toMermaidId(value: string) {
+  const normalized = value.replaceAll(/[^a-zA-Z0-9]+/g, "_").replaceAll(/^_+|_+$/g, "");
+
+  return normalized ? `node_${normalized}` : "node_unknown";
+}
+
+function escapeMermaidLabel(value: string) {
+  return value.replaceAll(/"/g, '\\"');
+}
+
+function buildMermaidNodeLine(
+  nodeId: string,
+  label: string,
+  shape: "rounded" | "stadium" | "subroutine" | "database",
+) {
+  const escapedLabel = escapeMermaidLabel(label);
+
+  if (shape === "stadium") {
+    return `${nodeId}(["${escapedLabel}"])`;
+  }
+
+  if (shape === "subroutine") {
+    return `${nodeId}[["${escapedLabel}"]]`;
+  }
+
+  if (shape === "database") {
+    return `${nodeId}[("${escapedLabel}")]`;
+  }
+
+  return `${nodeId}["${escapedLabel}"]`;
+}
+
+function getMermaidShape(type: ServiceType) {
+  if (type === "frontend") {
+    return "rounded" as const;
+  }
+
+  if (type === "backend") {
+    return "subroutine" as const;
+  }
+
+  if (type === "datastore") {
+    return "database" as const;
+  }
+
+  return "stadium" as const;
+}
+
+type MermaidExport = {
+  filename: string;
+  source: string;
+};
+
+function buildGraphMermaid(params: {
+  registry: Registry;
+  serviceKeys: Set<string>;
+  edges: Array<{
+    from: string;
+    to: string;
+    protocol?: string;
+    criticality?: DependencyCriticality;
+  }>;
+  direction?: "LR" | "TD";
+  title: string;
+  filenameStem: string;
+}) {
+  const { registry, serviceKeys, edges, direction = "LR", title, filenameStem } = params;
+  const lines = [`flowchart ${direction}`, `%% ${title}`];
+  const sortedServiceKeys = [...serviceKeys].sort((left, right) => left.localeCompare(right));
+
+  if (sortedServiceKeys.length === 0) {
+    return null;
+  }
+
+  for (const serviceKey of sortedServiceKeys) {
+    const service = registry.services[serviceKey];
+
+    if (!service) {
+      continue;
+    }
+
+    const ownerSuffix =
+      service.owner === registry.metadata.team_id ? "team-owned" : "external";
+    const label = `${service.name}\\n${service.type} • ${service.status} • ${ownerSuffix}`;
+    lines.push(`  ${buildMermaidNodeLine(toMermaidId(serviceKey), label, getMermaidShape(service.type))}`);
+  }
+
+  const sortedEdges = [...edges].sort((left, right) => {
+    const fromComparison = left.from.localeCompare(right.from);
+
+    if (fromComparison !== 0) {
+      return fromComparison;
+    }
+
+    return left.to.localeCompare(right.to);
+  });
+
+  for (const edge of sortedEdges) {
+    if (!serviceKeys.has(edge.from) || !serviceKeys.has(edge.to)) {
+      continue;
+    }
+
+    const fromId = toMermaidId(edge.from);
+    const toId = toMermaidId(edge.to);
+    const edgeLabelParts = [edge.protocol, edge.criticality].filter(Boolean);
+
+    if (edgeLabelParts.length > 0) {
+      lines.push(
+        `  ${fromId} -->|${escapeMermaidLabel(edgeLabelParts.join(" · "))}| ${toId}`,
+      );
+    } else {
+      lines.push(`  ${fromId} --> ${toId}`);
+    }
+  }
+
+  return {
+    filename: `${filenameStem}.mmd`,
+    source: `${lines.join("\n")}\n`,
+  } satisfies MermaidExport;
+}
+
+function buildDataFlowMermaid(params: {
+  registry: Registry;
+  dataFlowEntries: Array<[string, DataFlow]>;
+  filenameStem: string;
+  title: string;
+}) {
+  const { registry, dataFlowEntries, filenameStem, title } = params;
+
+  if (dataFlowEntries.length === 0) {
+    return null;
+  }
+
+  const lines = ["flowchart TD", `%% ${title}`];
+  const sortedEntries = [...dataFlowEntries].sort(([leftKey], [rightKey]) =>
+    leftKey.localeCompare(rightKey),
+  );
+
+  for (const [flowKey, dataFlow] of sortedEntries) {
+    const flowId = toMermaidId(`flow_${flowKey}`);
+    const flowLabel = registry.business_flows[dataFlow.business_flow]?.name ?? dataFlow.business_flow;
+
+    lines.push(`  subgraph ${flowId}["${escapeMermaidLabel(`${dataFlow.name} · ${flowLabel}`)}"]`);
+
+    dataFlow.stages.forEach((stage, index) => {
+      const stageId = toMermaidId(`${flowKey}_${index}_${stage.service}`);
+      const serviceName = registry.services[stage.service]?.name ?? stage.service;
+      const stageLabelParts = [serviceName, stage.action];
+
+      if (stage.format) {
+        stageLabelParts.push(stage.format);
+      }
+
+      lines.push(`    ${stageId}["${escapeMermaidLabel(stageLabelParts.join("\\n"))}"]`);
+
+      if (index > 0) {
+        const prevStageId = toMermaidId(
+          `${flowKey}_${index - 1}_${dataFlow.stages[index - 1]?.service ?? "stage"}`,
+        );
+        lines.push(`    ${prevStageId} --> ${stageId}`);
+      }
+    });
+
+    lines.push("  end");
+  }
+
+  return {
+    filename: `${filenameStem}.mmd`,
+    source: `${lines.join("\n")}\n`,
+  } satisfies MermaidExport;
+}
+
 function getNodeRadius(type: ServiceType) {
   if (type === "datastore") {
     return 20;
@@ -1560,6 +1740,85 @@ function CatalogView({
   }, [eligibleDataFlowEntries, selectedDataFlow]);
 
   const selectedServiceDetails = selectedService ? services[selectedService] : null;
+  const mermaidExport = useMemo(() => {
+    const teamSlug = slugify(registry.metadata.team) || "service-catalog";
+
+    if (mode === "overview") {
+      return buildGraphMermaid({
+        edges,
+        filenameStem: `${teamSlug}-overview`,
+        registry,
+        serviceKeys: visibleServices,
+        title: `${registry.metadata.team} overview`,
+      });
+    }
+
+    if (mode === "impact") {
+      if (!selectedService) {
+        return null;
+      }
+
+      const selectedServiceName = services[selectedService]?.name ?? selectedService;
+      const impactedServices = new Set(
+        [...affectedSet].filter((serviceKey) => visibleServices.has(serviceKey)),
+      );
+
+      return buildGraphMermaid({
+        edges: edges.filter(
+          (edge) => impactedServices.has(edge.from) && impactedServices.has(edge.to),
+        ),
+        filenameStem: `${teamSlug}-impact-${slugify(selectedServiceName) || slugify(selectedService) || "service"}-${impactDirection}`,
+        registry,
+        serviceKeys: impactedServices,
+        title: `${selectedServiceName} ${impactDirection} impact`,
+      });
+    }
+
+    if (mode === "flow") {
+      const flowLabel = selectedFlow
+        ? businessFlows[selectedFlow]?.name ?? selectedFlow
+        : selectedStakeholder
+          ? `${selectedStakeholder} business flows`
+          : "business flows";
+
+      return buildGraphMermaid({
+        edges,
+        filenameStem: `${teamSlug}-flow-${slugify(flowLabel) || "all"}`,
+        registry,
+        serviceKeys: visibleServices,
+        title: `${registry.metadata.team} ${flowLabel}`,
+      });
+    }
+
+    const selectedDataFlowName = selectedDataFlow
+      ? dataFlows[selectedDataFlow]?.name ?? selectedDataFlow
+      : null;
+    const lineageLabel =
+      selectedDataFlowName ??
+      (selectedFlow ? businessFlows[selectedFlow]?.name ?? selectedFlow : "data-lineage");
+
+    return buildDataFlowMermaid({
+      dataFlowEntries: filteredDataFlows,
+      filenameStem: `${teamSlug}-lineage-${slugify(lineageLabel) || "all"}`,
+      registry,
+      title: `${registry.metadata.team} ${lineageLabel}`,
+    });
+  }, [
+    affectedSet,
+    businessFlows,
+    dataFlows,
+    edges,
+    filteredDataFlows,
+    impactDirection,
+    mode,
+    registry,
+    selectedDataFlow,
+    selectedFlow,
+    selectedService,
+    selectedStakeholder,
+    services,
+    visibleServices,
+  ]);
 
   const handleServiceClick = useCallback(
     (serviceKey: string) => {
@@ -1630,6 +1889,29 @@ function CatalogView({
     });
   }, []);
 
+  const handleCopyMermaid = useCallback(async () => {
+    if (!mermaidExport) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(mermaidExport.source);
+  }, [mermaidExport]);
+
+  const handleDownloadMermaid = useCallback(() => {
+    if (!mermaidExport) {
+      return;
+    }
+
+    const blob = new Blob([mermaidExport.source], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = mermaidExport.filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [mermaidExport]);
+
   return (
     <div className="app-shell" data-theme={theme}>
       <header className="app-header">
@@ -1643,6 +1925,24 @@ function CatalogView({
             </div>
           </div>
           <div className="header-actions">
+            <button
+              className="secondary-button"
+              disabled={!mermaidExport}
+              onClick={() => {
+                void handleCopyMermaid();
+              }}
+              type="button"
+            >
+              Copy Mermaid
+            </button>
+            <button
+              className="secondary-button"
+              disabled={!mermaidExport}
+              onClick={handleDownloadMermaid}
+              type="button"
+            >
+              Download .mmd
+            </button>
             <button className="secondary-button" onClick={onEditRegistry} type="button">
               Edit registry
             </button>
