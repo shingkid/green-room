@@ -10,11 +10,16 @@
     "metadata": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["team", "last_updated", "maintainers"],
+      "required": ["team", "team_id", "last_updated", "maintainers"],
       "properties": {
         "team": {
           "type": "string",
+          "description": "Human-readable team name used in the UI title.",
           "minLength": 1
+        },
+        "team_id": {
+          "$ref": "#/$defs/registryKey",
+          "description": "Canonical team identifier. A service is considered team-owned when its owner matches metadata.team_id."
         },
         "last_updated": {
           "type": "string",
@@ -186,7 +191,7 @@
     },
     "service": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
         "name",
         "description",
@@ -196,8 +201,7 @@
         "business_flows",
         "owner",
         "runbook",
-        "health_check",
-        "port"
+        "health_check"
       ],
       "properties": {
         "name": {
@@ -230,8 +234,8 @@
           }
         },
         "owner": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/registryKey",
+          "description": "Canonical owner identifier. Compare this to metadata.team_id to distinguish team-owned services from external dependencies."
         },
         "runbook": {
           "type": "string"

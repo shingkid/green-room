@@ -16,7 +16,7 @@ Service Catalog is a lightweight Vite + React app for exploring a service depend
 
 The registry has four top-level sections:
 
-- `metadata`: team ownership and maintainers
+- `metadata`: team ownership and maintainers; `metadata.team` is the display name used in the UI and `metadata.team_id` is the canonical identifier used to determine whether a service is team-owned
 - `business_flows`: named business journeys such as `research_search`
 - `data_flows`: ordered stage pipelines that show how data moves between services
 - `services`: service definitions with upstream dependencies and ownership metadata
@@ -26,6 +26,9 @@ The registry has four top-level sections:
 - registry keys must use `snake_case`
 - service `type` is one of `frontend`, `backend`, `datastore`, or `infrastructure`
 - service `status` is one of `active`, `deprecated`, or `migrating`
+- service `owner` is a canonical identifier; compare it to `metadata.team_id` to distinguish team-owned services from external dependencies
+- service `port` is optional
+- extra custom fields are allowed on service entries
 - dependency `criticality` is `hard` or `soft`
 - data-flow `action` is one of `produces`, `transforms`, `stores`, `indexes`, `enriches`, `caches`, `serves`, or `consumes`
 - `last_updated` is an ISO date string
@@ -45,7 +48,7 @@ Create a production build:
 npm run build
 ```
 
-The app entrypoint is [`index.html`](./index.html), which loads [`src/main.tsx`](./src/main.tsx). The UI imports the YAML registry directly through Vite's YAML plugin.
+The app entrypoint is [`index.html`](./index.html), which loads [`src/main.tsx`](./src/main.tsx). The UI fetches the YAML registry at runtime from [`public/service_registry.yaml`](./public/service_registry.yaml) when present.
 
 ## Schema Usage
 
@@ -63,5 +66,5 @@ This repo does not yet include a dedicated validation script, but the schema is 
 
 - The frontend is fully rewired to TypeScript.
 - The app now tries to fetch `service_registry.yaml` at runtime. If it is missing or invalid, the browser UI opens an editor with live validation feedback.
-- The schema is strict by design: unknown fields are rejected inside typed objects.
+- The schema is strict everywhere except service entries, which may include additional custom fields.
 - Cross-reference integrity such as “every `business_flow` value must exist in `business_flows`” is documented by convention, but not enforced by plain JSON Schema in this version.

@@ -78,6 +78,7 @@ type DataFlow = {
 type Registry = {
   metadata: {
     team: string;
+    team_id: string;
     last_updated: string;
     maintainers: Array<{ name: string; slack: string }>;
   };
@@ -191,6 +192,7 @@ const LOCAL_STORAGE_THEME_KEY = "service-catalog.theme";
 
 const DEFAULT_REGISTRY_TEMPLATE = `metadata:
   team: Platform Engineering
+  team_id: platform_engineering
   last_updated: 2026-04-06
   maintainers:
     - name: Jane Doe
@@ -232,7 +234,7 @@ services:
         criticality: hard
     business_flows:
       - example_flow
-    owner: Web Platform
+    owner: platform_engineering
     runbook: https://example.com/runbooks/example-ui
     health_check: https://example.com/health/example-ui
     port: 443
@@ -245,7 +247,7 @@ services:
     upstream: []
     business_flows:
       - example_flow
-    owner: API Platform
+    owner: platform_engineering
     runbook: https://example.com/runbooks/example-api
     health_check: https://example.com/health/example-api
     port: 8080
@@ -688,6 +690,14 @@ function matchesFuzzy(label: string, query: string, extraSearchText?: string) {
   return tokens.every((token) => haystack.includes(token));
 }
 
+function getExplorerTitle(teamName?: string | null) {
+  const normalizedTeamName = teamName?.trim();
+
+  return normalizedTeamName
+    ? `${normalizedTeamName} Service Dependency Explorer`
+    : "Service Dependency Explorer";
+}
+
 function getNodeRadius(type: ServiceType) {
   if (type === "datastore") {
     return 20;
@@ -1085,6 +1095,7 @@ function DataFlowPipeline({
 
 type RegistryEditorProps = {
   theme: Theme;
+  title: string;
   draftText: string;
   issues: ValidationIssue[];
   onApply: () => void;
@@ -1099,6 +1110,7 @@ type RegistryEditorProps = {
 
 function RegistryEditor({
   theme,
+  title,
   draftText,
   issues,
   onApply,
@@ -1116,7 +1128,7 @@ function RegistryEditor({
     <div className="editor-shell">
       <div className="editor-header">
         <div>
-          <div className="app-title">Registry Editor</div>
+          <div className="app-title">{title}</div>
           <div className="app-subtitle">
             {sourceLabel
               ? `Editing ${sourceLabel}. Validation runs on every change.`
@@ -1217,6 +1229,7 @@ function CatalogView({
   const services = registry.services;
   const businessFlows = registry.business_flows;
   const dataFlows = registry.data_flows;
+  const explorerTitle = getExplorerTitle(registry.metadata.team);
 
   const [mode, setMode] = useState<Mode>("overview");
   const [selectedStakeholder, setSelectedStakeholder] = useState<string | null>(null);
@@ -1471,7 +1484,7 @@ function CatalogView({
       <header className="app-header">
         <div className="header-row">
           <div>
-            <div className="app-title">Service Dependency Explorer</div>
+            <div className="app-title">{explorerTitle}</div>
             <div className="app-subtitle">
               {sourceLabel
                 ? `Loaded from ${sourceLabel}. Edit the registry to validate and preview changes in-browser.`
@@ -1842,12 +1855,19 @@ export default function App() {
   const [showEditor, setShowEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const validation = useMemo(() => validateRegistryText(draftText), [draftText]);
+  const currentRegistry = validation.registry ?? appliedRegistry;
+  const explorerTitle = getExplorerTitle(currentRegistry?.metadata.team);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
     window.localStorage.setItem(LOCAL_STORAGE_THEME_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.title = explorerTitle;
+  }, [explorerTitle]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1923,8 +1943,6 @@ export default function App() {
     window.localStorage.setItem(LOCAL_STORAGE_DRAFT_KEY, draftText);
   }, [draftText]);
 
-  const validation = useMemo(() => validateRegistryText(draftText), [draftText]);
-
   const handleApplyRegistry = useCallback(() => {
     if (!validation.registry) {
       return;
@@ -1975,7 +1993,7 @@ export default function App() {
     return (
       <div className="startup-shell" data-theme={theme}>
         <div className="startup-card">
-          <div className="app-title">Service Dependency Explorer</div>
+          <div className="app-title">{explorerTitle}</div>
           <div className="app-subtitle">Loading registry…</div>
         </div>
       </div>
@@ -2002,6 +2020,7 @@ export default function App() {
           onToggleTheme={handleToggleTheme}
           sourceLabel={sourceLabel}
           theme={theme}
+          title={explorerTitle}
         />
       </div>
     );
