@@ -10,3 +10,142 @@
 .pipelineStage {
   cursor: pointer;
 }
+
+/* Edit mode */
+.editPipeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.editStageWrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editStage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 120px;
+  border: 1px solid var(--border-muted, #334155);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: grab;
+  background: var(--pipeline-stage-bg, #1e293b);
+  user-select: none;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+
+.editStage:active {
+  cursor: grabbing;
+}
+
+.editStageDragging {
+  opacity: 0.4;
+  box-shadow: 0 0 0 2px #7c3aed;
+}
+
+.editStageAction {
+  width: 100%;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  padding: 3px 0;
+  letter-spacing: 0.04em;
+}
+
+.editStageName {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+  padding: 4px 6px 2px;
+  text-align: center;
+}
+
+.editStageFormat {
+  font-size: 8px;
+  color: var(--text-subtle, #94a3b8);
+  padding: 0 6px 4px;
+  text-align: center;
+}
+
+.dragHandle {
+  font-size: 12px;
+  color: var(--text-subtle, #94a3b8);
+  padding: 2px 0 4px;
+  cursor: grab;
+  line-height: 1;
+}
+
+.dropIndicator {
+  width: 3px;
+  height: 72px;
+  background: #7c3aed;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.addStageBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px dashed var(--border-muted, #475569);
+  background: transparent;
+  color: var(--text-subtle, #94a3b8);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.addStageBtn:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+
+.addStageBtnFirst {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--border-muted, #475569);
+  background: transparent;
+  color: var(--text-subtle, #94a3b8);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.addStageBtnFirst:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+
+.addStageForm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--surface-raised, #1e293b);
+  border: 1px solid var(--border-muted, #334155);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.addStageForm select {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-muted, #334155);
+  background: var(--surface, #0f172a);
+  color: var(--text-primary, #f1f5f9);
+}

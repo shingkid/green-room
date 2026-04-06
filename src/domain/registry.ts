@@ -1,6 +1,6 @@
 import Ajv2020, { type ErrorObject } from "ajv/dist/2020";
 import addFormats from "ajv-formats";
-import { LineCounter, isMap, isSeq, parseDocument } from "yaml";
+import { LineCounter, isMap, isSeq, parseDocument, type YAMLSeq } from "yaml";
 
 import registrySchema from "../../service_registry.schema.json";
 
@@ -317,9 +317,9 @@ function collectNodeLocations(
 
   if (isMap(node)) {
     for (const item of node.items) {
-      const key = String(item.key?.value ?? "");
       // Track value locations, not just keys, so downstream validation errors land on the field
       // content the user actually needs to edit.
+      const key = String((item.key as { value?: unknown } | null | undefined)?.value ?? "");
       collectNodeLocations(item.value, [...path, key], lineCounter, locations);
     }
     return;
@@ -527,6 +527,43 @@ export async function loadInitialRegistrySource(): Promise<InitialLoadResult | n
   }
 
   return null;
+}
+
+export function findYamlLine(yamlText: string, keyPath: string[]): number {
+  const lc = new LineCounter();
+  const doc = parseDocument(yamlText, { lineCounter: lc });
+  const node = doc.getIn(keyPath, true);
+  if (node && typeof node === "object" && "range" in node) {
+    const range = (node as { range?: number[] }).range;
+    if (Array.isArray(range) && typeof range[0] === "number") {
+      return lc.linePos(range[0]).line;
+    }
+  }
+  return 1;
+}
+
+export function reorderDataFlowStages(
+  yamlText: string,
+  flowKey: string,
+  newStages: DataFlowStage[],
+): string {
+  const doc = parseDocument(yamlText);
+  doc.setIn(["data_flows", flowKey, "stages"], doc.createNode(newStages));
+  return doc.toString();
+}
+
+export function addDataFlowStage(
+  yamlText: string,
+  flowKey: string,
+  stage: DataFlowStage,
+  atIndex: number,
+): string {
+  const doc = parseDocument(yamlText);
+  const stages = doc.getIn(["data_flows", flowKey, "stages"]);
+  if (isSeq(stages)) {
+    (stages as YAMLSeq).items.splice(atIndex, 0, doc.createNode(stage));
+  }
+  return doc.toString();
 }
 
 export function getExplorerTitle(teamName?: string | null) {
