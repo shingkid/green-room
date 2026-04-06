@@ -28,7 +28,7 @@
   --graph-edge: #94a3b8;
   --graph-edge-active: #f97316;
   --graph-edge-label: #94a3b8;
-  --graph-external-border: #cbd5e1;
+  --graph-external-stripe: #f59e0b;
   --pipeline-stage-bg: #0f172a;
   --pipeline-stage-bg-selected: #1e293b;
   --pipeline-stage-stroke: #334155;
@@ -74,7 +74,7 @@
   --graph-edge: #64748b;
   --graph-edge-active: #ea580c;
   --graph-edge-label: #475569;
-  --graph-external-border: #64748b;
+  --graph-external-stripe: #ea580c;
   --pipeline-stage-bg: #f8fafc;
   --pipeline-stage-bg-selected: #dbeafe;
   --pipeline-stage-stroke: #cbd5e1;
@@ -148,6 +148,11 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.theme-toggle-button {
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .app-title {
@@ -603,15 +608,44 @@ textarea {
   width: 16px;
   height: 10px;
   border-radius: 4px;
+  border: 2px solid var(--accent-primary-strong);
   background: transparent;
 }
 
 .legend-node-sample-internal {
-  border: 2px solid var(--accent-primary-strong);
+  background: transparent;
 }
 
 .legend-node-sample-external {
-  border: 2px dashed var(--graph-external-border);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      var(--graph-external-stripe) 0 3px,
+      transparent 3px 7px
+    );
+}
+
+.direction-toggle {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-panel-strong);
+}
+
+.direction-toggle-button {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: var(--text-subtle);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.direction-toggle-button-active {
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .startup-shell {

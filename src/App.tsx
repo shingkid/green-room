@@ -29,7 +29,8 @@ type DataFlowAction =
 type DataType = "dataset" | "event" | "metric" | "config" | "auth_token";
 type Sensitivity = "public" | "internal" | "confidential" | "restricted";
 
-type Mode = "overview" | "blast" | "upstream" | "flow" | "data";
+type Mode = "overview" | "impact" | "flow" | "data";
+type ImpactDirection = "downstream" | "upstream";
 type Theme = "light" | "dark";
 
 type Dependency = {
@@ -135,7 +136,7 @@ const ALL_SERVICE_STATUSES: ServiceStatus[] = ["active", "deprecated", "migratin
 
 const STATUS_STYLES: Record<ServiceStatus, StatusStyle> = {
   active: { bg: "#16a34a", border: "#15803d", text: "#fff" },
-  deprecated: { bg: "#d97706", border: "#b45309", text: "#fff" },
+  deprecated: { bg: "#6b7280", border: "#4b5563", text: "#fff" },
   migrating: { bg: "#2563eb", border: "#1d4ed8", text: "#fff" },
 };
 
@@ -181,13 +182,12 @@ const SENSITIVITY_COLORS: Record<Sensitivity, string> = {
 
 const TABS: Array<{ key: Mode; label: string }> = [
   { key: "overview", label: "Overview" },
-  { key: "blast", label: "Blast Radius" },
-  { key: "upstream", label: "Upstream Causes" },
+  { key: "impact", label: "Dependency Impact" },
   { key: "flow", label: "Business Flow" },
-  { key: "data", label: "📊 Data Flows" },
+  { key: "data", label: "Data Lineage" },
 ];
 
-const graphModes: Mode[] = ["overview", "blast", "upstream", "flow"];
+const graphModes: Mode[] = ["overview", "impact", "flow"];
 const REGISTRY_URL_CANDIDATES = ["/service_registry.yaml", "/service-registry.yaml"];
 const LOCAL_STORAGE_DRAFT_KEY = "service-catalog.registry-draft";
 const LOCAL_STORAGE_THEME_KEY = "service-catalog.theme";
@@ -899,10 +899,7 @@ function ServiceNode({
     ? "#dc2626"
     : isAffected
       ? "#f97316"
-      : isInternal
-        ? statusStyle.border
-        : "var(--graph-external-border)";
-  const strokeDasharray = !isHighlight && !isAffected && !isInternal ? "5 3" : "none";
+      : statusStyle.border;
 
   return (
     <g
@@ -916,10 +913,19 @@ function ServiceNode({
         height={height}
         rx={getNodeRadius(service.type)}
         stroke={stroke}
-        strokeDasharray={strokeDasharray}
         strokeWidth={isHighlight ? 3 : isAffected ? 2 : 1}
         width={width}
       />
+      {!isInternal ? (
+        <rect
+          fill="url(#externalNodeStripe)"
+          height={height}
+          opacity={0.35}
+          pointerEvents="none"
+          rx={getNodeRadius(service.type)}
+          width={width}
+        />
+      ) : null}
       <text
         fill={statusStyle.text}
         fontFamily="system-ui"
@@ -1148,15 +1154,6 @@ function RegistryEditor({
           </div>
         </div>
         <div className="header-actions">
-          <button
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-            aria-pressed={theme === "dark"}
-            className="secondary-button theme-toggle-button"
-            onClick={onToggleTheme}
-            type="button"
-          >
-            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
-          </button>
           <button className="secondary-button" onClick={() => inputRef.current?.click()} type="button">
             Import YAML
           </button>
@@ -1170,6 +1167,15 @@ function RegistryEditor({
           ) : null}
           <button className="primary-button" disabled={!canApply} onClick={onApply} type="button">
             {canApply ? "Use this registry" : "Fix validation errors"}
+          </button>
+          <button
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            aria-pressed={theme === "dark"}
+            className="secondary-button theme-toggle-button"
+            onClick={onToggleTheme}
+            type="button"
+          >
+            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
           </button>
           <input
             accept=".yaml,.yml,text/yaml,text/x-yaml"
@@ -1244,6 +1250,7 @@ function CatalogView({
   const explorerTitle = getExplorerTitle(registry.metadata.team);
 
   const [mode, setMode] = useState<Mode>("overview");
+  const [impactDirection, setImpactDirection] = useState<ImpactDirection>("downstream");
   const [visibleStatuses, setVisibleStatuses] = useState<Set<ServiceStatus>>(
     () => new Set(ALL_SERVICE_STATUSES),
   );
@@ -1402,11 +1409,11 @@ function CatalogView({
       };
     }
 
-    if ((mode === "blast" || mode === "upstream") && selectedService) {
+    if (mode === "impact" && selectedService) {
       return {
         affectedSet: collectReachable(
           selectedService,
-          mode === "blast" ? graph.downstream : graph.upstream,
+          impactDirection === "downstream" ? graph.downstream : graph.upstream,
         ),
         highlightKey: selectedService,
         visibleServices: allServices,
@@ -1421,6 +1428,7 @@ function CatalogView({
   }, [
     eligibleFlowKeys,
     graph,
+    impactDirection,
     mode,
     selectedFlow,
     selectedService,
@@ -1472,7 +1480,7 @@ function CatalogView({
 
     const affectedServices = collectReachable(
       selectedService,
-      mode === "blast" ? graph.downstream : graph.upstream,
+      impactDirection === "downstream" ? graph.downstream : graph.upstream,
     );
     const flowKeys = new Set<string>();
 
@@ -1483,7 +1491,7 @@ function CatalogView({
     }
 
     return [...flowKeys];
-  }, [graph, mode, selectedService, services]);
+  }, [graph, impactDirection, mode, selectedService, services]);
 
   const affectedDataFlows = useMemo(() => {
     if (!selectedService || mode === "data") {
@@ -1508,7 +1516,8 @@ function CatalogView({
   const handleServiceClick = useCallback(
     (serviceKey: string) => {
       if (mode === "overview") {
-        setMode("blast");
+        setMode("impact");
+        setImpactDirection("downstream");
       }
 
       setSelectedService(serviceKey);
@@ -1554,10 +1563,13 @@ function CatalogView({
             <div className="app-subtitle">
               {sourceLabel
                 ? `Loaded from ${sourceLabel}. Edit the registry to validate and preview changes in-browser.`
-                : "Click a service for blast radius and affected data flows."}
+                : "Click a service for dependency impact and affected data flows."}
             </div>
           </div>
           <div className="header-actions">
+            <button className="secondary-button" onClick={onEditRegistry} type="button">
+              Edit registry
+            </button>
             <button
               aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
               aria-pressed={theme === "dark"}
@@ -1566,9 +1578,6 @@ function CatalogView({
               type="button"
             >
               <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
-            </button>
-            <button className="secondary-button" onClick={onEditRegistry} type="button">
-              Edit registry
             </button>
           </div>
         </div>
@@ -1640,16 +1649,34 @@ function CatalogView({
           </>
         ) : null}
 
-        {mode === "blast" || mode === "upstream" ? (
-          <SearchableSelect
-            allLabel="All services"
-            ariaLabel="services"
-            emptyMessage="No services match."
-            onChange={setSelectedService}
-            options={serviceOptions}
-            placeholder="Select a service"
-            value={selectedService}
-          />
+        {mode === "impact" ? (
+          <>
+            <SearchableSelect
+              allLabel="All services"
+              ariaLabel="services"
+              emptyMessage="No services match."
+              onChange={setSelectedService}
+              options={serviceOptions}
+              placeholder="Select a service"
+              value={selectedService}
+            />
+            <div className="direction-toggle" role="group" aria-label="impact direction">
+              <button
+                className={`direction-toggle-button${impactDirection === "downstream" ? " direction-toggle-button-active" : ""}`}
+                onClick={() => setImpactDirection("downstream")}
+                type="button"
+              >
+                Downstream
+              </button>
+              <button
+                className={`direction-toggle-button${impactDirection === "upstream" ? " direction-toggle-button-active" : ""}`}
+                onClick={() => setImpactDirection("upstream")}
+                type="button"
+              >
+                Upstream
+              </button>
+            </div>
+          </>
         ) : null}
 
         {affectedBusinessFlows.length > 0 ? (
@@ -1668,6 +1695,16 @@ function CatalogView({
         <section className="graph-section">
           <svg className="graph-canvas" height={layout.svgH} width={layout.svgW}>
             <defs>
+              <pattern
+                id="externalNodeStripe"
+                height="8"
+                patternTransform="rotate(45)"
+                patternUnits="userSpaceOnUse"
+                width="8"
+              >
+                <rect fill="transparent" height="8" width="8" />
+                <rect fill="var(--graph-external-stripe)" height="8" width="3" />
+              </pattern>
               <marker
                 id="arrow"
                 markerHeight="6"
@@ -1815,7 +1852,7 @@ function CatalogView({
         </section>
       ) : null}
 
-      {selectedServiceDetails && isGraphMode && (mode === "blast" || mode === "upstream") ? (
+      {selectedServiceDetails && isGraphMode && mode === "impact" ? (
         <section className="panel details-panel">
           <div className="details-header">
             <div>
@@ -1824,8 +1861,8 @@ function CatalogView({
                 {selectedServiceDetails.type} · {selectedServiceDetails.status} · {getOwnershipKind(selectedServiceDetails)}
               </div>
             </div>
-            <Badge color={mode === "blast" ? "#dc2626" : "#2563eb"}>
-              {mode === "blast"
+            <Badge color={impactDirection === "downstream" ? "#dc2626" : "#2563eb"}>
+              {impactDirection === "downstream"
                 ? `${affectedSet.size - 1} downstream affected`
                 : `${affectedSet.size - 1} upstream deps`}
             </Badge>
