@@ -1,0 +1,151 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--text-primary);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+input,
+textarea {
+  color: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--app-bg);
+  color: var(--text-primary);
+}
+
+.app-header {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 16px 20px;
+}
+
+.header-row,
+.editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.theme-toggle-button {
+  margin-left: auto;
+  min-width: 40px;
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.app-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.app-subtitle {
+  margin-top: 2px;
+  color: var(--text-subtle);
+  font-size: 11px;
+}
+
+.primary-button,
+.secondary-button {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.primary-button {
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  border-color: var(--border-default);
+  background: var(--surface-panel);
+  color: var(--text-subtle);
+}
+
+.secondary-button {
+  border: 1px solid var(--border-default);
+  background: var(--surface-panel-strong);
+  color: var(--text-primary);
+}
+
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.panel {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-panel);
+}
+
+.empty-state {
+  padding: 40px;
+  color: var(--text-subtle);
+  text-align: center;
+}
+
+.overline {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.startup-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background: var(--app-bg);
+}
+
+.startup-card {
+  width: min(480px, 100%);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  padding: 20px;
+}
+
+.load-error-banner {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--load-error-border);
+  background: var(--load-error-bg);
+  color: var(--load-error-text);
+  font-size: 12px;
+}

@@ -1,0 +1,156 @@
+.editor-shell {
+  padding: 20px;
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.editor-pane {
+  display: flex;
+  min-height: 70vh;
+  flex-direction: column;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.pane-title {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.editor-textarea {
+  min-height: 70vh;
+  flex: 1 1 auto;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: none;
+}
+
+.editor-textarea:focus {
+  outline: none;
+}
+
+.editor-codeframe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 70vh;
+  flex: 1 1 auto;
+}
+
+.editor-line-numbers {
+  overflow: hidden;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-panel-strong);
+  color: var(--text-subtle);
+  padding: 14px 10px 14px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+  user-select: none;
+}
+
+.editor-line-number {
+  min-width: 2.5em;
+}
+
+.validation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.validation-item {
+  border: 1px solid var(--validation-item-border);
+  border-radius: 8px;
+  background: var(--validation-item-bg);
+  padding: 12px;
+}
+
+.validation-item-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.validation-severity {
+  color: var(--validation-severity);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.validation-location {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.validation-message {
+  margin-top: 8px;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.validation-path {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+.validation-ok {
+  padding: 14px;
+}
+
+.validation-ok-title {
+  color: var(--validation-success);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.validation-ok-body {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-pane {
+    min-height: 40vh;
+  }
+
+  .editor-codeframe,
+  .editor-textarea {
+    min-height: 40vh;
+  }
+}

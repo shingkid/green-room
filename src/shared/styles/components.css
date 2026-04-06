@@ -1,0 +1,117 @@
+.searchable-select {
+  position: relative;
+  min-width: 220px;
+}
+
+.searchable-select-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  padding: 7px 10px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.searchable-select-trigger-open {
+  border-color: var(--accent-primary-strong);
+  box-shadow: 0 0 0 1px var(--focus-ring);
+}
+
+.searchable-select-placeholder {
+  color: var(--text-muted);
+}
+
+.searchable-select-chevron {
+  flex: 0 0 auto;
+  color: var(--text-subtle);
+}
+
+.searchable-select-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--menu-shadow);
+}
+
+.searchable-select-input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.searchable-select-input:focus {
+  outline: none;
+}
+
+.searchable-select-options {
+  display: flex;
+  max-height: 260px;
+  flex-direction: column;
+  overflow: auto;
+  padding: 6px;
+}
+
+.searchable-select-option {
+  width: 100%;
+  cursor: pointer;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 8px 10px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.searchable-select-option:hover,
+.searchable-select-option-active {
+  background: var(--surface-hover);
+}
+
+.searchable-select-empty {
+  padding: 10px;
+  color: var(--text-subtle);
+  font-size: 12px;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 3px;
+  background: var(--badge-color);
+  color: #fff;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-clickable {
+  cursor: pointer;
+}
+
+.tag {
+  display: inline-block;
+  border-radius: 3px;
+  background: var(--tag-color);
+  color: var(--tag-text);
+  padding: 1px 6px;
+  font-family: monospace;
+  font-size: 9px;
+  white-space: nowrap;
+}
