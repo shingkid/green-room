@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./service_registry.schema.json",
+  "title": "Service Registry",
+  "description": "Schema for service_registry.yaml used by the service catalog explorer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["metadata", "business_flows", "data_flows", "services"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["team", "last_updated", "maintainers"],
+      "properties": {
+        "team": {
+          "type": "string",
+          "minLength": 1
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date"
+        },
+        "maintainers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/maintainer"
+          }
+        }
+      }
+    },
+    "business_flows": {
+      "type": "object",
+      "description": "Map of business flow keys to flow definitions.",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/registryKey"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/businessFlow"
+      }
+    },
+    "data_flows": {
+      "type": "object",
+      "description": "Map of data flow keys to data flow definitions.",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/registryKey"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/dataFlow"
+      }
+    },
+    "services": {
+      "type": "object",
+      "description": "Map of service keys to service definitions.",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/registryKey"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/service"
+      }
+    }
+  },
+  "$defs": {
+    "registryKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "maintainer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "slack"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "slack": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "businessFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "priority", "stakeholders"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "priority": {
+          "type": "string",
+          "pattern": "^P[0-9]+$"
+        },
+        "stakeholders": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "dataFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "business_flow",
+        "data_type",
+        "sensitivity",
+        "freshness",
+        "stages"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "business_flow": {
+          "$ref": "#/$defs/registryKey"
+        },
+        "data_type": {
+          "type": "string",
+          "enum": ["dataset", "event", "metric", "config", "auth_token"]
+        },
+        "sensitivity": {
+          "type": "string",
+          "enum": ["public", "internal", "confidential", "restricted"]
+        },
+        "freshness": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/dataFlowStage"
+          }
+        }
+      }
+    },
+    "dataFlowStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service", "action"],
+      "properties": {
+        "service": {
+          "$ref": "#/$defs/registryKey"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "produces",
+            "transforms",
+            "stores",
+            "indexes",
+            "enriches",
+            "caches",
+            "serves",
+            "consumes"
+          ]
+        },
+        "format": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "type",
+        "status",
+        "upstream",
+        "business_flows",
+        "owner",
+        "runbook",
+        "health_check",
+        "port"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": ["frontend", "backend", "datastore", "infrastructure"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "deprecated", "migrating"]
+        },
+        "upstream": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dependency"
+          }
+        },
+        "business_flows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/registryKey"
+          }
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runbook": {
+          "type": "string"
+        },
+        "health_check": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service", "protocol", "criticality"],
+      "properties": {
+        "service": {
+          "$ref": "#/$defs/registryKey"
+        },
+        "protocol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "criticality": {
+          "type": "string",
+          "enum": ["hard", "soft"]
+        }
+      }
+    }
+  }
+}
