@@ -14,7 +14,6 @@ import {
   STATUS_STYLES,
   getExplorerTitle,
 } from "../../domain/registry";
-import { downloadTextFile } from "../../shared/browser";
 import { Badge } from "../../shared/components/Badge";
 import { SearchableSelect } from "../../shared/components/SearchableSelect";
 import { Tag } from "../../shared/components/Tag";
@@ -49,14 +48,6 @@ export function CatalogView({
     await navigator.clipboard.writeText(viewModel.mermaidExport.source);
   }, [viewModel.mermaidExport]);
 
-  const handleDownloadMermaid = useCallback(() => {
-    if (!viewModel.mermaidExport) {
-      return;
-    }
-
-    downloadTextFile(viewModel.mermaidExport.filename, viewModel.mermaidExport.source);
-  }, [viewModel.mermaidExport]);
-
   return (
     <div className="app-shell" data-theme={theme}>
       <header className="app-header">
@@ -82,13 +73,9 @@ export function CatalogView({
             </button>
             <button
               className="secondary-button"
-              disabled={!viewModel.mermaidExport}
-              onClick={handleDownloadMermaid}
+              onClick={onEditRegistry}
               type="button"
             >
-              Download .mmd
-            </button>
-            <button className="secondary-button" onClick={onEditRegistry} type="button">
               Edit registry
             </button>
             <button
