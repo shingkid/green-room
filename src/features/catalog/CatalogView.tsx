@@ -44,12 +44,8 @@ export function CatalogView({
 }: CatalogViewProps) {
   const explorerTitle = getExplorerTitle(registry.metadata.team);
   const viewModel = useCatalogViewModel(registry);
-  const {
-    setExpandedDataFlow,
-    setImpactDirection,
-    setSelectedDataFlow,
-    setSelectedFlow,
-  } = viewModel;
+  const { setExpandedDataFlow, setImpactDirection, setSelectedDataFlow, setSelectedFlow } =
+    viewModel;
 
   const handleCopyMermaid = useCallback(async () => {
     if (!viewModel.mermaidExport) {
@@ -102,11 +98,7 @@ export function CatalogView({
             >
               Copy Mermaid
             </button>
-            <button
-              className="secondary-button"
-              onClick={onEditRegistry}
-              type="button"
-            >
+            <button className="secondary-button" onClick={onEditRegistry} type="button">
               Edit registry
             </button>
             <button
@@ -249,7 +241,11 @@ export function CatalogView({
               viewModel.expandedDataFlow === flowKey || viewModel.selectedDataFlow === flowKey;
 
             return (
-              <div className={styles.panel} key={flowKey} style={{ marginBottom: 12, overflow: "hidden" }}>
+              <div
+                className={styles.panel}
+                key={flowKey}
+                style={{ marginBottom: 12, overflow: "hidden" }}
+              >
                 <div
                   className={styles.panelHeader}
                   onClick={() => viewModel.setExpandedDataFlow(isExpanded ? null : flowKey)}
@@ -269,7 +265,9 @@ export function CatalogView({
                     <Tag>{dataFlow.freshness}</Tag>
                     <Tag color="var(--tag-neutral)">{dataFlow.stages.length} stages</Tag>
                   </div>
-                  <span className={`${styles.panelChevron}${isExpanded ? ` ${styles.panelChevronExpanded}` : ""}`}>
+                  <span
+                    className={`${styles.panelChevron}${isExpanded ? ` ${styles.panelChevronExpanded}` : ""}`}
+                  >
                     ▾
                   </span>
                 </div>
@@ -308,7 +306,11 @@ export function CatalogView({
                                 <td>
                                   <span
                                     className={styles.actionPill}
-                                    style={{ "--action-color": ACTION_COLORS[stage.action] ?? "#475569" } as CSSProperties}
+                                    style={
+                                      {
+                                        "--action-color": ACTION_COLORS[stage.action] ?? "#475569",
+                                      } as CSSProperties
+                                    }
                                   >
                                     {subtype ? `${stage.action} · ${subtype}` : stage.action}
                                   </span>
@@ -335,8 +337,8 @@ export function CatalogView({
             <div>
               <div className={styles.detailsTitle}>{viewModel.selectedServiceDetails.name}</div>
               <div className={styles.detailsMeta}>
-                {viewModel.selectedServiceDetails.type} · {viewModel.selectedServiceDetails.status} ·{" "}
-                {viewModel.getOwnershipKind(viewModel.selectedServiceDetails)}
+                {viewModel.selectedServiceDetails.type} · {viewModel.selectedServiceDetails.status}{" "}
+                · {viewModel.getOwnershipKind(viewModel.selectedServiceDetails)}
               </div>
             </div>
             <Badge color={viewModel.impactDirection === "downstream" ? "#dc2626" : "#2563eb"}>
@@ -353,9 +355,7 @@ export function CatalogView({
                 {viewModel.selectedServiceDetails.upstream?.map((dependency) => (
                   <Tag
                     color={
-                      dependency.criticality === "hard"
-                        ? "var(--tag-critical)"
-                        : "var(--tag-muted)"
+                      dependency.criticality === "hard" ? "var(--tag-critical)" : "var(--tag-muted)"
                     }
                     key={`${viewModel.selectedService}-${dependency.service}`}
                   >
@@ -410,12 +410,8 @@ export function CatalogView({
                       {label} ↗
                     </a>
                   ))}
-                  {svc?.incident_channel ? (
-                    <Tag>{svc.incident_channel}</Tag>
-                  ) : null}
-                  {svc?.slo ? (
-                    <Tag>SLO {svc.slo}</Tag>
-                  ) : null}
+                  {svc?.incident_channel ? <Tag>{svc.incident_channel}</Tag> : null}
+                  {svc?.slo ? <Tag>SLO {svc.slo}</Tag> : null}
                 </div>
               </div>
             );

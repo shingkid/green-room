@@ -47,16 +47,16 @@ export function DataFlowPipeline({
           const service = services[stage.service];
           const isSelected = stage.service === selectedService;
           const subtype = getStageSubtypeLabel(stage);
-          const detail = subtype ? `${subtype}${stage.format ? ` · ${stage.format}` : ""}` : (stage.format ?? "");
+          const detail = subtype
+            ? `${subtype}${stage.format ? ` · ${stage.format}` : ""}`
+            : (stage.format ?? "");
 
           return (
             <g key={`${stage.service}-${index}`}>
               <g className={styles.pipelineStage} onClick={() => onSelectService(stage.service)}>
                 <rect
                   fill={
-                    isSelected
-                      ? "var(--pipeline-stage-bg-selected)"
-                      : "var(--pipeline-stage-bg)"
+                    isSelected ? "var(--pipeline-stage-bg-selected)" : "var(--pipeline-stage-bg)"
                   }
                   height={stageH}
                   rx={8}

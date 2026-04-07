@@ -268,12 +268,11 @@
 }
 
 .legendNodeSampleExternal {
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      var(--graph-external-stripe) 0 3px,
-      transparent 3px 7px
-    );
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--graph-external-stripe) 0 3px,
+    transparent 3px 7px
+  );
 }
 
 .directionToggle {

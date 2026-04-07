@@ -97,8 +97,7 @@ export function useCatalogViewModel(registry: Registry) {
   const eligibleFlowEntries = useMemo(
     () =>
       businessFlowEntries.filter(
-        ([, flow]) =>
-          !selectedStakeholder || flow.stakeholders.includes(selectedStakeholder),
+        ([, flow]) => !selectedStakeholder || flow.stakeholders.includes(selectedStakeholder),
       ),
     [businessFlowEntries, selectedStakeholder],
   );
@@ -108,24 +107,20 @@ export function useCatalogViewModel(registry: Registry) {
   );
   const businessFlowOptions = useMemo(
     () =>
-      [...eligibleFlowEntries]
-        .sort(compareBusinessFlowEntries)
-        .map(([flowKey, flow]) => ({
-          label: `${flow.name} (${flow.priority})`,
-          searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
-          value: flowKey,
-        })),
+      [...eligibleFlowEntries].sort(compareBusinessFlowEntries).map(([flowKey, flow]) => ({
+        label: `${flow.name} (${flow.priority})`,
+        searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
+        value: flowKey,
+      })),
     [eligibleFlowEntries],
   );
   const dataBusinessFlowOptions = useMemo(
     () =>
-      [...eligibleFlowEntries]
-        .sort(compareBusinessFlowEntries)
-        .map(([flowKey, flow]) => ({
-          label: flow.name,
-          searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
-          value: flowKey,
-        })),
+      [...eligibleFlowEntries].sort(compareBusinessFlowEntries).map(([flowKey, flow]) => ({
+        label: flow.name,
+        searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
+        value: flowKey,
+      })),
     [eligibleFlowEntries],
   );
   const serviceOptions = useMemo(
@@ -162,8 +157,7 @@ export function useCatalogViewModel(registry: Registry) {
   const visibleTypeSet = visibleTypes;
   const visibleOwnershipSet = visibleOwnershipKinds;
   const getOwnershipKind = useCallback(
-    (service: Service) =>
-      service.owner === registry.metadata.team_id ? "internal" : "external",
+    (service: Service) => (service.owner === registry.metadata.team_id ? "internal" : "external"),
     [registry.metadata.team_id],
   );
   const isServiceVisibleInGraph = useCallback(
@@ -193,11 +187,7 @@ export function useCatalogViewModel(registry: Registry) {
   useEffect(() => {
     const service = selectedService ? services[selectedService] : null;
 
-    if (
-      service &&
-      isGraphMode &&
-      !isServiceVisibleInGraph(service)
-    ) {
+    if (service && isGraphMode && !isServiceVisibleInGraph(service)) {
       setSelectedService(null);
     }
   }, [isGraphMode, isServiceVisibleInGraph, selectedService, services]);
@@ -384,7 +374,7 @@ export function useCatalogViewModel(registry: Registry) {
 
     if (mode === "flow") {
       const flowLabel = selectedFlow
-        ? businessFlows[selectedFlow]?.name ?? selectedFlow
+        ? (businessFlows[selectedFlow]?.name ?? selectedFlow)
         : selectedStakeholder
           ? `${selectedStakeholder} business flows`
           : "business flows";
@@ -399,11 +389,11 @@ export function useCatalogViewModel(registry: Registry) {
     }
 
     const selectedDataFlowName = selectedDataFlow
-      ? dataFlows[selectedDataFlow]?.name ?? selectedDataFlow
+      ? (dataFlows[selectedDataFlow]?.name ?? selectedDataFlow)
       : null;
     const lineageLabel =
       selectedDataFlowName ??
-      (selectedFlow ? businessFlows[selectedFlow]?.name ?? selectedFlow : "data-lineage");
+      (selectedFlow ? (businessFlows[selectedFlow]?.name ?? selectedFlow) : "data-lineage");
 
     // Data mode has no separate graph canvas, so export mirrors the currently visible expanded
     // filter result rather than any transient UI expansion state.

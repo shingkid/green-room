@@ -7,13 +7,7 @@ import registrySchema from "../../service_registry.schema.json";
 export type ServiceStatus = "active" | "experimental" | "migrating" | "deprecated";
 export type ServiceType = "frontend" | "backend" | "worker" | "datastore" | "infrastructure";
 export type DependencyCriticality = "hard" | "soft";
-export type DataFlowAction =
-  | "produces"
-  | "queues"
-  | "processes"
-  | "stores"
-  | "serves"
-  | "consumes";
+export type DataFlowAction = "produces" | "queues" | "processes" | "stores" | "serves" | "consumes";
 export type ProcessKind = "transform" | "enrich" | "filter" | "aggregate" | "validate";
 export type StoreKind = "database" | "object_store" | "index" | "cache" | "warehouse";
 export type QueueKind = "queue" | "stream" | "topic" | "bus";
@@ -119,7 +113,12 @@ export type SelectOption = {
   value: string;
 };
 
-export const ALL_SERVICE_STATUSES: ServiceStatus[] = ["active", "experimental", "migrating", "deprecated"];
+export const ALL_SERVICE_STATUSES: ServiceStatus[] = [
+  "active",
+  "experimental",
+  "migrating",
+  "deprecated",
+];
 export const ALL_SERVICE_TYPES: ServiceType[] = [
   "frontend",
   "backend",
@@ -301,11 +300,7 @@ export function pointerToLabel(pointer: string) {
     return "(root)";
   }
 
-  return pointer
-    .split("/")
-    .slice(1)
-    .map(decodeJsonPointerSegment)
-    .join(" > ");
+  return pointer.split("/").slice(1).map(decodeJsonPointerSegment).join(" > ");
 }
 
 function nearestLocation(
@@ -334,7 +329,7 @@ function nearestLocation(
 }
 
 function collectNodeLocations(
-  node: any,
+  node: unknown,
   path: string[],
   lineCounter: LineCounter,
   locations: Map<string, string>,
@@ -343,7 +338,8 @@ function collectNodeLocations(
     return;
   }
 
-  const [start] = node.range ?? [];
+  const nodeWithRange = node as { range?: [number?] };
+  const [start] = nodeWithRange.range ?? [];
 
   if (typeof start === "number") {
     const pos = lineCounter.linePos(start);
@@ -352,7 +348,8 @@ function collectNodeLocations(
 
   if (isMap(node)) {
     for (const item of node.items) {
-      const key = String(item.key?.value ?? "");
+      const keyNode = item.key as { value?: unknown } | null | undefined;
+      const key = String(keyNode?.value ?? "");
       // Track value locations, not just keys, so downstream validation errors land on the field
       // content the user actually needs to edit.
       collectNodeLocations(item.value, [...path, key], lineCounter, locations);
@@ -361,7 +358,7 @@ function collectNodeLocations(
   }
 
   if (isSeq(node)) {
-    node.items.forEach((item: any, index: number) => {
+    node.items.forEach((item: unknown, index: number) => {
       collectNodeLocations(item, [...path, String(index)], lineCounter, locations);
     });
   }
@@ -508,18 +505,22 @@ function buildChecklist(raw: unknown): ChecklistGroup[] {
     {
       title: "Metadata",
       items: [
-        { label: "team",                checked: nonEmptyStr(meta["team"]) },
-        { label: "team_id",             checked: nonEmptyStr(meta["team_id"]) },
-        { label: "last_updated",        checked: nonEmptyStr(meta["last_updated"]) },
-        { label: "maintainers (min 1)", checked: Array.isArray(meta["maintainers"]) && (meta["maintainers"] as unknown[]).length > 0 },
+        { label: "team", checked: nonEmptyStr(meta["team"]) },
+        { label: "team_id", checked: nonEmptyStr(meta["team_id"]) },
+        { label: "last_updated", checked: nonEmptyStr(meta["last_updated"]) },
+        {
+          label: "maintainers (min 1)",
+          checked:
+            Array.isArray(meta["maintainers"]) && (meta["maintainers"] as unknown[]).length > 0,
+        },
       ],
     },
     {
       title: "Sections",
       items: [
         { label: "business_flows (min 1)", checked: hasEntries("business_flows") },
-        { label: "data_flows (min 1)",     checked: hasEntries("data_flows") },
-        { label: "services (min 1)",       checked: hasEntries("services") },
+        { label: "data_flows (min 1)", checked: hasEntries("data_flows") },
+        { label: "services (min 1)", checked: hasEntries("services") },
       ],
     },
   ];
@@ -542,16 +543,24 @@ export function validateRegistryText(sourceText: string): ValidationResult {
 
   // Best-effort parse for checklist — works even when the document has errors.
   let rawForChecklist: unknown = null;
-  try { rawForChecklist = doc.toJS(); } catch { /* leave null */ }
+  try {
+    rawForChecklist = doc.toJS();
+  } catch {
+    /* leave null */
+  }
   const checklist = buildChecklist(rawForChecklist);
 
-  const parseIssues: ValidationIssue[] = (doc.errors ?? []).map((error: any) => {
+  const parseIssues: ValidationIssue[] = (doc.errors ?? []).map((error: unknown) => {
+    const maybeError = error as {
+      message?: string;
+      pos?: [number?];
+    };
     const position =
-      typeof error.pos?.[0] === "number" ? lineCounter.linePos(error.pos[0]) : null;
+      typeof maybeError.pos?.[0] === "number" ? lineCounter.linePos(maybeError.pos[0]) : null;
 
     return {
       location: position ? formatLocation(position.line, position.col) : rootLocation,
-      message: error.message,
+      message: maybeError.message ?? "YAML parse error.",
       path: "",
       severity: "error",
     };

@@ -285,14 +285,7 @@
         "action": {
           "type": "string",
           "description": "The primary incident-facing role this service plays at this stage.\n- produces: Originates data/events from an authoritative source\n- queues: Buffers or brokers data through queue/stream infrastructure\n- processes: Applies business logic (transform, validate, aggregate, enrich)\n- stores: Persists durable state (database/object store/index/cache)\n- serves: Reads and delivers data to downstream systems or clients\n- consumes: Terminal sink with no forwarding to additional stages",
-          "enum": [
-            "produces",
-            "queues",
-            "processes",
-            "stores",
-            "serves",
-            "consumes"
-          ]
+          "enum": ["produces", "queues", "processes", "stores", "serves", "consumes"]
         },
         "process_kind": {
           "type": "string",

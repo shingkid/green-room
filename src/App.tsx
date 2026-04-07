@@ -183,11 +183,7 @@ export default function App() {
   if (showEditor || !appliedRegistry) {
     return (
       <div className="app-shell" data-theme={theme}>
-        {loadError ? (
-          <div className="load-error-banner">
-            {loadError}
-          </div>
-        ) : null}
+        {loadError ? <div className="load-error-banner">{loadError}</div> : null}
         <RegistryEditor
           canApply={validation.registry !== null}
           checklist={validation.checklist}

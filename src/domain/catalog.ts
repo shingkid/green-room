@@ -1,10 +1,4 @@
-import type {
-  DataFlow,
-  DependencyCriticality,
-  Registry,
-  Service,
-  ServiceType,
-} from "./registry";
+import type { DataFlow, DependencyCriticality, Registry, Service, ServiceType } from "./registry";
 import { getStageSubtypeLabel } from "./registry";
 
 export type GraphEdge = {
@@ -157,7 +151,10 @@ export function formatServiceLabel(name: string, limit: number) {
 }
 
 export function normalizeSearchText(value: string) {
-  return value.toLowerCase().replaceAll(/[^a-z0-9]+/g, " ").trim();
+  return value
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 export function matchesFuzzy(label: string, query: string, extraSearchText?: string) {
@@ -259,10 +256,11 @@ export function buildGraphMermaid(params: {
       continue;
     }
 
-    const ownerSuffix =
-      service.owner === registry.metadata.team_id ? "team-owned" : "external";
+    const ownerSuffix = service.owner === registry.metadata.team_id ? "team-owned" : "external";
     const label = `${service.name}\\n${service.type} • ${service.status} • ${ownerSuffix}`;
-    lines.push(`  ${buildMermaidNodeLine(toMermaidId(serviceKey), label, getMermaidShape(service.type))}`);
+    lines.push(
+      `  ${buildMermaidNodeLine(toMermaidId(serviceKey), label, getMermaidShape(service.type))}`,
+    );
   }
 
   const sortedEdges = [...edges].sort((left, right) => {
@@ -287,9 +285,7 @@ export function buildGraphMermaid(params: {
     const edgeLabelParts = [edge.protocol, edge.criticality].filter(Boolean);
 
     if (edgeLabelParts.length > 0) {
-      lines.push(
-        `  ${fromId} -->|${escapeMermaidLabel(edgeLabelParts.join(" · "))}| ${toId}`,
-      );
+      lines.push(`  ${fromId} -->|${escapeMermaidLabel(edgeLabelParts.join(" · "))}| ${toId}`);
     } else {
       lines.push(`  ${fromId} --> ${toId}`);
     }
@@ -320,7 +316,8 @@ export function buildDataFlowMermaid(params: {
 
   for (const [flowKey, dataFlow] of sortedEntries) {
     const flowId = toMermaidId(`flow_${flowKey}`);
-    const flowLabel = registry.business_flows[dataFlow.business_flow]?.name ?? dataFlow.business_flow;
+    const flowLabel =
+      registry.business_flows[dataFlow.business_flow]?.name ?? dataFlow.business_flow;
 
     // Emit each visible data flow as its own Mermaid subgraph so a single export can contain the
     // current filtered lineage view without merging unrelated pipelines into one chain.

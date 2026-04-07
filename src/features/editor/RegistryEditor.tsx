@@ -78,7 +78,13 @@ export function RegistryEditor({
   }, []);
 
   const extensions = useMemo(
-    () => [yaml(), search({ top: true }), lintGutter(), linter(lintSource, { delay: 0 }), noTabCapture],
+    () => [
+      yaml(),
+      search({ top: true }),
+      lintGutter(),
+      linter(lintSource, { delay: 0 }),
+      noTabCapture,
+    ],
     [lintSource],
   );
 
@@ -113,7 +119,11 @@ export function RegistryEditor({
           </div>
         </div>
         <div className="header-actions">
-          <button className="secondary-button" onClick={() => inputRef.current?.click()} type="button">
+          <button
+            className="secondary-button"
+            onClick={() => inputRef.current?.click()}
+            type="button"
+          >
             Import YAML
           </button>
           <button className="secondary-button" onClick={onDownload} type="button">
@@ -194,13 +204,17 @@ export function RegistryEditor({
             <div className={styles.validationOk}>
               <div className={styles.validationOkTitle}>Schema validation passed.</div>
               <div className={styles.validationOkBody}>
-                The registry is syntactically valid, matches the schema, and all known references resolve.
+                The registry is syntactically valid, matches the schema, and all known references
+                resolve.
               </div>
             </div>
           ) : (
             <div className={styles.validationList}>
               {issues.map((issue, index) => (
-                <div className={styles.validationItem} key={`${issue.path}-${issue.message}-${index}`}>
+                <div
+                  className={styles.validationItem}
+                  key={`${issue.path}-${issue.message}-${index}`}
+                >
                   <div className={styles.validationItemHeader}>
                     <span className={styles.validationSeverity}>Error</span>
                     {issue.location ? (

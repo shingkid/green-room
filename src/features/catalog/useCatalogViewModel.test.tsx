@@ -55,4 +55,3 @@ describe("useCatalogViewModel business flow sorting", () => {
     ]);
   });
 });
-

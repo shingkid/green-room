@@ -259,11 +259,19 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.checklistItemChecked .checklistIcon  { color: var(--validation-success); }
-.checklistItemChecked .checklistLabel { color: var(--text-muted); }
+.checklistItemChecked .checklistIcon {
+  color: var(--validation-success);
+}
+.checklistItemChecked .checklistLabel {
+  color: var(--text-muted);
+}
 
-.checklistItemUnchecked .checklistIcon  { color: var(--text-subtle); }
-.checklistItemUnchecked .checklistLabel { color: var(--text-primary); }
+.checklistItemUnchecked .checklistIcon {
+  color: var(--text-subtle);
+}
+.checklistItemUnchecked .checklistLabel {
+  color: var(--text-primary);
+}
 
 @media (max-width: 960px) {
   .layout {

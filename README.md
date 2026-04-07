@@ -24,12 +24,12 @@ npm run dev
 
 Drop a `service_registry.yaml` into `public/` and the app loads it automatically. The file has four top-level sections:
 
-| Section | What goes here |
-|---|---|
-| `metadata` | Team name, canonical `team_id`, maintainers, last-updated date |
-| `business_flows` | Named user journeys with priority and stakeholder lists |
-| `data_flows` | Ordered stage pipelines — which service produces, queues, processes, stores, serves, and consumes each dataset |
-| `services` | One entry per deployable unit: type, status, upstream deps, business flows, and on-call links |
+| Section          | What goes here                                                                                                 |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| `metadata`       | Team name, canonical `team_id`, maintainers, last-updated date                                                 |
+| `business_flows` | Named user journeys with priority and stakeholder lists                                                        |
+| `data_flows`     | Ordered stage pipelines — which service produces, queues, processes, stores, serves, and consumes each dataset |
+| `services`       | One entry per deployable unit: type, status, upstream deps, business flows, and on-call links                  |
 
 A minimal service entry:
 
@@ -56,22 +56,22 @@ services:
 
 ### Service fields
 
-| Field | Required | Description |
-|---|---|---|
-| `name` | yes | Human-readable display name |
-| `description` | yes | What the service does and why it exists (1–2 sentences) |
-| `type` | yes | `frontend` · `backend` · `worker` · `datastore` · `infrastructure` |
-| `status` | yes | `active` · `experimental` · `migrating` · `deprecated` |
-| `upstream` | yes | Direct runtime dependencies (service key, protocol, `hard`/`soft` criticality) |
-| `business_flows` | yes | Keys of the business flows this service participates in |
-| `owner` | yes | Registry key of the owning team — compared to `metadata.team_id` to distinguish your services from external ones |
-| `runbook` | yes | URL to the on-call runbook (triage steps, failure modes, escalation) |
-| `health_check` | yes | URL to the health/readiness endpoint |
-| `port` | no | Primary listening port, for local development reference |
-| `dashboard` | no | Observability dashboard URL (Grafana, Datadog, etc.) — first stop when paged |
-| `on_call` | no | PagerDuty service name, OpsGenie integration, or escalation policy URL |
-| `incident_channel` | no | Primary Slack/Teams channel for incidents (e.g. `#incidents-payments`) |
-| `slo` | no | Availability target as a percentage or URL to the SLO doc (e.g. `99.9%`) |
+| Field              | Required | Description                                                                                                      |
+| ------------------ | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `name`             | yes      | Human-readable display name                                                                                      |
+| `description`      | yes      | What the service does and why it exists (1–2 sentences)                                                          |
+| `type`             | yes      | `frontend` · `backend` · `worker` · `datastore` · `infrastructure`                                               |
+| `status`           | yes      | `active` · `experimental` · `migrating` · `deprecated`                                                           |
+| `upstream`         | yes      | Direct runtime dependencies (service key, protocol, `hard`/`soft` criticality)                                   |
+| `business_flows`   | yes      | Keys of the business flows this service participates in                                                          |
+| `owner`            | yes      | Registry key of the owning team — compared to `metadata.team_id` to distinguish your services from external ones |
+| `runbook`          | yes      | URL to the on-call runbook (triage steps, failure modes, escalation)                                             |
+| `health_check`     | yes      | URL to the health/readiness endpoint                                                                             |
+| `port`             | no       | Primary listening port, for local development reference                                                          |
+| `dashboard`        | no       | Observability dashboard URL (Grafana, Datadog, etc.) — first stop when paged                                     |
+| `on_call`          | no       | PagerDuty service name, OpsGenie integration, or escalation policy URL                                           |
+| `incident_channel` | no       | Primary Slack/Teams channel for incidents (e.g. `#incidents-payments`)                                           |
+| `slo`              | no       | Availability target as a percentage or URL to the SLO doc (e.g. `99.9%`)                                         |
 
 Full descriptions for every field, enum value, and constraint are embedded in `service_registry.schema.json` as `description` properties. Editors with JSON Schema support (VS Code, JetBrains) surface these as hover text and autocomplete.
 
@@ -88,5 +88,6 @@ Validation runs in two tiers: JSON Schema checks structural correctness and enum
 ## Contributing
 
 Found a bug or have an idea? Open an issue using one of the templates:
+
 - [Bug report](.github/ISSUE_TEMPLATE/bug_report.md)
 - [Feature request](.github/ISSUE_TEMPLATE/feature_request.md)

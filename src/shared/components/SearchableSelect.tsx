@@ -30,10 +30,7 @@ export function SearchableSelect({
 
   const selectedOption = options.find((option) => option.value === value) ?? null;
   const filteredOptions = useMemo(
-    () =>
-      options.filter((option) =>
-        matchesFuzzy(option.label, query, option.searchText),
-      ),
+    () => options.filter((option) => matchesFuzzy(option.label, query, option.searchText)),
     [options, query],
   );
 

@@ -26,14 +26,22 @@ vi.mock("@uiw/react-codemirror", () => {
     EditorView: {
       domEventHandlers: vi.fn(() => ({ extension: "domEventHandlers" })),
     },
-    default: ({ ref, extensions }: { ref?: { current: { view: unknown } | null }; extensions?: unknown[] }) => {
+    default: ({
+      ref,
+      extensions,
+    }: {
+      ref?: { current: { view: unknown } | null };
+      extensions?: unknown[];
+    }) => {
       if (ref) {
         ref.current = { view: mockView };
       }
 
       return (
         <div data-testid="mock-codemirror">
-          {extensions?.some((extension) => (extension as { extension?: string }).extension === "search")
+          {extensions?.some(
+            (extension) => (extension as { extension?: string }).extension === "search",
+          )
             ? "search-enabled"
             : "search-missing"}
         </div>
@@ -87,5 +95,41 @@ describe("RegistryEditor", () => {
 
     expect(searchMock).toHaveBeenCalledWith({ top: true });
     expect(screen.getByTestId("mock-codemirror")).toHaveTextContent("search-enabled");
+  });
+
+  it("renders validation issues and optional back button path", () => {
+    render(
+      <RegistryEditor
+        canApply={false}
+        checklist={[
+          {
+            title: "Metadata",
+            items: [{ label: "team", checked: false }],
+          },
+        ]}
+        draftText="metadata:"
+        issues={[
+          {
+            message: "Missing team_id",
+            path: "/metadata/team_id",
+            location: "line 1, col 1",
+            severity: "error",
+          },
+        ]}
+        onApply={() => {}}
+        onChange={() => {}}
+        onClose={() => {}}
+        onDownload={() => {}}
+        onImport={() => {}}
+        onToggleTheme={() => {}}
+        sourceLabel={null}
+        theme="dark"
+        title="Green Room"
+      />,
+    );
+
+    expect(screen.getByText("Missing team_id")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fix validation errors" })).toBeDisabled();
   });
 });
