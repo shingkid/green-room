@@ -382,6 +382,40 @@ export function CatalogView({
               </div>
             </div>
           ) : null}
+
+          {(() => {
+            const svc = viewModel.selectedServiceDetails;
+            const links: Array<{ label: string; href: string }> = [];
+            if (svc?.runbook) links.push({ label: "Runbook", href: svc.runbook });
+            if (svc?.health_check) links.push({ label: "Health check", href: svc.health_check });
+            if (svc?.dashboard) links.push({ label: "Dashboard", href: svc.dashboard });
+            if (svc?.on_call) links.push({ label: "On-call", href: svc.on_call });
+            if (links.length === 0) return null;
+            return (
+              <div className={styles.detailsSection}>
+                <div className={styles.overline}>On-call</div>
+                <div className={styles.tagRow}>
+                  {links.map(({ label, href }) => (
+                    <a
+                      className={styles.linkTag}
+                      href={href}
+                      key={label}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {label} ↗
+                    </a>
+                  ))}
+                  {svc?.incident_channel ? (
+                    <Tag>{svc.incident_channel}</Tag>
+                  ) : null}
+                  {svc?.slo ? (
+                    <Tag>SLO {svc.slo}</Tag>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })()}
         </section>
       ) : null}
 

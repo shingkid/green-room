@@ -4,8 +4,8 @@ import { LineCounter, isMap, isSeq, parseDocument } from "yaml";
 
 import registrySchema from "../../service_registry.schema.json";
 
-export type ServiceStatus = "active" | "deprecated" | "migrating";
-export type ServiceType = "frontend" | "backend" | "datastore" | "infrastructure";
+export type ServiceStatus = "active" | "experimental" | "migrating" | "deprecated";
+export type ServiceType = "frontend" | "backend" | "worker" | "datastore" | "infrastructure";
 export type DependencyCriticality = "hard" | "soft";
 export type DataFlowAction =
   | "produces"
@@ -40,6 +40,10 @@ export type Service = {
   runbook?: string;
   health_check?: string;
   port?: number;
+  dashboard?: string;
+  on_call?: string;
+  incident_channel?: string;
+  slo?: string;
 };
 
 export type BusinessFlow = {
@@ -111,10 +115,11 @@ export type SelectOption = {
   value: string;
 };
 
-export const ALL_SERVICE_STATUSES: ServiceStatus[] = ["active", "deprecated", "migrating"];
+export const ALL_SERVICE_STATUSES: ServiceStatus[] = ["active", "experimental", "migrating", "deprecated"];
 export const ALL_SERVICE_TYPES: ServiceType[] = [
   "frontend",
   "backend",
+  "worker",
   "datastore",
   "infrastructure",
 ];
@@ -123,8 +128,9 @@ export type OwnershipKind = (typeof ALL_OWNERSHIP_KINDS)[number];
 
 export const STATUS_STYLES: Record<ServiceStatus, StatusStyle> = {
   active: { bg: "#16a34a", border: "#15803d", text: "#fff" },
-  deprecated: { bg: "#6b7280", border: "#4b5563", text: "#fff" },
+  experimental: { bg: "#d97706", border: "#b45309", text: "#fff" },
   migrating: { bg: "#2563eb", border: "#1d4ed8", text: "#fff" },
+  deprecated: { bg: "#6b7280", border: "#4b5563", text: "#fff" },
 };
 
 export const ACTION_COLORS: Record<DataFlowAction, string> = {
@@ -148,6 +154,7 @@ export const FLOW_COLORS: Record<string, string> = {
 export const TYPE_ICONS: Record<ServiceType, string> = {
   frontend: "◻",
   backend: "⚙",
+  worker: "▷",
   datastore: "⛁",
   infrastructure: "△",
 };
@@ -225,6 +232,11 @@ services:
     runbook: https://example.com/runbooks/example-ui
     health_check: https://example.com/health/example-ui
     port: 443
+    # Optional on-call fields — add these to make the registry useful during incidents:
+    # dashboard: https://grafana.example.com/d/example-ui
+    # on_call: Example UI PagerDuty
+    # incident_channel: "#incidents-platform"
+    # slo: "99.9%"
 
   example_api:
     name: Example API
