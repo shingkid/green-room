@@ -1,4 +1,8 @@
-import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ChangeEvent } from "react";
+import CodeMirror, { EditorView, type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { yaml } from "@codemirror/lang-yaml";
+import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
+import { type Diagnostic, forceLinting, lintGutter, linter } from "@codemirror/lint";
 
 import type { ChecklistGroup, Theme, ValidationIssue } from "../../domain/registry";
 import { pointerToLabel } from "../../domain/registry";
@@ -20,6 +24,28 @@ type RegistryEditorProps = {
   sourceLabel: string | null;
 };
 
+function parseLocation(
+  doc: { line: (n: number) => { from: number; to: number }; lines: number },
+  location: string | null,
+): { from: number; to: number } | null {
+  if (!location) return null;
+  const match = /line (\d+), col (\d+)/.exec(location);
+  if (!match) return null;
+  const lineNum = parseInt(match[1], 10);
+  const col = parseInt(match[2], 10);
+  if (lineNum < 1 || lineNum > doc.lines) return null;
+  const line = doc.line(lineNum);
+  const from = Math.min(line.from + col - 1, line.to);
+  return { from, to: Math.min(from + 1, line.to) };
+}
+
+// Prevent CM from capturing Tab so keyboard users can move focus normally.
+const noTabCapture = EditorView.domEventHandlers({
+  keydown(event) {
+    if (event.key === "Tab") event.preventDefault();
+  },
+});
+
 export function RegistryEditor({
   theme,
   title,
@@ -36,20 +62,32 @@ export function RegistryEditor({
   sourceLabel,
 }: RegistryEditorProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const lineNumberRef = useRef<HTMLDivElement | null>(null);
-  const lineNumbers = useMemo(
-    () => Array.from({ length: draftText.split("\n").length }, (_, index) => index + 1),
-    [draftText],
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+
+  // Keep a ref so the stable lintSource callback always sees current issues.
+  const issuesRef = useRef<ValidationIssue[]>(issues);
+  issuesRef.current = issues;
+
+  const lintSource = useCallback((view: EditorView): Diagnostic[] => {
+    return issuesRef.current.flatMap((issue) => {
+      const pos = parseLocation(view.state.doc, issue.location);
+      if (!pos) return [];
+      return [{ from: pos.from, to: pos.to, severity: "error" as const, message: issue.message }];
+    });
+  }, []);
+
+  const extensions = useMemo(
+    () => [yaml(), lintGutter(), linter(lintSource, { delay: 0 }), noTabCapture],
+    [lintSource],
   );
 
-  const handleEditorScroll = useCallback(() => {
-    if (!textareaRef.current || !lineNumberRef.current) {
-      return;
-    }
+  const cmTheme = theme === "dark" ? githubDark : githubLight;
 
-    lineNumberRef.current.scrollTop = textareaRef.current.scrollTop;
-  }, []);
+  // Force CM to re-run linting immediately whenever the React-computed issues change.
+  useEffect(() => {
+    const view = editorRef.current?.view;
+    if (view) forceLinting(view);
+  }, [issues]);
 
   return (
     <div className={styles.shell}>
@@ -99,20 +137,13 @@ export function RegistryEditor({
       <div className={styles.layout}>
         <section className={styles.pane}>
           <div className={styles.paneTitle}>YAML</div>
-          <div className={styles.codeframe}>
-            <div aria-hidden="true" className={styles.lineNumbers} ref={lineNumberRef}>
-              {lineNumbers.map((lineNumber) => (
-                <div className={styles.lineNumber} key={lineNumber}>
-                  {lineNumber}
-                </div>
-              ))}
-            </div>
-            <textarea
-              className={styles.textarea}
-              onChange={(event) => onChange(event.target.value)}
-              onScroll={handleEditorScroll}
-              ref={textareaRef}
-              spellCheck={false}
+          <div className={styles.cmWrapper}>
+            <CodeMirror
+              basicSetup={{ foldGutter: false }}
+              extensions={extensions}
+              onChange={onChange}
+              ref={editorRef}
+              theme={cmTheme}
               value={draftText}
             />
           </div>

@@ -23,11 +23,11 @@
   flex-direction: column;
   border: 1px solid var(--border-default);
   border-radius: 10px;
-  background: var(--surface-raised);
   overflow: hidden;
 }
 
 .paneTitle {
+  flex-shrink: 0;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-muted);
@@ -37,46 +37,33 @@
   text-transform: uppercase;
 }
 
-.textarea {
-  min-height: 70vh;
+/* ---- CodeMirror editor pane ---- */
+
+.cmWrapper {
   flex: 1 1 auto;
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  padding: 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  min-height: 0;
+  overflow: auto;
+}
+
+.cmWrapper :global(.cm-editor) {
   font-size: 12px;
-  line-height: 1.5;
-  resize: none;
+  min-height: 100%;
 }
 
-.textarea:focus {
-  outline: none;
-}
-
-.codeframe {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  min-height: 70vh;
-  flex: 1 1 auto;
-}
-
-.lineNumbers {
-  overflow: hidden;
-  border-right: 1px solid var(--border-subtle);
-  background: var(--surface-panel-strong);
-  color: var(--text-subtle);
-  padding: 14px 10px 14px 12px;
+.cmWrapper :global(.cm-scroller) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  text-align: right;
-  user-select: none;
+  min-height: calc(70vh - 44px); /* match the pane min-height minus paneTitle */
 }
 
-.lineNumber {
-  min-width: 2.5em;
+/* Squiggly underline for lint errors */
+.cmWrapper :global(.cm-lintRange-error) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 2.5 Q1.5 0 3 2.5 Q4.5 5 6 2.5' fill='none' stroke='%23ef4444' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: bottom;
+  padding-bottom: 2px;
 }
+
+/* ---- Validation pane ---- */
 
 .validationList {
   display: flex;
@@ -206,8 +193,7 @@
     min-height: 40vh;
   }
 
-  .codeframe,
-  .textarea {
-    min-height: 40vh;
+  .cmWrapper :global(.cm-scroller) {
+    min-height: calc(40vh - 44px);
   }
 }
