@@ -23,6 +23,35 @@ import {
   type ServiceType,
 } from "../../domain/registry";
 
+function priorityRank(priority: string) {
+  const match = /^P(\d+)$/.exec(priority.trim().toUpperCase());
+
+  if (!match) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return Number.parseInt(match[1], 10);
+}
+
+function compareBusinessFlowEntries(
+  left: [string, { name: string; priority: string }],
+  right: [string, { name: string; priority: string }],
+) {
+  const priorityDelta = priorityRank(left[1].priority) - priorityRank(right[1].priority);
+
+  if (priorityDelta !== 0) {
+    return priorityDelta;
+  }
+
+  const nameDelta = left[1].name.localeCompare(right[1].name);
+
+  if (nameDelta !== 0) {
+    return nameDelta;
+  }
+
+  return left[0].localeCompare(right[0]);
+}
+
 export function useCatalogViewModel(registry: Registry) {
   const services = registry.services;
   const businessFlows = registry.business_flows;
@@ -79,20 +108,24 @@ export function useCatalogViewModel(registry: Registry) {
   );
   const businessFlowOptions = useMemo(
     () =>
-      eligibleFlowEntries.map(([flowKey, flow]) => ({
-        label: `${flow.name} (${flow.priority})`,
-        searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
-        value: flowKey,
-      })),
+      [...eligibleFlowEntries]
+        .sort(compareBusinessFlowEntries)
+        .map(([flowKey, flow]) => ({
+          label: `${flow.name} (${flow.priority})`,
+          searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
+          value: flowKey,
+        })),
     [eligibleFlowEntries],
   );
   const dataBusinessFlowOptions = useMemo(
     () =>
-      eligibleFlowEntries.map(([flowKey, flow]) => ({
-        label: flow.name,
-        searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
-        value: flowKey,
-      })),
+      [...eligibleFlowEntries]
+        .sort(compareBusinessFlowEntries)
+        .map(([flowKey, flow]) => ({
+          label: flow.name,
+          searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
+          value: flowKey,
+        })),
     [eligibleFlowEntries],
   );
   const serviceOptions = useMemo(

@@ -3,6 +3,7 @@ import CodeMirror, { EditorView, type ReactCodeMirrorRef } from "@uiw/react-code
 import { yaml } from "@codemirror/lang-yaml";
 import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
 import { type Diagnostic, forceLinting, lintGutter, linter } from "@codemirror/lint";
+import { openSearchPanel, search } from "@codemirror/search";
 
 import type { ChecklistGroup, Theme, ValidationIssue } from "../../domain/registry";
 import { pointerToLabel } from "../../domain/registry";
@@ -77,7 +78,7 @@ export function RegistryEditor({
   }, []);
 
   const extensions = useMemo(
-    () => [yaml(), lintGutter(), linter(lintSource, { delay: 0 }), noTabCapture],
+    () => [yaml(), search({ top: true }), lintGutter(), linter(lintSource, { delay: 0 }), noTabCapture],
     [lintSource],
   );
 
@@ -88,6 +89,17 @@ export function RegistryEditor({
     const view = editorRef.current?.view;
     if (view) forceLinting(view);
   }, [issues]);
+
+  const handleOpenFindReplace = useCallback(() => {
+    const view = editorRef.current?.view;
+
+    if (!view) {
+      return;
+    }
+
+    openSearchPanel(view);
+    view.focus();
+  }, []);
 
   return (
     <div className={styles.shell}>
@@ -136,7 +148,16 @@ export function RegistryEditor({
 
       <div className={styles.layout}>
         <section className={styles.pane}>
-          <div className={styles.paneTitle}>YAML</div>
+          <div className={styles.paneTitleRow}>
+            <div className={styles.paneTitle}>YAML</div>
+            <button
+              className={styles.findReplaceButton}
+              onClick={handleOpenFindReplace}
+              type="button"
+            >
+              Find / Replace
+            </button>
+          </div>
           <div className={styles.cmWrapper}>
             <CodeMirror
               basicSetup={{ foldGutter: false }}

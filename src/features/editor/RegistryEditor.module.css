@@ -37,6 +37,39 @@
   text-transform: uppercase;
 }
 
+.paneTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.paneTitleRow .paneTitle {
+  border-bottom: 0;
+}
+
+.findReplaceButton {
+  margin-right: 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-panel-strong);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+
+.findReplaceButton:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.findReplaceButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
 /* ---- CodeMirror editor pane ---- */
 
 .cmWrapper {
@@ -48,6 +81,54 @@
 .cmWrapper :global(.cm-editor) {
   font-size: 12px;
   min-height: 100%;
+}
+
+.cmWrapper :global(.cm-panels) {
+  background: transparent;
+}
+
+.cmWrapper :global(.cm-panels-top) {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cmWrapper :global(.cm-search) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface-panel-strong);
+  color: var(--text-primary);
+}
+
+.cmWrapper :global(.cm-search label),
+.cmWrapper :global(.cm-search [name="close"]) {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.cmWrapper :global(.cm-search input) {
+  min-height: 28px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  padding: 4px 8px;
+}
+
+.cmWrapper :global(.cm-search button) {
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cmWrapper :global(.cm-search button:hover) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
 }
 
 .cmWrapper :global(.cm-scroller) {
