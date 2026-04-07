@@ -85,6 +85,26 @@ To **enforce** a custom field — for example, to require every service to decla
 
 Validation runs in two tiers: JSON Schema checks structural correctness and enum values, then `validateCrossReferences` in `src/domain/registry.ts` ensures every referenced service, business flow, and data flow stage resolves to a real key. Errors are pinned to source locations (line and column) in the editor pane.
 
+## Project layout
+
+- `src/app` — app bootstrap and shell wiring
+- `src/features` — feature UI modules (`catalog`, `editor`)
+- `src/domain` — pure domain logic (graphing, validation, export)
+- `src/shared` — reusable UI components and browser utilities
+- `src/styles` — global design tokens and base styles
+
+Imports use aliases (`@app`, `@features`, `@domain`, `@shared`, `@styles`) to avoid fragile deep relative paths.
+
+## Quality checks
+
+```bash
+npm run lint
+npm run typecheck
+npm run format:check
+npm run test:coverage
+npm run build
+```
+
 ## Contributing
 
 Found a bug or have an idea? Open an issue using one of the templates:

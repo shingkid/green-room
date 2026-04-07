@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 
-import type { Registry } from "../../domain/registry";
+import type { Registry } from "@domain/registry";
 import { useCatalogViewModel } from "./useCatalogViewModel";
 
 const registry: Registry = {

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { DEFAULT_REGISTRY_TEMPLATE, validateRegistryText } from "../../domain/registry";
+import { DEFAULT_REGISTRY_TEMPLATE, validateRegistryText } from "@domain/registry";
 import { CatalogView } from "./CatalogView";
 
 const parsed = validateRegistryText(DEFAULT_REGISTRY_TEMPLATE);

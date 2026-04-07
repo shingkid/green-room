@@ -7,6 +7,14 @@ export default tseslint.config(
   {
     ignores: ["dist/**", "coverage/**", "node_modules/**"],
   },
+  {
+    files: ["*.js"],
+    languageOptions: {
+      globals: {
+        URL: "readonly",
+      },
+    },
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

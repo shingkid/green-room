@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
 import App from "./App";
-import * as registryDomain from "./domain/registry";
+import * as registryDomain from "@domain/registry";
 
 describe("App", () => {
   afterEach(() => {

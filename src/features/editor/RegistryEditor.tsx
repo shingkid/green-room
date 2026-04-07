@@ -5,8 +5,8 @@ import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
 import { type Diagnostic, forceLinting, lintGutter, linter } from "@codemirror/lint";
 import { openSearchPanel, search } from "@codemirror/search";
 
-import type { ChecklistGroup, Theme, ValidationIssue } from "../../domain/registry";
-import { pointerToLabel } from "../../domain/registry";
+import type { ChecklistGroup, Theme, ValidationIssue } from "@domain/registry";
+import { pointerToLabel } from "@domain/registry";
 import styles from "./RegistryEditor.module.css";
 
 type RegistryEditorProps = {

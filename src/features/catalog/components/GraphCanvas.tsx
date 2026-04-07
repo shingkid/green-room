@@ -1,8 +1,8 @@
 import { memo, useMemo } from "react";
 
-import type { DependencyCriticality, Mode, Service } from "../../../domain/registry";
-import { STATUS_STYLES, TYPE_ICONS } from "../../../domain/registry";
-import { formatServiceLabel, getNodeRadius, type Layout } from "../../../domain/catalog";
+import type { DependencyCriticality, Mode, Service } from "@domain/registry";
+import { STATUS_STYLES, TYPE_ICONS } from "@domain/registry";
+import { formatServiceLabel, getNodeRadius, type Layout } from "@domain/catalog";
 import styles from "./GraphCanvas.module.css";
 
 type ServiceNodeProps = {

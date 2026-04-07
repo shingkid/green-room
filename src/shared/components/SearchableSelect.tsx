@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { matchesFuzzy } from "../../domain/catalog";
-import type { SelectOption } from "../../domain/registry";
+import { matchesFuzzy } from "@domain/catalog";
+import type { SelectOption } from "@domain/registry";
 import styles from "./SearchableSelect.module.css";
 
 type SearchableSelectProps = {

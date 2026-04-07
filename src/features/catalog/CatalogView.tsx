@@ -14,10 +14,10 @@ import {
   type ServiceType,
   STATUS_STYLES,
   getExplorerTitle,
-} from "../../domain/registry";
-import { Badge } from "../../shared/components/Badge";
-import { SearchableSelect } from "../../shared/components/SearchableSelect";
-import { Tag } from "../../shared/components/Tag";
+} from "@domain/registry";
+import { Badge } from "@shared/components/Badge";
+import { SearchableSelect } from "@shared/components/SearchableSelect";
+import { Tag } from "@shared/components/Tag";
 import { DataFlowPipeline } from "./components/DataFlowPipeline";
 import { GraphCanvas } from "./components/GraphCanvas";
 import { useCatalogViewModel } from "./useCatalogViewModel";

@@ -1,10 +1,5 @@
-import {
-  ACTION_COLORS,
-  getStageSubtypeLabel,
-  type DataFlow,
-  type Service,
-} from "../../../domain/registry";
-import { formatServiceLabel } from "../../../domain/catalog";
+import { ACTION_COLORS, getStageSubtypeLabel, type DataFlow, type Service } from "@domain/registry";
+import { formatServiceLabel } from "@domain/catalog";
 import styles from "./DataFlowPipeline.module.css";
 
 type DataFlowPipelineProps = {

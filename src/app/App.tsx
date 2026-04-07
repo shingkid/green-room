@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 
-import { CatalogView } from "./features/catalog/CatalogView";
-import { RegistryEditor } from "./features/editor/RegistryEditor";
+import { CatalogView } from "@features/catalog/CatalogView";
+import { RegistryEditor } from "@features/editor/RegistryEditor";
 import {
   DEFAULT_REGISTRY_TEMPLATE,
   getExplorerTitle,
@@ -11,8 +11,8 @@ import {
   type Registry,
   type Theme,
   validateRegistryText,
-} from "./domain/registry";
-import { downloadTextFile } from "./shared/browser";
+} from "@domain/registry";
+import { downloadTextFile } from "@shared/browser";
 
 const LOCAL_STORAGE_THEME_KEY = "green-room.theme";
 

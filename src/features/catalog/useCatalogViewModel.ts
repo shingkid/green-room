@@ -8,7 +8,7 @@ import {
   computeLayout,
   getAffectedDataFlows,
   slugify,
-} from "../../domain/catalog";
+} from "@domain/catalog";
 import {
   ALL_OWNERSHIP_KINDS,
   ALL_SERVICE_STATUSES,
@@ -21,7 +21,7 @@ import {
   type Service,
   type ServiceStatus,
   type ServiceType,
-} from "../../domain/registry";
+} from "@domain/registry";
 
 function priorityRank(priority: string) {
   const match = /^P(\d+)$/.exec(priority.trim().toUpperCase());
