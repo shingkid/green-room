@@ -184,6 +184,99 @@
       "description": "A single step in a data flow, identifying which service is involved and what it does with the data.",
       "additionalProperties": false,
       "required": ["service", "action"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "processes"
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["store_kind"]
+                },
+                {
+                  "required": ["queue_kind"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "stores"
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["process_kind"]
+                },
+                {
+                  "required": ["queue_kind"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "queues"
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["process_kind"]
+                },
+                {
+                  "required": ["store_kind"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "enum": ["produces", "serves", "consumes"]
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["process_kind"]
+                },
+                {
+                  "required": ["store_kind"]
+                },
+                {
+                  "required": ["queue_kind"]
+                }
+              ]
+            }
+          }
+        }
+      ],
       "properties": {
         "service": {
           "$ref": "#/$defs/registryKey",
@@ -191,17 +284,30 @@
         },
         "action": {
           "type": "string",
-          "description": "The role this service plays with the data at this stage.\n- produces: Originates new data records or events from scratch; the authoritative source\n- transforms: Modifies the format, shape, or content of the data (e.g. maps fields, filters records, aggregates)\n- enriches: Augments the data with additional context or metadata without changing its core structure (e.g. adds geo-lookup, appends user profile)\n- stores: Writes to the primary persistent store; the authoritative record of truth\n- indexes: Writes a derivative copy to a secondary or search index (e.g. Elasticsearch) for efficient querying\n- caches: Writes an ephemeral fast-access copy (e.g. Redis); not the authoritative source\n- serves: Reads the data and delivers it to downstream consumers or clients\n- consumes: Terminal sink; ingests the data for internal use with no further forwarding",
+          "description": "The primary incident-facing role this service plays at this stage.\n- produces: Originates data/events from an authoritative source\n- queues: Buffers or brokers data through queue/stream infrastructure\n- processes: Applies business logic (transform, validate, aggregate, enrich)\n- stores: Persists durable state (database/object store/index/cache)\n- serves: Reads and delivers data to downstream systems or clients\n- consumes: Terminal sink with no forwarding to additional stages",
           "enum": [
             "produces",
-            "transforms",
+            "queues",
+            "processes",
             "stores",
-            "indexes",
-            "enriches",
-            "caches",
             "serves",
             "consumes"
           ]
+        },
+        "process_kind": {
+          "type": "string",
+          "description": "Optional subtype for action=processes.",
+          "enum": ["transform", "enrich", "filter", "aggregate", "validate"]
+        },
+        "store_kind": {
+          "type": "string",
+          "description": "Optional subtype for action=stores.",
+          "enum": ["database", "object_store", "index", "cache", "warehouse"]
+        },
+        "queue_kind": {
+          "type": "string",
+          "description": "Optional subtype for action=queues.",
+          "enum": ["queue", "stream", "topic", "bus"]
         },
         "format": {
           "type": "string",

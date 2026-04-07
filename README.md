@@ -28,7 +28,7 @@ Drop a `service_registry.yaml` into `public/` and the app loads it automatically
 |---|---|
 | `metadata` | Team name, canonical `team_id`, maintainers, last-updated date |
 | `business_flows` | Named user journeys with priority and stakeholder lists |
-| `data_flows` | Ordered stage pipelines — which service produces, transforms, stores, and serves each dataset |
+| `data_flows` | Ordered stage pipelines — which service produces, queues, processes, stores, serves, and consumes each dataset |
 | `services` | One entry per deployable unit: type, status, upstream deps, business flows, and on-call links |
 
 A minimal service entry:

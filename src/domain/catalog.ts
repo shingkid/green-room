@@ -5,6 +5,7 @@ import type {
   Service,
   ServiceType,
 } from "./registry";
+import { getStageSubtypeLabel } from "./registry";
 
 export type GraphEdge = {
   service: string;
@@ -329,6 +330,11 @@ export function buildDataFlowMermaid(params: {
       const stageId = toMermaidId(`${flowKey}_${index}_${stage.service}`);
       const serviceName = registry.services[stage.service]?.name ?? stage.service;
       const stageLabelParts = [serviceName, stage.action];
+      const subtype = getStageSubtypeLabel(stage);
+
+      if (subtype) {
+        stageLabelParts.push(subtype);
+      }
 
       if (stage.format) {
         stageLabelParts.push(stage.format);

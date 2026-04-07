@@ -9,13 +9,14 @@ export type ServiceType = "frontend" | "backend" | "worker" | "datastore" | "inf
 export type DependencyCriticality = "hard" | "soft";
 export type DataFlowAction =
   | "produces"
-  | "transforms"
+  | "queues"
+  | "processes"
   | "stores"
-  | "indexes"
-  | "enriches"
-  | "caches"
   | "serves"
   | "consumes";
+export type ProcessKind = "transform" | "enrich" | "filter" | "aggregate" | "validate";
+export type StoreKind = "database" | "object_store" | "index" | "cache" | "warehouse";
+export type QueueKind = "queue" | "stream" | "topic" | "bus";
 export type DataType = "dataset" | "event" | "metric" | "config" | "auth_token";
 export type Sensitivity = "public" | "internal" | "confidential" | "restricted";
 
@@ -56,6 +57,9 @@ export type BusinessFlow = {
 export type DataFlowStage = {
   service: string;
   action: DataFlowAction;
+  process_kind?: ProcessKind;
+  store_kind?: StoreKind;
+  queue_kind?: QueueKind;
   format?: string;
   notes?: string;
 };
@@ -134,15 +138,29 @@ export const STATUS_STYLES: Record<ServiceStatus, StatusStyle> = {
 };
 
 export const ACTION_COLORS: Record<DataFlowAction, string> = {
-  produces: "#059669",
-  transforms: "#7c3aed",
-  stores: "#0369a1",
-  indexes: "#0369a1",
-  enriches: "#d97706",
-  caches: "#64748b",
-  serves: "#059669",
-  consumes: "#dc2626",
+  produces: "#1B9E77",
+  queues: "#D95F02",
+  processes: "#7570B3",
+  stores: "#E7298A",
+  serves: "#66A61E",
+  consumes: "#E31A1C",
 };
+
+export function getStageSubtypeLabel(stage: DataFlowStage) {
+  if (stage.action === "processes") {
+    return stage.process_kind ?? null;
+  }
+
+  if (stage.action === "stores") {
+    return stage.store_kind ?? null;
+  }
+
+  if (stage.action === "queues") {
+    return stage.queue_kind ?? null;
+  }
+
+  return null;
+}
 
 export const FLOW_COLORS: Record<string, string> = {
   research_search: "#8b5cf6",
@@ -213,7 +231,8 @@ data_flows:
         action: produces
         format: JSON
       - service: example_api
-        action: transforms
+        action: processes
+        process_kind: transform
         format: JSON
 
 services:

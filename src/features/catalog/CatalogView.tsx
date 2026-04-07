@@ -4,6 +4,7 @@ import {
   ACTION_COLORS,
   DATA_TYPE_ICONS,
   FLOW_COLORS,
+  getStageSubtypeLabel,
   type Registry,
   type ServiceStatus,
   SENSITIVITY_COLORS,
@@ -292,28 +293,31 @@ export function CatalogView({
                           </tr>
                         </thead>
                         <tbody>
-                          {dataFlow.stages.map((stage, index) => (
-                            <tr
-                              className={styles.dataflowRow}
-                              key={`${stage.service}-${index}`}
-                              onClick={() => viewModel.setSelectedService(stage.service)}
-                            >
-                              <td>{index + 1}</td>
-                              <td className={styles.dataflowServiceCell}>
-                                {viewModel.services[stage.service]?.name ?? stage.service}
-                              </td>
-                              <td>
-                                <span
-                                  className={styles.actionPill}
-                                  style={{ "--action-color": ACTION_COLORS[stage.action] ?? "#475569" } as CSSProperties}
-                                >
-                                  {stage.action}
-                                </span>
-                              </td>
-                              <td className={styles.monoCell}>{stage.format}</td>
-                              <td className={styles.mutedCell}>{stage.notes}</td>
-                            </tr>
-                          ))}
+                          {dataFlow.stages.map((stage, index) => {
+                            const subtype = getStageSubtypeLabel(stage);
+                            return (
+                              <tr
+                                className={styles.dataflowRow}
+                                key={`${stage.service}-${index}`}
+                                onClick={() => viewModel.setSelectedService(stage.service)}
+                              >
+                                <td>{index + 1}</td>
+                                <td className={styles.dataflowServiceCell}>
+                                  {viewModel.services[stage.service]?.name ?? stage.service}
+                                </td>
+                                <td>
+                                  <span
+                                    className={styles.actionPill}
+                                    style={{ "--action-color": ACTION_COLORS[stage.action] ?? "#475569" } as CSSProperties}
+                                  >
+                                    {subtype ? `${stage.action} · ${subtype}` : stage.action}
+                                  </span>
+                                </td>
+                                <td className={styles.monoCell}>{stage.format}</td>
+                                <td className={styles.mutedCell}>{stage.notes}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
