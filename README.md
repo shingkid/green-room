@@ -95,6 +95,8 @@ Validation runs in two tiers: JSON Schema checks structural correctness and enum
 
 Imports use aliases (`@app`, `@features`, `@domain`, `@shared`, `@styles`) to avoid fragile deep relative paths.
 
+Note: TypeScript currently requires `baseUrl` when using `paths` aliases in this setup; `ignoreDeprecations` is temporarily enabled until alias resolution is migrated to a TS7-safe pattern.
+
 ## Quality checks
 
 ```bash
@@ -104,6 +106,8 @@ npm run format:check
 npm run test:coverage
 npm run build
 ```
+
+Coverage thresholds currently enforce `70%` for lines/functions/statements and `55%` for branches. The lower branch threshold is temporary while branch-heavy UI paths are incrementally hardened.
 
 ## Contributing
 

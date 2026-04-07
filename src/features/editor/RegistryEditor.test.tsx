@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
+import { EditorView } from "@uiw/react-codemirror";
 
 import { RegistryEditor } from "./RegistryEditor";
 
@@ -95,6 +96,31 @@ describe("RegistryEditor", () => {
 
     expect(searchMock).toHaveBeenCalledWith({ top: true });
     expect(screen.getByTestId("mock-codemirror")).toHaveTextContent("search-enabled");
+  });
+
+  it("does not suppress default Tab behavior in editor key handlers", () => {
+    const domEventHandlersMock = EditorView.domEventHandlers as unknown as ReturnType<typeof vi.fn>;
+    render(
+      <RegistryEditor
+        canApply
+        checklist={[]}
+        draftText="metadata: {}"
+        issues={[]}
+        onApply={() => {}}
+        onChange={() => {}}
+        onDownload={() => {}}
+        onImport={() => {}}
+        onToggleTheme={() => {}}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+        title="Green Room"
+      />,
+    );
+
+    const firstCallArg = domEventHandlersMock.mock.calls[0]?.[0] as
+      | Record<string, unknown>
+      | undefined;
+    expect(firstCallArg).toBeUndefined();
   });
 
   it("renders validation issues and optional back button path", () => {

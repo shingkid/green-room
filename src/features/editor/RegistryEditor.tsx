@@ -40,13 +40,6 @@ function parseLocation(
   return { from, to: Math.min(from + 1, line.to) };
 }
 
-// Prevent CM from capturing Tab so keyboard users can move focus normally.
-const noTabCapture = EditorView.domEventHandlers({
-  keydown(event) {
-    if (event.key === "Tab") event.preventDefault();
-  },
-});
-
 export function RegistryEditor({
   theme,
   title,
@@ -78,13 +71,7 @@ export function RegistryEditor({
   }, []);
 
   const extensions = useMemo(
-    () => [
-      yaml(),
-      search({ top: true }),
-      lintGutter(),
-      linter(lintSource, { delay: 0 }),
-      noTabCapture,
-    ],
+    () => [yaml(), search({ top: true }), lintGutter(), linter(lintSource, { delay: 0 })],
     [lintSource],
   );
 

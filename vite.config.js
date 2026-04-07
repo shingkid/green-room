@@ -30,6 +30,8 @@ export default defineConfig({
       thresholds: {
         lines: 70,
         functions: 70,
+        // Branch threshold is temporarily lower while branch-heavy interaction paths are
+        // incrementally covered in follow-up test hardening.
         branches: 55,
         statements: 70,
       },

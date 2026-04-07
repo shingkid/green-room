@@ -5,6 +5,16 @@ import { vi } from "vitest";
 import App from "./App";
 import * as registryDomain from "@domain/registry";
 
+vi.mock("@uiw/react-codemirror", () => {
+  return {
+    __esModule: true,
+    EditorView: {
+      domEventHandlers: vi.fn(() => ({ extension: "domEventHandlers" })),
+    },
+    default: () => <div data-testid="mock-codemirror">editor</div>,
+  };
+});
+
 describe("App", () => {
   afterEach(() => {
     vi.restoreAllMocks();
