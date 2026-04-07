@@ -85,10 +85,6 @@ To **enforce** a custom field — for example, to require every service to decla
 
 Validation runs in two tiers: JSON Schema checks structural correctness and enum values, then `validateCrossReferences` in `src/domain/registry.ts` ensures every referenced service, business flow, and data flow stage resolves to a real key. Errors are pinned to source locations (line and column) in the editor pane.
 
-## Deploy
-
-Push to `main` and GitHub Actions builds and deploys to GitHub Pages automatically — your registry is live at `https://<owner>.github.io/<repo>`. See [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
-
 ## Contributing
 
 Found a bug or have an idea? Open an issue using one of the templates:
