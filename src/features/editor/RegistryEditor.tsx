@@ -1,7 +1,12 @@
-import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ChangeEvent } from "react";
+import CodeMirror, { EditorView, type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { yaml } from "@codemirror/lang-yaml";
+import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
+import { type Diagnostic, forceLinting, lintGutter, linter } from "@codemirror/lint";
+import { openSearchPanel, search } from "@codemirror/search";
 
-import type { ChecklistGroup, Theme, ValidationIssue } from "../../domain/registry";
-import { pointerToLabel } from "../../domain/registry";
+import type { ChecklistGroup, Theme, ValidationIssue } from "@domain/registry";
+import { pointerToLabel } from "@domain/registry";
 import styles from "./RegistryEditor.module.css";
 
 type RegistryEditorProps = {
@@ -20,6 +25,21 @@ type RegistryEditorProps = {
   sourceLabel: string | null;
 };
 
+function parseLocation(
+  doc: { line: (n: number) => { from: number; to: number }; lines: number },
+  location: string | null,
+): { from: number; to: number } | null {
+  if (!location) return null;
+  const match = /line (\d+), col (\d+)/.exec(location);
+  if (!match) return null;
+  const lineNum = parseInt(match[1], 10);
+  const col = parseInt(match[2], 10);
+  if (lineNum < 1 || lineNum > doc.lines) return null;
+  const line = doc.line(lineNum);
+  const from = Math.min(line.from + col - 1, line.to);
+  return { from, to: Math.min(from + 1, line.to) };
+}
+
 export function RegistryEditor({
   theme,
   title,
@@ -36,19 +56,42 @@ export function RegistryEditor({
   sourceLabel,
 }: RegistryEditorProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const lineNumberRef = useRef<HTMLDivElement | null>(null);
-  const lineNumbers = useMemo(
-    () => Array.from({ length: draftText.split("\n").length }, (_, index) => index + 1),
-    [draftText],
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+
+  // Keep a ref so the stable lintSource callback always sees current issues.
+  const issuesRef = useRef<ValidationIssue[]>(issues);
+  issuesRef.current = issues;
+
+  const lintSource = useCallback((view: EditorView): Diagnostic[] => {
+    return issuesRef.current.flatMap((issue) => {
+      const pos = parseLocation(view.state.doc, issue.location);
+      if (!pos) return [];
+      return [{ from: pos.from, to: pos.to, severity: "error" as const, message: issue.message }];
+    });
+  }, []);
+
+  const extensions = useMemo(
+    () => [yaml(), search({ top: true }), lintGutter(), linter(lintSource, { delay: 0 })],
+    [lintSource],
   );
 
-  const handleEditorScroll = useCallback(() => {
-    if (!textareaRef.current || !lineNumberRef.current) {
+  const cmTheme = theme === "dark" ? githubDark : githubLight;
+
+  // Force CM to re-run linting immediately whenever the React-computed issues change.
+  useEffect(() => {
+    const view = editorRef.current?.view;
+    if (view) forceLinting(view);
+  }, [issues]);
+
+  const handleOpenFindReplace = useCallback(() => {
+    const view = editorRef.current?.view;
+
+    if (!view) {
       return;
     }
 
-    lineNumberRef.current.scrollTop = textareaRef.current.scrollTop;
+    openSearchPanel(view);
+    view.focus();
   }, []);
 
   return (
@@ -63,7 +106,11 @@ export function RegistryEditor({
           </div>
         </div>
         <div className="header-actions">
-          <button className="secondary-button" onClick={() => inputRef.current?.click()} type="button">
+          <button
+            className="secondary-button"
+            onClick={() => inputRef.current?.click()}
+            type="button"
+          >
             Import YAML
           </button>
           <button className="secondary-button" onClick={onDownload} type="button">
@@ -98,21 +145,23 @@ export function RegistryEditor({
 
       <div className={styles.layout}>
         <section className={styles.pane}>
-          <div className={styles.paneTitle}>YAML</div>
-          <div className={styles.codeframe}>
-            <div aria-hidden="true" className={styles.lineNumbers} ref={lineNumberRef}>
-              {lineNumbers.map((lineNumber) => (
-                <div className={styles.lineNumber} key={lineNumber}>
-                  {lineNumber}
-                </div>
-              ))}
-            </div>
-            <textarea
-              className={styles.textarea}
-              onChange={(event) => onChange(event.target.value)}
-              onScroll={handleEditorScroll}
-              ref={textareaRef}
-              spellCheck={false}
+          <div className={styles.paneTitleRow}>
+            <div className={styles.paneTitle}>YAML</div>
+            <button
+              className={styles.findReplaceButton}
+              onClick={handleOpenFindReplace}
+              type="button"
+            >
+              Find / Replace
+            </button>
+          </div>
+          <div className={styles.cmWrapper}>
+            <CodeMirror
+              basicSetup={{ foldGutter: false }}
+              extensions={extensions}
+              onChange={onChange}
+              ref={editorRef}
+              theme={cmTheme}
               value={draftText}
             />
           </div>
@@ -142,13 +191,17 @@ export function RegistryEditor({
             <div className={styles.validationOk}>
               <div className={styles.validationOkTitle}>Schema validation passed.</div>
               <div className={styles.validationOkBody}>
-                The registry is syntactically valid, matches the schema, and all known references resolve.
+                The registry is syntactically valid, matches the schema, and all known references
+                resolve.
               </div>
             </div>
           ) : (
             <div className={styles.validationList}>
               {issues.map((issue, index) => (
-                <div className={styles.validationItem} key={`${issue.path}-${issue.message}-${index}`}>
+                <div
+                  className={styles.validationItem}
+                  key={`${issue.path}-${issue.message}-${index}`}
+                >
                   <div className={styles.validationItemHeader}>
                     <span className={styles.validationSeverity}>Error</span>
                     {issue.location ? (

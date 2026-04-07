@@ -1,8 +1,8 @@
 import { memo, useMemo } from "react";
 
-import type { Mode, Service } from "../../../domain/registry";
-import { STATUS_STYLES, TYPE_ICONS } from "../../../domain/registry";
-import { formatServiceLabel, getNodeRadius, type DependencyCriticality, type Layout } from "../../../domain/catalog";
+import type { DependencyCriticality, Mode, Service } from "@domain/registry";
+import { STATUS_STYLES, TYPE_ICONS } from "@domain/registry";
+import { formatServiceLabel, getNodeRadius, type Layout } from "@domain/catalog";
 import styles from "./GraphCanvas.module.css";
 
 type ServiceNodeProps = {
@@ -33,11 +33,7 @@ const ServiceNode = memo(function ServiceNode({
   const statusStyle = STATUS_STYLES[service.status] ?? STATUS_STYLES.active;
   // Interaction state wins over status styling so selection/impact remains readable even when
   // ownership and status already contribute their own visual signals.
-  const stroke = isHighlight
-    ? "#dc2626"
-    : isAffected
-      ? "#f97316"
-      : statusStyle.border;
+  const stroke = isHighlight ? "#dc2626" : isAffected ? "#f97316" : statusStyle.border;
 
   return (
     <g

@@ -1,5 +1,5 @@
-import { ACTION_COLORS, type DataFlow, type Service } from "../../../domain/registry";
-import { formatServiceLabel } from "../../../domain/catalog";
+import { ACTION_COLORS, getStageSubtypeLabel, type DataFlow, type Service } from "@domain/registry";
+import { formatServiceLabel } from "@domain/catalog";
 import styles from "./DataFlowPipeline.module.css";
 
 type DataFlowPipelineProps = {
@@ -41,15 +41,17 @@ export function DataFlowPipeline({
           const x = 20 + index * (stageW + arrowW + gap);
           const service = services[stage.service];
           const isSelected = stage.service === selectedService;
+          const subtype = getStageSubtypeLabel(stage);
+          const detail = subtype
+            ? `${subtype}${stage.format ? ` · ${stage.format}` : ""}`
+            : (stage.format ?? "");
 
           return (
             <g key={`${stage.service}-${index}`}>
               <g className={styles.pipelineStage} onClick={() => onSelectService(stage.service)}>
                 <rect
                   fill={
-                    isSelected
-                      ? "var(--pipeline-stage-bg-selected)"
-                      : "var(--pipeline-stage-bg)"
+                    isSelected ? "var(--pipeline-stage-bg-selected)" : "var(--pipeline-stage-bg)"
                   }
                   height={stageH}
                   rx={8}
@@ -102,7 +104,7 @@ export function DataFlowPipeline({
                   x={x + stageW / 2}
                   y={56}
                 >
-                  {formatServiceLabel(stage.format ?? "", 20)}
+                  {formatServiceLabel(detail, 20)}
                 </text>
               </g>
               {index < dataFlow.stages.length - 1 ? (

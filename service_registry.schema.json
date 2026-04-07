@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "./service_registry.schema.json",
   "title": "Service Registry",
-  "description": "Schema for service_registry.yaml used by the service catalog explorer.",
+  "description": "Schema for service_registry.yaml used by the Green Room explorer.",
   "type": "object",
   "additionalProperties": false,
   "required": ["metadata", "business_flows", "data_flows", "services"],
@@ -23,10 +23,12 @@
         },
         "last_updated": {
           "type": "string",
+          "description": "Date the registry was last updated (YYYY-MM-DD).",
           "format": "date"
         },
         "maintainers": {
           "type": "array",
+          "description": "People responsible for keeping this registry accurate.",
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/maintainer"
@@ -36,7 +38,7 @@
     },
     "business_flows": {
       "type": "object",
-      "description": "Map of business flow keys to flow definitions.",
+      "description": "Map of business flow keys to flow definitions. A business flow represents a user-facing journey or product capability that spans multiple services.",
       "minProperties": 1,
       "propertyNames": {
         "$ref": "#/$defs/registryKey"
@@ -47,7 +49,7 @@
     },
     "data_flows": {
       "type": "object",
-      "description": "Map of data flow keys to data flow definitions.",
+      "description": "Map of data flow keys to data flow definitions. A data flow describes how a specific dataset or event moves through the system from origin to consumption.",
       "minProperties": 1,
       "propertyNames": {
         "$ref": "#/$defs/registryKey"
@@ -71,42 +73,51 @@
   "$defs": {
     "registryKey": {
       "type": "string",
+      "description": "A lowercase identifier using only letters, digits, and underscores. Used as the canonical key for services, flows, and teams.",
       "pattern": "^[a-z][a-z0-9_]*$"
     },
     "maintainer": {
       "type": "object",
+      "description": "A person responsible for keeping this registry accurate.",
       "additionalProperties": false,
       "required": ["name", "slack"],
       "properties": {
         "name": {
           "type": "string",
+          "description": "Full name of the maintainer.",
           "minLength": 1
         },
         "slack": {
           "type": "string",
+          "description": "Slack handle of the maintainer (e.g. @jane).",
           "minLength": 1
         }
       }
     },
     "businessFlow": {
       "type": "object",
+      "description": "A user-facing journey or product capability that one or more services collaborate to deliver.",
       "additionalProperties": false,
       "required": ["name", "description", "priority", "stakeholders"],
       "properties": {
         "name": {
           "type": "string",
+          "description": "Human-readable name for this business flow.",
           "minLength": 1
         },
         "description": {
           "type": "string",
+          "description": "What this business flow delivers from a user or business perspective.",
           "minLength": 1
         },
         "priority": {
           "type": "string",
+          "description": "Incident priority tier for this flow (e.g. P1, P2). Used to communicate on-call severity expectations.",
           "pattern": "^P[0-9]+$"
         },
         "stakeholders": {
           "type": "array",
+          "description": "Teams or groups with a stake in this flow's reliability (e.g. Product, Finance, Legal).",
           "minItems": 1,
           "items": {
             "type": "string",
@@ -117,6 +128,7 @@
     },
     "dataFlow": {
       "type": "object",
+      "description": "Describes how a specific dataset or event travels through the system, from the service that originates it to the service that finally consumes it.",
       "additionalProperties": false,
       "required": [
         "name",
@@ -130,29 +142,36 @@
       "properties": {
         "name": {
           "type": "string",
+          "description": "Human-readable name for this data flow.",
           "minLength": 1
         },
         "description": {
           "type": "string",
+          "description": "What data this flow carries and why it matters to the business.",
           "minLength": 1
         },
         "business_flow": {
-          "$ref": "#/$defs/registryKey"
+          "$ref": "#/$defs/registryKey",
+          "description": "Key of the business flow this data flow supports."
         },
         "data_type": {
           "type": "string",
+          "description": "Broad category of data moving through this flow.\n- dataset: A structured collection of records (e.g. database export, ML training set)\n- event: A discrete occurrence that happened at a point in time (e.g. user clicked, order placed)\n- metric: A numeric measurement sampled or aggregated over time (e.g. CPU usage, request latency)\n- config: Configuration or feature-flag data consumed by services at startup or runtime\n- auth_token: A credential or token used to prove identity or authorise access",
           "enum": ["dataset", "event", "metric", "config", "auth_token"]
         },
         "sensitivity": {
           "type": "string",
+          "description": "Data sensitivity classification, used to guide access controls and handling requirements.\n- public: No access restrictions; safe to expose externally\n- internal: Restricted to employees and internal systems; not for external exposure\n- confidential: Sensitive business or personal data; access limited to authorised teams\n- restricted: Highest sensitivity (e.g. PII, PCI, secrets); strict access controls and audit logging required",
           "enum": ["public", "internal", "confidential", "restricted"]
         },
         "freshness": {
           "type": "string",
+          "description": "Expected latency from event occurrence to availability in the final stage (e.g. real-time, near-real-time, hourly, daily).",
           "minLength": 1
         },
         "stages": {
           "type": "array",
+          "description": "Ordered list of services and the role each plays in moving this data through the system.",
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/dataFlowStage"
@@ -162,35 +181,140 @@
     },
     "dataFlowStage": {
       "type": "object",
+      "description": "A single step in a data flow, identifying which service is involved and what it does with the data.",
       "additionalProperties": false,
       "required": ["service", "action"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "processes"
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["store_kind"]
+                },
+                {
+                  "required": ["queue_kind"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "stores"
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["process_kind"]
+                },
+                {
+                  "required": ["queue_kind"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "queues"
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["process_kind"]
+                },
+                {
+                  "required": ["store_kind"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "enum": ["produces", "serves", "consumes"]
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["process_kind"]
+                },
+                {
+                  "required": ["store_kind"]
+                },
+                {
+                  "required": ["queue_kind"]
+                }
+              ]
+            }
+          }
+        }
+      ],
       "properties": {
         "service": {
-          "$ref": "#/$defs/registryKey"
+          "$ref": "#/$defs/registryKey",
+          "description": "Key of the service performing this action."
         },
         "action": {
           "type": "string",
-          "enum": [
-            "produces",
-            "transforms",
-            "stores",
-            "indexes",
-            "enriches",
-            "caches",
-            "serves",
-            "consumes"
-          ]
+          "description": "The primary incident-facing role this service plays at this stage.\n- produces: Originates data/events from an authoritative source\n- queues: Buffers or brokers data through queue/stream infrastructure\n- processes: Applies business logic (transform, validate, aggregate, enrich)\n- stores: Persists durable state (database/object store/index/cache)\n- serves: Reads and delivers data to downstream systems or clients\n- consumes: Terminal sink with no forwarding to additional stages",
+          "enum": ["produces", "queues", "processes", "stores", "serves", "consumes"]
+        },
+        "process_kind": {
+          "type": "string",
+          "description": "Optional subtype for action=processes.",
+          "enum": ["transform", "enrich", "filter", "aggregate", "validate"]
+        },
+        "store_kind": {
+          "type": "string",
+          "description": "Optional subtype for action=stores.",
+          "enum": ["database", "object_store", "index", "cache", "warehouse"]
+        },
+        "queue_kind": {
+          "type": "string",
+          "description": "Optional subtype for action=queues.",
+          "enum": ["queue", "stream", "topic", "bus"]
         },
         "format": {
-          "type": "string"
+          "type": "string",
+          "description": "Data format at this stage (e.g. JSON, Avro, Parquet, Protobuf)."
         },
         "notes": {
-          "type": "string"
+          "type": "string",
+          "description": "Any additional context about what happens at this stage."
         }
       }
     },
     "service": {
       "type": "object",
+      "description": "A deployable unit in the architecture — a service, application, or platform component.",
       "additionalProperties": true,
       "required": [
         "name",
@@ -206,28 +330,34 @@
       "properties": {
         "name": {
           "type": "string",
+          "description": "Human-readable display name for this service.",
           "minLength": 1
         },
         "description": {
           "type": "string",
+          "description": "What this service does and why it exists. Keep it to 1–2 sentences.",
           "minLength": 1
         },
         "type": {
           "type": "string",
-          "enum": ["frontend", "backend", "datastore", "infrastructure"]
+          "description": "Runtime category of this service. Determines the icon and graph grouping.\n- frontend: User-facing interface layer (browser app, mobile client)\n- backend: Synchronous API server; handles request/response from clients or other services\n- worker: Async background processor; consumes from a queue or runs scheduled jobs; has no synchronous callers and fails silently from the caller's perspective\n- datastore: Persistent storage at rest (relational DB, document store, blob storage, search index, cache)\n- infrastructure: Platform plumbing not in the request path (message buses, service mesh, observability stack, CI runners)",
+          "enum": ["frontend", "backend", "worker", "datastore", "infrastructure"]
         },
         "status": {
           "type": "string",
-          "enum": ["active", "deprecated", "migrating"]
+          "description": "Operational lifecycle stage of this service.\n- active: Healthy, serving production traffic under normal SLA and on-call coverage\n- experimental: Deployed but not production-grade; not covered by on-call rotation; may break without notice\n- migrating: In active transition (data migration, replatforming); behaviour may temporarily differ from steady-state; treat with extra caution during incidents\n- deprecated: Still running but scheduled for removal; consumers must migrate to a replacement before the sunset date",
+          "enum": ["active", "experimental", "migrating", "deprecated"]
         },
         "upstream": {
           "type": "array",
+          "description": "Services this service directly depends on at runtime. Only list immediate dependencies, not transitive ones.",
           "items": {
             "$ref": "#/$defs/dependency"
           }
         },
         "business_flows": {
           "type": "array",
+          "description": "Keys of the business flows this service participates in. Used to compute impact when the service is degraded.",
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/registryKey"
@@ -235,35 +365,58 @@
         },
         "owner": {
           "$ref": "#/$defs/registryKey",
-          "description": "Canonical owner identifier. Compare this to metadata.team_id to distinguish team-owned services from external dependencies."
+          "description": "Registry key of the team that owns this service. Compare to metadata.team_id to distinguish team-owned services from external dependencies."
         },
         "runbook": {
-          "type": "string"
+          "type": "string",
+          "description": "URL to the on-call runbook for this service. Should contain triage steps, common failure modes, and escalation guidance."
         },
         "health_check": {
-          "type": "string"
+          "type": "string",
+          "description": "URL to this service's health or readiness endpoint. Used during incidents to confirm whether the service is up."
         },
         "port": {
           "type": "integer",
+          "description": "Primary port this service listens on. Useful for local development and network policy reference.",
           "minimum": 1,
           "maximum": 65535
+        },
+        "dashboard": {
+          "type": "string",
+          "description": "URL to the observability or metrics dashboard for this service (e.g. Grafana, Datadog). The first place to look when you get paged."
+        },
+        "on_call": {
+          "type": "string",
+          "description": "PagerDuty service name, OpsGenie integration name, or escalation policy URL for this service. Used to route alerts and find the right on-call engineer."
+        },
+        "incident_channel": {
+          "type": "string",
+          "description": "Primary Slack or Teams channel for incidents affecting this service (e.g. #sre-payments). Where the team coordinates during an outage."
+        },
+        "slo": {
+          "type": "string",
+          "description": "Availability target for this service, expressed as a percentage or a URL to the SLO document (e.g. 99.9%, https://slo.example.com/payments). Sets expectations for on-call triage severity."
         }
       }
     },
     "dependency": {
       "type": "object",
+      "description": "A runtime dependency on another service declared in the registry.",
       "additionalProperties": false,
       "required": ["service", "protocol", "criticality"],
       "properties": {
         "service": {
-          "$ref": "#/$defs/registryKey"
+          "$ref": "#/$defs/registryKey",
+          "description": "Key of the service being depended on."
         },
         "protocol": {
           "type": "string",
+          "description": "Communication protocol used (e.g. HTTPS, gRPC, AMQP, PostgreSQL wire).",
           "minLength": 1
         },
         "criticality": {
           "type": "string",
+          "description": "How this dependency affects the calling service if it goes down.\n- hard: Synchronous dependency; the calling service fails entirely if this is unavailable. Model hard deps carefully — they define your blast radius.\n- soft: Optional or async dependency; the calling service degrades gracefully if this is unavailable (e.g. falls back to a default, skips enrichment, queues for retry).",
           "enum": ["hard", "soft"]
         }
       }

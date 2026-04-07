@@ -23,11 +23,11 @@
   flex-direction: column;
   border: 1px solid var(--border-default);
   border-radius: 10px;
-  background: var(--surface-raised);
   overflow: hidden;
 }
 
 .paneTitle {
+  flex-shrink: 0;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-muted);
@@ -37,46 +37,114 @@
   text-transform: uppercase;
 }
 
-.textarea {
-  min-height: 70vh;
-  flex: 1 1 auto;
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  padding: 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  resize: none;
+.paneTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.textarea:focus {
-  outline: none;
+.paneTitleRow .paneTitle {
+  border-bottom: 0;
 }
 
-.codeframe {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  min-height: 70vh;
-  flex: 1 1 auto;
-}
-
-.lineNumbers {
-  overflow: hidden;
-  border-right: 1px solid var(--border-subtle);
+.findReplaceButton {
+  margin-right: 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
   background: var(--surface-panel-strong);
-  color: var(--text-subtle);
-  padding: 14px 10px 14px 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  text-align: right;
-  user-select: none;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  cursor: pointer;
 }
 
-.lineNumber {
-  min-width: 2.5em;
+.findReplaceButton:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
 }
+
+.findReplaceButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* ---- CodeMirror editor pane ---- */
+
+.cmWrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.cmWrapper :global(.cm-editor) {
+  font-size: 12px;
+  min-height: 100%;
+}
+
+.cmWrapper :global(.cm-panels) {
+  background: transparent;
+}
+
+.cmWrapper :global(.cm-panels-top) {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cmWrapper :global(.cm-search) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface-panel-strong);
+  color: var(--text-primary);
+}
+
+.cmWrapper :global(.cm-search label),
+.cmWrapper :global(.cm-search [name="close"]) {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.cmWrapper :global(.cm-search input) {
+  min-height: 28px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  padding: 4px 8px;
+}
+
+.cmWrapper :global(.cm-search button) {
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cmWrapper :global(.cm-search button:hover) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.cmWrapper :global(.cm-scroller) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  min-height: calc(70vh - 44px); /* match the pane min-height minus paneTitle */
+}
+
+/* Squiggly underline for lint errors */
+.cmWrapper :global(.cm-lintRange-error) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 2.5 Q1.5 0 3 2.5 Q4.5 5 6 2.5' fill='none' stroke='%23ef4444' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: bottom;
+  padding-bottom: 2px;
+}
+
+/* ---- Validation pane ---- */
 
 .validationList {
   display: flex;
@@ -191,11 +259,19 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.checklistItemChecked .checklistIcon  { color: var(--validation-success); }
-.checklistItemChecked .checklistLabel { color: var(--text-muted); }
+.checklistItemChecked .checklistIcon {
+  color: var(--validation-success);
+}
+.checklistItemChecked .checklistLabel {
+  color: var(--text-muted);
+}
 
-.checklistItemUnchecked .checklistIcon  { color: var(--text-subtle); }
-.checklistItemUnchecked .checklistLabel { color: var(--text-primary); }
+.checklistItemUnchecked .checklistIcon {
+  color: var(--text-subtle);
+}
+.checklistItemUnchecked .checklistLabel {
+  color: var(--text-primary);
+}
 
 @media (max-width: 960px) {
   .layout {
@@ -206,8 +282,7 @@
     min-height: 40vh;
   }
 
-  .codeframe,
-  .textarea {
-    min-height: 40vh;
+  .cmWrapper :global(.cm-scroller) {
+    min-height: calc(40vh - 44px);
   }
 }

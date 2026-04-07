@@ -4,6 +4,7 @@ import {
   ACTION_COLORS,
   DATA_TYPE_ICONS,
   FLOW_COLORS,
+  getStageSubtypeLabel,
   type Registry,
   type ServiceStatus,
   SENSITIVITY_COLORS,
@@ -13,10 +14,10 @@ import {
   type ServiceType,
   STATUS_STYLES,
   getExplorerTitle,
-} from "../../domain/registry";
-import { Badge } from "../../shared/components/Badge";
-import { SearchableSelect } from "../../shared/components/SearchableSelect";
-import { Tag } from "../../shared/components/Tag";
+} from "@domain/registry";
+import { Badge } from "@shared/components/Badge";
+import { SearchableSelect } from "@shared/components/SearchableSelect";
+import { Tag } from "@shared/components/Tag";
 import { DataFlowPipeline } from "./components/DataFlowPipeline";
 import { GraphCanvas } from "./components/GraphCanvas";
 import { useCatalogViewModel } from "./useCatalogViewModel";
@@ -43,12 +44,8 @@ export function CatalogView({
 }: CatalogViewProps) {
   const explorerTitle = getExplorerTitle(registry.metadata.team);
   const viewModel = useCatalogViewModel(registry);
-  const {
-    setExpandedDataFlow,
-    setImpactDirection,
-    setSelectedDataFlow,
-    setSelectedFlow,
-  } = viewModel;
+  const { setExpandedDataFlow, setImpactDirection, setSelectedDataFlow, setSelectedFlow } =
+    viewModel;
 
   const handleCopyMermaid = useCallback(async () => {
     if (!viewModel.mermaidExport) {
@@ -101,11 +98,7 @@ export function CatalogView({
             >
               Copy Mermaid
             </button>
-            <button
-              className="secondary-button"
-              onClick={onEditRegistry}
-              type="button"
-            >
+            <button className="secondary-button" onClick={onEditRegistry} type="button">
               Edit registry
             </button>
             <button
@@ -248,7 +241,11 @@ export function CatalogView({
               viewModel.expandedDataFlow === flowKey || viewModel.selectedDataFlow === flowKey;
 
             return (
-              <div className={styles.panel} key={flowKey} style={{ marginBottom: 12, overflow: "hidden" }}>
+              <div
+                className={styles.panel}
+                key={flowKey}
+                style={{ marginBottom: 12, overflow: "hidden" }}
+              >
                 <div
                   className={styles.panelHeader}
                   onClick={() => viewModel.setExpandedDataFlow(isExpanded ? null : flowKey)}
@@ -268,7 +265,9 @@ export function CatalogView({
                     <Tag>{dataFlow.freshness}</Tag>
                     <Tag color="var(--tag-neutral)">{dataFlow.stages.length} stages</Tag>
                   </div>
-                  <span className={`${styles.panelChevron}${isExpanded ? ` ${styles.panelChevronExpanded}` : ""}`}>
+                  <span
+                    className={`${styles.panelChevron}${isExpanded ? ` ${styles.panelChevronExpanded}` : ""}`}
+                  >
                     ▾
                   </span>
                 </div>
@@ -292,28 +291,35 @@ export function CatalogView({
                           </tr>
                         </thead>
                         <tbody>
-                          {dataFlow.stages.map((stage, index) => (
-                            <tr
-                              className={styles.dataflowRow}
-                              key={`${stage.service}-${index}`}
-                              onClick={() => viewModel.setSelectedService(stage.service)}
-                            >
-                              <td>{index + 1}</td>
-                              <td className={styles.dataflowServiceCell}>
-                                {viewModel.services[stage.service]?.name ?? stage.service}
-                              </td>
-                              <td>
-                                <span
-                                  className={styles.actionPill}
-                                  style={{ "--action-color": ACTION_COLORS[stage.action] ?? "#475569" } as CSSProperties}
-                                >
-                                  {stage.action}
-                                </span>
-                              </td>
-                              <td className={styles.monoCell}>{stage.format}</td>
-                              <td className={styles.mutedCell}>{stage.notes}</td>
-                            </tr>
-                          ))}
+                          {dataFlow.stages.map((stage, index) => {
+                            const subtype = getStageSubtypeLabel(stage);
+                            return (
+                              <tr
+                                className={styles.dataflowRow}
+                                key={`${stage.service}-${index}`}
+                                onClick={() => viewModel.setSelectedService(stage.service)}
+                              >
+                                <td>{index + 1}</td>
+                                <td className={styles.dataflowServiceCell}>
+                                  {viewModel.services[stage.service]?.name ?? stage.service}
+                                </td>
+                                <td>
+                                  <span
+                                    className={styles.actionPill}
+                                    style={
+                                      {
+                                        "--action-color": ACTION_COLORS[stage.action] ?? "#475569",
+                                      } as CSSProperties
+                                    }
+                                  >
+                                    {subtype ? `${stage.action} · ${subtype}` : stage.action}
+                                  </span>
+                                </td>
+                                <td className={styles.monoCell}>{stage.format}</td>
+                                <td className={styles.mutedCell}>{stage.notes}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -331,8 +337,8 @@ export function CatalogView({
             <div>
               <div className={styles.detailsTitle}>{viewModel.selectedServiceDetails.name}</div>
               <div className={styles.detailsMeta}>
-                {viewModel.selectedServiceDetails.type} · {viewModel.selectedServiceDetails.status} ·{" "}
-                {viewModel.getOwnershipKind(viewModel.selectedServiceDetails)}
+                {viewModel.selectedServiceDetails.type} · {viewModel.selectedServiceDetails.status}{" "}
+                · {viewModel.getOwnershipKind(viewModel.selectedServiceDetails)}
               </div>
             </div>
             <Badge color={viewModel.impactDirection === "downstream" ? "#dc2626" : "#2563eb"}>
@@ -349,9 +355,7 @@ export function CatalogView({
                 {viewModel.selectedServiceDetails.upstream?.map((dependency) => (
                   <Tag
                     color={
-                      dependency.criticality === "hard"
-                        ? "var(--tag-critical)"
-                        : "var(--tag-muted)"
+                      dependency.criticality === "hard" ? "var(--tag-critical)" : "var(--tag-muted)"
                     }
                     key={`${viewModel.selectedService}-${dependency.service}`}
                   >
@@ -382,6 +386,36 @@ export function CatalogView({
               </div>
             </div>
           ) : null}
+
+          {(() => {
+            const svc = viewModel.selectedServiceDetails;
+            const links: Array<{ label: string; href: string }> = [];
+            if (svc?.runbook) links.push({ label: "Runbook", href: svc.runbook });
+            if (svc?.health_check) links.push({ label: "Health check", href: svc.health_check });
+            if (svc?.dashboard) links.push({ label: "Dashboard", href: svc.dashboard });
+            if (svc?.on_call) links.push({ label: "On-call", href: svc.on_call });
+            if (links.length === 0) return null;
+            return (
+              <div className={styles.detailsSection}>
+                <div className={styles.overline}>On-call</div>
+                <div className={styles.tagRow}>
+                  {links.map(({ label, href }) => (
+                    <a
+                      className={styles.linkTag}
+                      href={href}
+                      key={label}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {label} ↗
+                    </a>
+                  ))}
+                  {svc?.incident_channel ? <Tag>{svc.incident_channel}</Tag> : null}
+                  {svc?.slo ? <Tag>SLO {svc.slo}</Tag> : null}
+                </div>
+              </div>
+            );
+          })()}
         </section>
       ) : null}
 

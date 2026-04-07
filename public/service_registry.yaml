@@ -78,7 +78,8 @@ data_flows:
         format: "JSON"
         notes: "Mobile app tracks cooking steps and completion"
       - service: "recipe_api"
-        action: "transforms"
+        action: "processes"
+        process_kind: "enrich"
         format: "Structured Events"
         notes: "Validates and enriches cooking session data"
       - service: "user_behavior_warehouse"
@@ -98,7 +99,8 @@ data_flows:
         format: "JSON"
         notes: "Chefs and users submit recipe content"
       - service: "recipe_processing_service"
-        action: "transforms"
+        action: "processes"
+        process_kind: "validate"
         format: "Normalized Recipe Schema"
         notes: "Validates ingredients, nutritional analysis, difficulty scoring"
       - service: "recipe_database"
@@ -106,7 +108,8 @@ data_flows:
         format: "PostgreSQL"
         notes: "Primary recipe catalog with full metadata"
       - service: "recipe_search_index"
-        action: "indexes"
+        action: "stores"
+        store_kind: "index"
         format: "Elasticsearch"
         notes: "Searchable recipe index with filters"
   recommendation_training_data:
@@ -122,7 +125,8 @@ data_flows:
         format: "CSV"
         notes: "Exports anonymized user interaction data"
       - service: "recommendation_engine"
-        action: "transforms"
+        action: "processes"
+        process_kind: "transform"
         format: "Feature Vectors"
         notes: "Preprocesses data for ML training"
       - service: "ml_training_pipeline"
@@ -183,6 +187,10 @@ services:
     runbook: "https://wiki.mealplanner.com/recipe-api-runbook"
     health_check: "https://api.mealplanner.com/health"
     port: 8080
+    dashboard: "https://grafana.mealplanner.com/d/recipe-api"
+    on_call: "Recipe API - PagerDuty"
+    incident_channel: "#incidents-api"
+    slo: "99.9%"
   recommendation_engine:
     name: "Recipe Recommendation Engine"
     description: "Machine learning service using collaborative filtering and content-based recommendations"
@@ -201,6 +209,10 @@ services:
     runbook: "https://wiki.mealplanner.com/recommendation-engine-runbook"
     health_check: "https://recommendation.mealplanner.com/health"
     port: 5000
+    dashboard: "https://grafana.mealplanner.com/d/recommendation-engine"
+    on_call: "Recommendation Engine - PagerDuty"
+    incident_channel: "#incidents-ml"
+    slo: "99.5%"
   recipe_database:
     name: "Recipe Database"
     description: "PostgreSQL database storing recipes, ingredients, nutritional data, and user-generated content"
@@ -244,7 +256,7 @@ services:
   recipe_processing_service:
     name: "Recipe Processing Service"
     description: "Batch processing service for recipe validation, nutritional analysis, and content moderation"
-    type: "backend"
+    type: "worker"
     status: "migrating"
     upstream:
       - service: "recipe_database"
@@ -263,7 +275,7 @@ services:
   ml_training_pipeline:
     name: "ML Training Pipeline"
     description: "Automated pipeline for training and deploying recommendation models"
-    type: "backend"
+    type: "worker"
     status: "deprecated"
     upstream:
       - service: "user_behavior_warehouse"
@@ -311,6 +323,10 @@ services:
     runbook: "https://wiki.mealplanner.com/auth-service-runbook"
     health_check: "https://auth.mealplanner.com/health"
     port: 8084
+    dashboard: "https://grafana.mealplanner.com/d/auth-service"
+    on_call: "Auth Service - PagerDuty"
+    incident_channel: "#incidents-auth"
+    slo: "99.99%"
   user_profile_db:
     name: "User Profile Database"
     description: "Database storing user accounts, preferences, dietary restrictions, and profile data"

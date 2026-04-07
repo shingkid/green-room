@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 
-import { CatalogView } from "./features/catalog/CatalogView";
-import { RegistryEditor } from "./features/editor/RegistryEditor";
+import { CatalogView } from "@features/catalog/CatalogView";
+import { RegistryEditor } from "@features/editor/RegistryEditor";
 import {
   DEFAULT_REGISTRY_TEMPLATE,
   getExplorerTitle,
@@ -11,10 +11,10 @@ import {
   type Registry,
   type Theme,
   validateRegistryText,
-} from "./domain/registry";
-import { downloadTextFile } from "./shared/browser";
+} from "@domain/registry";
+import { downloadTextFile } from "@shared/browser";
 
-const LOCAL_STORAGE_THEME_KEY = "service-catalog.theme";
+const LOCAL_STORAGE_THEME_KEY = "green-room.theme";
 
 function getPreferredTheme(): Theme {
   if (typeof window === "undefined") {
@@ -34,11 +34,12 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [draftText, setDraftText] = useState("");
+  const [validationText, setValidationText] = useState("");
   const [appliedRegistry, setAppliedRegistry] = useState<Registry | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const validation = useMemo(() => validateRegistryText(draftText), [draftText]);
+  const validation = useMemo(() => validateRegistryText(validationText), [validationText]);
   const currentRegistry = validation.registry ?? appliedRegistry;
   const explorerTitle = getExplorerTitle(currentRegistry?.metadata.team);
 
@@ -51,6 +52,16 @@ export default function App() {
   useEffect(() => {
     document.title = explorerTitle;
   }, [explorerTitle]);
+
+  useEffect(() => {
+    const debounceTimer = window.setTimeout(() => {
+      setValidationText(draftText);
+    }, 180);
+
+    return () => {
+      window.clearTimeout(debounceTimer);
+    };
+  }, [draftText]);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +80,7 @@ export default function App() {
         if (initialSource) {
           setSourceLabel(initialSource.sourceLabel);
           setDraftText(initialSource.sourceText);
+          setValidationText(initialSource.sourceText);
 
           const initialValidation = validateRegistryText(initialSource.sourceText);
 
@@ -82,6 +94,7 @@ export default function App() {
         } else if (storedDraft) {
           setSourceLabel("saved local draft");
           setDraftText(storedDraft);
+          setValidationText(storedDraft);
 
           const storedValidation = validateRegistryText(storedDraft);
 
@@ -93,6 +106,7 @@ export default function App() {
         } else {
           setSourceLabel(null);
           setDraftText(DEFAULT_REGISTRY_TEMPLATE);
+          setValidationText(DEFAULT_REGISTRY_TEMPLATE);
           setAppliedRegistry(null);
           setShowEditor(true);
         }
@@ -104,6 +118,7 @@ export default function App() {
         setLoadError(error instanceof Error ? error.message : "Failed to load registry.");
         setSourceLabel(null);
         setDraftText(DEFAULT_REGISTRY_TEMPLATE);
+        setValidationText(DEFAULT_REGISTRY_TEMPLATE);
         setShowEditor(true);
       } finally {
         if (!cancelled) {
@@ -156,6 +171,7 @@ export default function App() {
 
     const text = await file.text();
     setDraftText(text);
+    setValidationText(text);
     setSourceLabel(file.name);
     setShowEditor(true);
     event.target.value = "";
@@ -183,11 +199,7 @@ export default function App() {
   if (showEditor || !appliedRegistry) {
     return (
       <div className="app-shell" data-theme={theme}>
-        {loadError ? (
-          <div className="load-error-banner">
-            {loadError}
-          </div>
-        ) : null}
+        {loadError ? <div className="load-error-banner">{loadError}</div> : null}
         <RegistryEditor
           canApply={validation.registry !== null}
           checklist={validation.checklist}

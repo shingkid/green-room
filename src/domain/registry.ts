@@ -4,18 +4,13 @@ import { LineCounter, isMap, isSeq, parseDocument } from "yaml";
 
 import registrySchema from "../../service_registry.schema.json";
 
-export type ServiceStatus = "active" | "deprecated" | "migrating";
-export type ServiceType = "frontend" | "backend" | "datastore" | "infrastructure";
+export type ServiceStatus = "active" | "experimental" | "migrating" | "deprecated";
+export type ServiceType = "frontend" | "backend" | "worker" | "datastore" | "infrastructure";
 export type DependencyCriticality = "hard" | "soft";
-export type DataFlowAction =
-  | "produces"
-  | "transforms"
-  | "stores"
-  | "indexes"
-  | "enriches"
-  | "caches"
-  | "serves"
-  | "consumes";
+export type DataFlowAction = "produces" | "queues" | "processes" | "stores" | "serves" | "consumes";
+export type ProcessKind = "transform" | "enrich" | "filter" | "aggregate" | "validate";
+export type StoreKind = "database" | "object_store" | "index" | "cache" | "warehouse";
+export type QueueKind = "queue" | "stream" | "topic" | "bus";
 export type DataType = "dataset" | "event" | "metric" | "config" | "auth_token";
 export type Sensitivity = "public" | "internal" | "confidential" | "restricted";
 
@@ -40,6 +35,10 @@ export type Service = {
   runbook?: string;
   health_check?: string;
   port?: number;
+  dashboard?: string;
+  on_call?: string;
+  incident_channel?: string;
+  slo?: string;
 };
 
 export type BusinessFlow = {
@@ -52,6 +51,9 @@ export type BusinessFlow = {
 export type DataFlowStage = {
   service: string;
   action: DataFlowAction;
+  process_kind?: ProcessKind;
+  store_kind?: StoreKind;
+  queue_kind?: QueueKind;
   format?: string;
   notes?: string;
 };
@@ -111,10 +113,16 @@ export type SelectOption = {
   value: string;
 };
 
-export const ALL_SERVICE_STATUSES: ServiceStatus[] = ["active", "deprecated", "migrating"];
+export const ALL_SERVICE_STATUSES: ServiceStatus[] = [
+  "active",
+  "experimental",
+  "migrating",
+  "deprecated",
+];
 export const ALL_SERVICE_TYPES: ServiceType[] = [
   "frontend",
   "backend",
+  "worker",
   "datastore",
   "infrastructure",
 ];
@@ -123,20 +131,35 @@ export type OwnershipKind = (typeof ALL_OWNERSHIP_KINDS)[number];
 
 export const STATUS_STYLES: Record<ServiceStatus, StatusStyle> = {
   active: { bg: "#16a34a", border: "#15803d", text: "#fff" },
-  deprecated: { bg: "#6b7280", border: "#4b5563", text: "#fff" },
+  experimental: { bg: "#d97706", border: "#b45309", text: "#fff" },
   migrating: { bg: "#2563eb", border: "#1d4ed8", text: "#fff" },
+  deprecated: { bg: "#6b7280", border: "#4b5563", text: "#fff" },
 };
 
 export const ACTION_COLORS: Record<DataFlowAction, string> = {
-  produces: "#059669",
-  transforms: "#7c3aed",
-  stores: "#0369a1",
-  indexes: "#0369a1",
-  enriches: "#d97706",
-  caches: "#64748b",
-  serves: "#059669",
-  consumes: "#dc2626",
+  produces: "#1B9E77",
+  queues: "#D95F02",
+  processes: "#7570B3",
+  stores: "#E7298A",
+  serves: "#66A61E",
+  consumes: "#E31A1C",
 };
+
+export function getStageSubtypeLabel(stage: DataFlowStage) {
+  if (stage.action === "processes") {
+    return stage.process_kind ?? null;
+  }
+
+  if (stage.action === "stores") {
+    return stage.store_kind ?? null;
+  }
+
+  if (stage.action === "queues") {
+    return stage.queue_kind ?? null;
+  }
+
+  return null;
+}
 
 export const FLOW_COLORS: Record<string, string> = {
   research_search: "#8b5cf6",
@@ -148,6 +171,7 @@ export const FLOW_COLORS: Record<string, string> = {
 export const TYPE_ICONS: Record<ServiceType, string> = {
   frontend: "◻",
   backend: "⚙",
+  worker: "▷",
   datastore: "⛁",
   infrastructure: "△",
 };
@@ -176,7 +200,7 @@ export const TABS: Array<{ key: Mode; label: string }> = [
 
 export const GRAPH_MODES: Mode[] = ["overview", "impact", "flow"];
 export const REGISTRY_URL_CANDIDATES = ["/service_registry.yaml", "/service-registry.yaml"];
-export const LOCAL_STORAGE_DRAFT_KEY = "service-catalog.registry-draft";
+export const LOCAL_STORAGE_DRAFT_KEY = "green-room.registry-draft";
 export const DEFAULT_REGISTRY_TEMPLATE = `metadata:
   team: Platform Engineering
   team_id: platform_engineering
@@ -206,7 +230,8 @@ data_flows:
         action: produces
         format: JSON
       - service: example_api
-        action: transforms
+        action: processes
+        process_kind: transform
         format: JSON
 
 services:
@@ -225,6 +250,11 @@ services:
     runbook: https://example.com/runbooks/example-ui
     health_check: https://example.com/health/example-ui
     port: 443
+    # Optional on-call fields — add these to make the registry useful during incidents:
+    # dashboard: https://grafana.example.com/d/example-ui
+    # on_call: Example UI PagerDuty
+    # incident_channel: "#incidents-platform"
+    # slo: "99.9%"
 
   example_api:
     name: Example API
@@ -270,11 +300,7 @@ export function pointerToLabel(pointer: string) {
     return "(root)";
   }
 
-  return pointer
-    .split("/")
-    .slice(1)
-    .map(decodeJsonPointerSegment)
-    .join(" > ");
+  return pointer.split("/").slice(1).map(decodeJsonPointerSegment).join(" > ");
 }
 
 function nearestLocation(
@@ -303,7 +329,7 @@ function nearestLocation(
 }
 
 function collectNodeLocations(
-  node: any,
+  node: unknown,
   path: string[],
   lineCounter: LineCounter,
   locations: Map<string, string>,
@@ -312,7 +338,8 @@ function collectNodeLocations(
     return;
   }
 
-  const [start] = node.range ?? [];
+  const nodeWithRange = node as { range?: [number?] };
+  const [start] = nodeWithRange.range ?? [];
 
   if (typeof start === "number") {
     const pos = lineCounter.linePos(start);
@@ -321,7 +348,8 @@ function collectNodeLocations(
 
   if (isMap(node)) {
     for (const item of node.items) {
-      const key = String(item.key?.value ?? "");
+      const keyNode = item.key as { value?: unknown } | null | undefined;
+      const key = String(keyNode?.value ?? "");
       // Track value locations, not just keys, so downstream validation errors land on the field
       // content the user actually needs to edit.
       collectNodeLocations(item.value, [...path, key], lineCounter, locations);
@@ -330,7 +358,7 @@ function collectNodeLocations(
   }
 
   if (isSeq(node)) {
-    node.items.forEach((item: any, index: number) => {
+    node.items.forEach((item: unknown, index: number) => {
       collectNodeLocations(item, [...path, String(index)], lineCounter, locations);
     });
   }
@@ -477,18 +505,22 @@ function buildChecklist(raw: unknown): ChecklistGroup[] {
     {
       title: "Metadata",
       items: [
-        { label: "team",                checked: nonEmptyStr(meta["team"]) },
-        { label: "team_id",             checked: nonEmptyStr(meta["team_id"]) },
-        { label: "last_updated",        checked: nonEmptyStr(meta["last_updated"]) },
-        { label: "maintainers (min 1)", checked: Array.isArray(meta["maintainers"]) && (meta["maintainers"] as unknown[]).length > 0 },
+        { label: "team", checked: nonEmptyStr(meta["team"]) },
+        { label: "team_id", checked: nonEmptyStr(meta["team_id"]) },
+        { label: "last_updated", checked: nonEmptyStr(meta["last_updated"]) },
+        {
+          label: "maintainers (min 1)",
+          checked:
+            Array.isArray(meta["maintainers"]) && (meta["maintainers"] as unknown[]).length > 0,
+        },
       ],
     },
     {
       title: "Sections",
       items: [
         { label: "business_flows (min 1)", checked: hasEntries("business_flows") },
-        { label: "data_flows (min 1)",     checked: hasEntries("data_flows") },
-        { label: "services (min 1)",       checked: hasEntries("services") },
+        { label: "data_flows (min 1)", checked: hasEntries("data_flows") },
+        { label: "services (min 1)", checked: hasEntries("services") },
       ],
     },
   ];
@@ -511,16 +543,24 @@ export function validateRegistryText(sourceText: string): ValidationResult {
 
   // Best-effort parse for checklist — works even when the document has errors.
   let rawForChecklist: unknown = null;
-  try { rawForChecklist = doc.toJS(); } catch { /* leave null */ }
+  try {
+    rawForChecklist = doc.toJS();
+  } catch {
+    /* leave null */
+  }
   const checklist = buildChecklist(rawForChecklist);
 
-  const parseIssues: ValidationIssue[] = (doc.errors ?? []).map((error: any) => {
+  const parseIssues: ValidationIssue[] = (doc.errors ?? []).map((error: unknown) => {
+    const maybeError = error as {
+      message?: string;
+      pos?: [number?];
+    };
     const position =
-      typeof error.pos?.[0] === "number" ? lineCounter.linePos(error.pos[0]) : null;
+      typeof maybeError.pos?.[0] === "number" ? lineCounter.linePos(maybeError.pos[0]) : null;
 
     return {
       location: position ? formatLocation(position.line, position.col) : rootLocation,
-      message: error.message,
+      message: maybeError.message ?? "YAML parse error.",
       path: "",
       severity: "error",
     };

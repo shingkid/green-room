@@ -8,7 +8,7 @@ import {
   computeLayout,
   getAffectedDataFlows,
   slugify,
-} from "../../domain/catalog";
+} from "@domain/catalog";
 import {
   ALL_OWNERSHIP_KINDS,
   ALL_SERVICE_STATUSES,
@@ -21,7 +21,36 @@ import {
   type Service,
   type ServiceStatus,
   type ServiceType,
-} from "../../domain/registry";
+} from "@domain/registry";
+
+function priorityRank(priority: string) {
+  const match = /^P(\d+)$/.exec(priority.trim().toUpperCase());
+
+  if (!match) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return Number.parseInt(match[1], 10);
+}
+
+function compareBusinessFlowEntries(
+  left: [string, { name: string; priority: string }],
+  right: [string, { name: string; priority: string }],
+) {
+  const priorityDelta = priorityRank(left[1].priority) - priorityRank(right[1].priority);
+
+  if (priorityDelta !== 0) {
+    return priorityDelta;
+  }
+
+  const nameDelta = left[1].name.localeCompare(right[1].name);
+
+  if (nameDelta !== 0) {
+    return nameDelta;
+  }
+
+  return left[0].localeCompare(right[0]);
+}
 
 export function useCatalogViewModel(registry: Registry) {
   const services = registry.services;
@@ -68,8 +97,7 @@ export function useCatalogViewModel(registry: Registry) {
   const eligibleFlowEntries = useMemo(
     () =>
       businessFlowEntries.filter(
-        ([, flow]) =>
-          !selectedStakeholder || flow.stakeholders.includes(selectedStakeholder),
+        ([, flow]) => !selectedStakeholder || flow.stakeholders.includes(selectedStakeholder),
       ),
     [businessFlowEntries, selectedStakeholder],
   );
@@ -79,7 +107,7 @@ export function useCatalogViewModel(registry: Registry) {
   );
   const businessFlowOptions = useMemo(
     () =>
-      eligibleFlowEntries.map(([flowKey, flow]) => ({
+      [...eligibleFlowEntries].sort(compareBusinessFlowEntries).map(([flowKey, flow]) => ({
         label: `${flow.name} (${flow.priority})`,
         searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
         value: flowKey,
@@ -88,7 +116,7 @@ export function useCatalogViewModel(registry: Registry) {
   );
   const dataBusinessFlowOptions = useMemo(
     () =>
-      eligibleFlowEntries.map(([flowKey, flow]) => ({
+      [...eligibleFlowEntries].sort(compareBusinessFlowEntries).map(([flowKey, flow]) => ({
         label: flow.name,
         searchText: `${flowKey} ${flow.description} ${flow.stakeholders.join(" ")}`,
         value: flowKey,
@@ -129,8 +157,7 @@ export function useCatalogViewModel(registry: Registry) {
   const visibleTypeSet = visibleTypes;
   const visibleOwnershipSet = visibleOwnershipKinds;
   const getOwnershipKind = useCallback(
-    (service: Service) =>
-      service.owner === registry.metadata.team_id ? "internal" : "external",
+    (service: Service) => (service.owner === registry.metadata.team_id ? "internal" : "external"),
     [registry.metadata.team_id],
   );
   const isServiceVisibleInGraph = useCallback(
@@ -160,11 +187,7 @@ export function useCatalogViewModel(registry: Registry) {
   useEffect(() => {
     const service = selectedService ? services[selectedService] : null;
 
-    if (
-      service &&
-      isGraphMode &&
-      !isServiceVisibleInGraph(service)
-    ) {
+    if (service && isGraphMode && !isServiceVisibleInGraph(service)) {
       setSelectedService(null);
     }
   }, [isGraphMode, isServiceVisibleInGraph, selectedService, services]);
@@ -314,7 +337,7 @@ export function useCatalogViewModel(registry: Registry) {
 
   const selectedServiceDetails = selectedService ? services[selectedService] : null;
   const mermaidExport = useMemo(() => {
-    const teamSlug = slugify(registry.metadata.team) || "service-catalog";
+    const teamSlug = slugify(registry.metadata.team) || "green-room";
 
     if (mode === "overview") {
       return buildGraphMermaid({
@@ -351,7 +374,7 @@ export function useCatalogViewModel(registry: Registry) {
 
     if (mode === "flow") {
       const flowLabel = selectedFlow
-        ? businessFlows[selectedFlow]?.name ?? selectedFlow
+        ? (businessFlows[selectedFlow]?.name ?? selectedFlow)
         : selectedStakeholder
           ? `${selectedStakeholder} business flows`
           : "business flows";
@@ -366,11 +389,11 @@ export function useCatalogViewModel(registry: Registry) {
     }
 
     const selectedDataFlowName = selectedDataFlow
-      ? dataFlows[selectedDataFlow]?.name ?? selectedDataFlow
+      ? (dataFlows[selectedDataFlow]?.name ?? selectedDataFlow)
       : null;
     const lineageLabel =
       selectedDataFlowName ??
-      (selectedFlow ? businessFlows[selectedFlow]?.name ?? selectedFlow : "data-lineage");
+      (selectedFlow ? (businessFlows[selectedFlow]?.name ?? selectedFlow) : "data-lineage");
 
     // Data mode has no separate graph canvas, so export mirrors the currently visible expanded
     // filter result rather than any transient UI expansion state.

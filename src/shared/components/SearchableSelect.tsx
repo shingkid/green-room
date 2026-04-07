@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { matchesFuzzy } from "../../domain/catalog";
-import type { SelectOption } from "../../domain/registry";
+import { matchesFuzzy } from "@domain/catalog";
+import type { SelectOption } from "@domain/registry";
 import styles from "./SearchableSelect.module.css";
 
 type SearchableSelectProps = {
@@ -30,10 +30,7 @@ export function SearchableSelect({
 
   const selectedOption = options.find((option) => option.value === value) ?? null;
   const filteredOptions = useMemo(
-    () =>
-      options.filter((option) =>
-        matchesFuzzy(option.label, query, option.searchText),
-      ),
+    () => options.filter((option) => matchesFuzzy(option.label, query, option.searchText)),
     [options, query],
   );
 
