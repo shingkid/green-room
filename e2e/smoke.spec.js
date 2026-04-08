@@ -56,7 +56,10 @@ test("data-flow jump from impact details opens data lineage panel", async ({ pag
   await page.getByRole("button", { name: /Select a service/i }).click();
   await page.getByRole("button", { name: "Example UI" }).click();
 
-  await page.getByText(/Example Data Flow/i).first().click();
+  await page
+    .getByText(/Example Data Flow/i)
+    .first()
+    .click();
   await expect(page.getByRole("button", { name: "Data Lineage" })).toBeVisible();
   await expect(page.getByText("Describe how data moves between services.")).toBeVisible();
 });
