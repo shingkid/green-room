@@ -1,5 +1,10 @@
 # Green Room
 
+[![CI](https://github.com/shingkid/green-room/actions/workflows/ci.yml/badge.svg)](https://github.com/shingkid/green-room/actions/workflows/ci.yml)
+[![Deploy](https://github.com/shingkid/green-room/actions/workflows/deploy.yml/badge.svg)](https://github.com/shingkid/green-room/actions/workflows/deploy.yml)
+[![License](https://img.shields.io/github/license/shingkid/green-room)](./LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/shingkid/green-room)](https://github.com/shingkid/green-room/commits/main)
+
 > A lightweight service registry explorer for on-call engineers and small platform teams.
 
 ![demo](./public/demo.gif)
