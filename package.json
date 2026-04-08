@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
@@ -20,6 +21,7 @@
     "format:write": "prettier --write ."
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@eslint/js": "^9.39.4",
     "@modyfi/vite-plugin-yaml": "^1.1.1",
     "@testing-library/jest-dom": "^6.9.1",

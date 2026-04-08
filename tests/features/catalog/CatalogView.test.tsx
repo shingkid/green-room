@@ -67,8 +67,8 @@ describe("CatalogView", () => {
     await userEvent.click(screen.getByText("Example Data Flow"));
 
     expect(screen.getByText("Describe how data moves between services.")).toBeInTheDocument();
-    expect(screen.getAllByText("Example UI").length).toBeGreaterThan(0);
-    expect(screen.getByText("processes · transform")).toBeInTheDocument();
+    expect(screen.getByText("2 stages")).toBeInTheDocument();
+    expect(screen.getByText("Action")).toBeInTheDocument();
   });
 
   it("supports selecting services in impact mode and toggling direction", async () => {

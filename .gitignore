@@ -10,3 +10,6 @@ yarn-error.log*
 pnpm-debug.log*
 dist/
 coverage/
+playwright-report/
+test-results/
+blob-report/
