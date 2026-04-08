@@ -2,12 +2,18 @@ import {
   DEFAULT_REGISTRY_TEMPLATE,
   getExplorerTitle,
   getStageSubtypeLabel,
+  loadInitialRegistrySource,
   pointerToLabel,
   type DataFlowStage,
   validateRegistryText,
 } from "@domain/registry";
+import { vi } from "vitest";
 
 describe("registry domain", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("validates a known-good registry template", () => {
     const result = validateRegistryText(DEFAULT_REGISTRY_TEMPLATE);
 
@@ -128,6 +134,61 @@ services: {}
         expect.objectContaining({ label: "data_flows (min 1)", checked: false }),
         expect.objectContaining({ label: "services (min 1)", checked: false }),
       ]),
+    );
+  });
+
+  it("returns YAML parse issues with no registry", () => {
+    const invalidYaml = `
+metadata:
+  team: Platform
+  team_id: platform
+  last_updated: 2026-04-08
+  maintainers:
+    - name: Jane
+      slack: "@jane"
+services:
+  api:
+    name: API
+    description: Broken indent
+      type: backend
+`;
+    const result = validateRegistryText(invalidYaml);
+
+    expect(result.registry).toBeNull();
+    expect(result.issues.length).toBeGreaterThan(0);
+    expect(result.issues[0]?.severity).toBe("error");
+  });
+
+  it("loads first available checked-in registry source", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 404, statusText: "Not Found" })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: vi.fn().mockResolvedValue("metadata:\n  team: Platform\n"),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const source = await loadInitialRegistrySource();
+
+    expect(source).toEqual({
+      sourceLabel: "/service-registry.yaml",
+      sourceText: "metadata:\n  team: Platform\n",
+    });
+  });
+
+  it("throws when registry fetch fails with non-404 status", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Server Error",
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(loadInitialRegistrySource()).rejects.toThrow(
+      "Failed to load /service_registry.yaml: 500 Server Error",
     );
   });
 });

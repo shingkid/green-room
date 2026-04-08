@@ -92,4 +92,42 @@ data_flows:
       "dataFlow",
     );
   });
+
+  it("returns none when parsed root is not a map or cursor is outside supported sections", () => {
+    const listSource = `- item
+- another`;
+    expect(detectHintContext(listSource, 1)).toBe("none");
+
+    const source = `metadata:
+  team: Platform
+services:
+  api:
+    name: API
+    description: Backend API
+    type: backend
+    status: active
+    upstream: []
+    business_flows: [checkout]
+    owner: platform
+    runbook: https://example.com/runbook
+    health_check: https://example.com/health
+`;
+    const parsed = parseHintDocument(source);
+
+    expect(detectHintContextFromParsed(parsed, source.indexOf("metadata:"))).toBe("none");
+    expect(detectHintContextFromParsed(parsed, source.indexOf("team: Platform"))).toBe("none");
+    expect(detectHintContextFromParsed(parsed, source.indexOf("services:"))).toBe("none");
+  });
+
+  it("returns none when supported section exists but its value is not a map entry collection", () => {
+    const source = `services: not_a_map
+business_flows: []
+data_flows: 123
+`;
+    const parsed = parseHintDocument(source);
+
+    expect(detectHintContextFromParsed(parsed, source.indexOf("not_a_map"))).toBe("none");
+    expect(detectHintContextFromParsed(parsed, source.indexOf("[]"))).toBe("none");
+    expect(detectHintContextFromParsed(parsed, source.indexOf("123"))).toBe("none");
+  });
 });
