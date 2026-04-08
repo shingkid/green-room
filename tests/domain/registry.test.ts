@@ -5,7 +5,7 @@ import {
   pointerToLabel,
   type DataFlowStage,
   validateRegistryText,
-} from "./registry";
+} from "@domain/registry";
 
 describe("registry domain", () => {
   it("validates a known-good registry template", () => {

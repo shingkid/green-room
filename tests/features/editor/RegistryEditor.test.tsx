@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { EditorView } from "@uiw/react-codemirror";
 
-import { RegistryEditor } from "./RegistryEditor";
+import { RegistryEditor } from "@features/editor/RegistryEditor";
 
 const openSearchPanelMock = vi.fn();
 const searchMock = vi.fn((config: { top?: boolean }) => ({ extension: "search", config }));

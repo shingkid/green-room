@@ -1,4 +1,4 @@
-import { downloadTextFile } from "./browser";
+import { downloadTextFile } from "@shared/browser";
 
 describe("downloadTextFile", () => {
   it("creates and revokes an object URL", () => {

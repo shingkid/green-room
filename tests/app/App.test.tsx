@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
-import App from "./App";
+import App from "@app/App";
 import * as registryDomain from "@domain/registry";
 
 vi.mock("@uiw/react-codemirror", () => {

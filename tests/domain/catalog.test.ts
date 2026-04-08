@@ -1,4 +1,4 @@
-import type { Registry, Service } from "./registry";
+import type { Registry, Service } from "@domain/registry";
 import {
   buildDataFlowMermaid,
   buildGraph,
@@ -11,7 +11,7 @@ import {
   matchesFuzzy,
   normalizeSearchText,
   slugify,
-} from "./catalog";
+} from "@domain/catalog";
 
 const services: Record<string, Service> = {
   api: {

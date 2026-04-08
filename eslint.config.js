@@ -34,7 +34,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/**/*.test.{ts,tsx}"],
+    files: ["tests/**/*.test.{ts,tsx}"],
     languageOptions: {
       globals: {
         describe: "readonly",
