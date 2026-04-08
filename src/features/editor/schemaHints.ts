@@ -115,12 +115,16 @@ function summarizeDescription(description: string | null): string | null {
   const baseText = listMarkerIndex >= 0 ? normalized.slice(0, listMarkerIndex).trim() : normalized;
   const sentenceMatch = baseText.match(/^(.+?[.!?])(\s|$)/);
   const firstSentence = sentenceMatch?.[1]?.trim() ?? baseText;
-  const capped = firstSentence.length > 120 ? `${firstSentence.slice(0, 117).trimEnd()}...` : firstSentence;
+  const capped =
+    firstSentence.length > 120 ? `${firstSentence.slice(0, 117).trimEnd()}...` : firstSentence;
 
   return capped;
 }
 
-function getSectionEntrySchema(schema: JsonSchema, sectionKey: SectionHintSpec["sectionKey"]): JsonSchema | null {
+function getSectionEntrySchema(
+  schema: JsonSchema,
+  sectionKey: SectionHintSpec["sectionKey"],
+): JsonSchema | null {
   const sectionNode = schema.properties?.[sectionKey];
 
   if (!sectionNode) {
@@ -200,7 +204,10 @@ function generateFieldSnippetLines(
   return [`${indent}${fieldName}: ${renderScalarPlaceholder(fieldName, resolved)}`];
 }
 
-function generateSnippet(entrySchema: JsonSchema, sectionKey: SectionHintSpec["sectionKey"]): string {
+function generateSnippet(
+  entrySchema: JsonSchema,
+  sectionKey: SectionHintSpec["sectionKey"],
+): string {
   const required = entrySchema.required ?? [];
   const properties = entrySchema.properties ?? {};
   const exampleKey = sectionKey === "services" ? "example_service" : "example_key";
@@ -233,14 +240,16 @@ function buildHintContent(schema: JsonSchema, spec: SectionHintSpec): HintConten
   };
 }
 
-export const HINTS_BY_CONTEXT: Record<Exclude<HintContext, "none">, HintContent> =
-  SECTION_HINT_SPECS.reduce(
-    (acc, spec) => {
-      acc[spec.context] = buildHintContent(parsedSchema, spec);
-      return acc;
-    },
-    {} as Record<Exclude<HintContext, "none">, HintContent>,
-  );
+export const HINTS_BY_CONTEXT: Record<
+  Exclude<HintContext, "none">,
+  HintContent
+> = SECTION_HINT_SPECS.reduce(
+  (acc, spec) => {
+    acc[spec.context] = buildHintContent(parsedSchema, spec);
+    return acc;
+  },
+  {} as Record<Exclude<HintContext, "none">, HintContent>,
+);
 
 function getNodeBounds(node: unknown): { end: number; start: number } | null {
   const maybeNode = node as { range?: [number?, number?] };

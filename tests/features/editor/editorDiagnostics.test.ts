@@ -27,9 +27,7 @@ describe("editorDiagnostics", () => {
       },
     ]);
 
-    expect(diagnostics).toEqual([
-      { from: 2, to: 3, severity: "error", message: "Missing field" },
-    ]);
+    expect(diagnostics).toEqual([{ from: 2, to: 3, severity: "error", message: "Missing field" }]);
   });
 
   it("ignores issues with null/malformed/out-of-range locations and clamps large columns", () => {
@@ -60,9 +58,7 @@ describe("editorDiagnostics", () => {
       },
     ]);
 
-    expect(diagnostics).toEqual([
-      { from: 20, to: 20, severity: "error", message: "clamped" },
-    ]);
+    expect(diagnostics).toEqual([{ from: 20, to: 20, severity: "error", message: "clamped" }]);
   });
 
   it("dispatches editor diagnostics through setDiagnostics", () => {
@@ -89,4 +85,3 @@ describe("editorDiagnostics", () => {
     });
   });
 });
-

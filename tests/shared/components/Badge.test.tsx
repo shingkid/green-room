@@ -27,4 +27,3 @@ describe("Badge", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
-

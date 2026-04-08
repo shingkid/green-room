@@ -7,11 +7,7 @@ import { openSearchPanel, search } from "@codemirror/search";
 
 import type { ChecklistGroup, Theme, ValidationIssue } from "@domain/registry";
 import { pointerToLabel } from "@domain/registry";
-import {
-  detectHintContextFromParsed,
-  HINTS_BY_CONTEXT,
-  parseHintDocument,
-} from "./schemaHints";
+import { detectHintContextFromParsed, HINTS_BY_CONTEXT, parseHintDocument } from "./schemaHints";
 import { syncEditorDiagnostics } from "./editorDiagnostics";
 import { SchemaHintsPanel } from "./SchemaHintsPanel";
 import styles from "./RegistryEditor.module.css";
@@ -70,10 +66,7 @@ export function RegistryEditor({
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const [cursorOffset, setCursorOffset] = useState(0);
 
-  const extensions = useMemo(
-    () => [yaml(), search({ top: true }), lintGutter()],
-    [],
-  );
+  const extensions = useMemo(() => [yaml(), search({ top: true }), lintGutter()], []);
 
   const cmTheme = theme === "dark" ? githubDark : githubLight;
   const parsedHintDocument = useMemo(() => parseHintDocument(draftText), [draftText]);
@@ -111,27 +104,24 @@ export function RegistryEditor({
     [],
   );
 
-  const jumpToSection = useCallback(
-    (sectionKey: SectionKey) => {
-      const view = editorRef.current?.view;
-      if (!view) {
-        return;
-      }
+  const jumpToSection = useCallback((sectionKey: SectionKey) => {
+    const view = editorRef.current?.view;
+    if (!view) {
+      return;
+    }
 
-      const offset = findSectionOffset(view.state.doc.toString(), sectionKey);
-      if (offset == null) {
-        return;
-      }
+    const offset = findSectionOffset(view.state.doc.toString(), sectionKey);
+    if (offset == null) {
+      return;
+    }
 
-      view.dispatch({
-        selection: { anchor: offset },
-        effects: EditorView.scrollIntoView(offset, { y: "start" }),
-      });
-      view.focus();
-      setCursorOffset(offset);
-    },
-    [],
-  );
+    view.dispatch({
+      selection: { anchor: offset },
+      effects: EditorView.scrollIntoView(offset, { y: "start" }),
+    });
+    view.focus();
+    setCursorOffset(offset);
+  }, []);
 
   return (
     <div className={styles.shell}>
@@ -227,8 +217,7 @@ export function RegistryEditor({
                         </span>
                         <span className={styles.checklistLabel}>{item.label}</span>
                       </div>
-                      {group.title === "Sections" &&
-                      SECTION_CHECKLIST_LABEL_TO_KEY[item.label] ? (
+                      {group.title === "Sections" && SECTION_CHECKLIST_LABEL_TO_KEY[item.label] ? (
                         <button
                           aria-label={`Jump to ${SECTION_CHECKLIST_LABEL_TO_KEY[item.label]} section`}
                           className={styles.checklistJumpIconButton}
@@ -252,7 +241,10 @@ export function RegistryEditor({
           <div className={styles.validationFooterTitle}>Validation</div>
           <div className={styles.validationList}>
             {issues.map((issue, index) => (
-              <div className={styles.validationItem} key={`${issue.path}-${issue.message}-${index}`}>
+              <div
+                className={styles.validationItem}
+                key={`${issue.path}-${issue.message}-${index}`}
+              >
                 <div className={styles.validationItemHeader}>
                   <span className={styles.validationSeverity}>Error</span>
                   {issue.location ? (

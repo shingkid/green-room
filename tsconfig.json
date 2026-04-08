@@ -22,11 +22,5 @@
       "@styles/*": ["src/styles/*"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.d.ts",
-    "tests/**/*.ts",
-    "tests/**/*.tsx"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "tests/**/*.ts", "tests/**/*.tsx"]
 }

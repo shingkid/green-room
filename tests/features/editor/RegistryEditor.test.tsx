@@ -317,9 +317,7 @@ describe("RegistryEditor", () => {
     );
 
     await userEvent.click(screen.getByRole("button", { name: "Jump to services section" }));
-    await userEvent.click(
-      screen.getByRole("button", { name: "Jump to business_flows section" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Jump to business_flows section" }));
     await userEvent.click(screen.getByRole("button", { name: "Jump to data_flows section" }));
 
     expect(mockDispatch).toHaveBeenCalled();

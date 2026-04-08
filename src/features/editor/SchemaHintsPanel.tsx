@@ -27,7 +27,9 @@ export function SchemaHintsPanel({ hint }: SchemaHintsPanelProps) {
                   <div className={styles.hintsFieldDescription}>{field.summaryDescription}</div>
                 ) : null}
                 {field.enumValues?.length ? (
-                  <div className={styles.hintsEnumValues}>Allowed: {field.enumValues.join(", ")}</div>
+                  <div className={styles.hintsEnumValues}>
+                    Allowed: {field.enumValues.join(", ")}
+                  </div>
                 ) : null}
               </div>
             ))}
@@ -43,7 +45,9 @@ export function SchemaHintsPanel({ hint }: SchemaHintsPanelProps) {
                       <div className={styles.hintsFieldDescription}>{field.summaryDescription}</div>
                     ) : null}
                     {field.enumValues?.length ? (
-                      <div className={styles.hintsEnumValues}>Allowed: {field.enumValues.join(", ")}</div>
+                      <div className={styles.hintsEnumValues}>
+                        Allowed: {field.enumValues.join(", ")}
+                      </div>
                     ) : null}
                   </div>
                 ))}
