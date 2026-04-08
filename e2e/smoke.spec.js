@@ -5,12 +5,17 @@ async function gotoApp(page) {
 }
 
 async function ensureExplorerMode(page) {
+  const editRegistryButton = page.getByRole("button", { name: "Edit registry" });
   const useRegistryButton = page.getByRole("button", { name: "Use this registry" });
-  if (await useRegistryButton.isVisible()) {
-    await expect(useRegistryButton).toBeEnabled();
-    await useRegistryButton.click();
+
+  if (await editRegistryButton.isVisible()) {
+    return;
   }
-  await expect(page.getByRole("button", { name: "Edit registry" })).toBeVisible();
+
+  await expect(useRegistryButton).toBeVisible();
+  await expect(useRegistryButton).toBeEnabled();
+  await useRegistryButton.click();
+  await expect(editRegistryButton).toBeVisible();
 }
 
 test("loads explorer shell and main tabs", async ({ page }) => {
