@@ -66,8 +66,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  border: 0;
+  background: transparent;
   padding: 12px 16px;
   cursor: pointer;
+  text-align: left;
 }
 
 .panelHeaderMain {
@@ -139,6 +143,16 @@
   font-weight: 600;
 }
 
+.dataflowServiceButton {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
+
 .monoCell {
   font-family: monospace;
 }
@@ -202,6 +216,9 @@
   padding: 3px 10px;
   font-size: 10px;
   font-weight: 500;
+  font-family: inherit;
+  line-height: 1.2;
+  text-decoration: none;
 }
 
 .footer {

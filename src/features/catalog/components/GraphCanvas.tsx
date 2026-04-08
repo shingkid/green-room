@@ -134,6 +134,7 @@ const ServiceEdge = memo(function ServiceEdge({
 
 type GraphCanvasProps = {
   edges: Array<{
+    key: string;
     from: string;
     to: string;
     protocol?: string;
@@ -163,7 +164,7 @@ export function GraphCanvas({
 }: GraphCanvasProps) {
   const renderedEdges = useMemo(
     () =>
-      edges.map((edge, index) => {
+      edges.map((edge) => {
         const from = layout.positions[edge.from];
         const to = layout.positions[edge.to];
 
@@ -177,7 +178,7 @@ export function GraphCanvas({
             from={{ x: from.x + layout.nodeW / 2, y: from.y + layout.nodeH }}
             isActive={edge.isActive}
             isDimmed={mode !== "overview" && !edge.isActive}
-            key={`${edge.from}-${edge.to}-${index}`}
+            key={edge.key}
             protocol={edge.protocol}
             to={{ x: to.x + layout.nodeW / 2, y: to.y }}
           />

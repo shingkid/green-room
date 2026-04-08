@@ -246,9 +246,11 @@ export function CatalogView({
                 key={flowKey}
                 style={{ marginBottom: 12, overflow: "hidden" }}
               >
-                <div
+                <button
+                  aria-expanded={isExpanded}
                   className={styles.panelHeader}
                   onClick={() => viewModel.setExpandedDataFlow(isExpanded ? null : flowKey)}
+                  type="button"
                 >
                   <div className={styles.panelHeaderMain}>
                     <span className={styles.panelTitle}>{dataFlow.name}</span>
@@ -270,7 +272,7 @@ export function CatalogView({
                   >
                     ▾
                   </span>
-                </div>
+                </button>
 
                 {isExpanded ? (
                   <div className={styles.panelBody}>
@@ -294,14 +296,16 @@ export function CatalogView({
                           {dataFlow.stages.map((stage, index) => {
                             const subtype = getStageSubtypeLabel(stage);
                             return (
-                              <tr
-                                className={styles.dataflowRow}
-                                key={`${stage.service}-${index}`}
-                                onClick={() => viewModel.setSelectedService(stage.service)}
-                              >
+                              <tr className={styles.dataflowRow} key={`${stage.service}-${index}`}>
                                 <td>{index + 1}</td>
                                 <td className={styles.dataflowServiceCell}>
-                                  {viewModel.services[stage.service]?.name ?? stage.service}
+                                  <button
+                                    className={styles.dataflowServiceButton}
+                                    onClick={() => viewModel.setSelectedService(stage.service)}
+                                    type="button"
+                                  >
+                                    {viewModel.services[stage.service]?.name ?? stage.service}
+                                  </button>
                                 </td>
                                 <td>
                                   <span
@@ -371,7 +375,7 @@ export function CatalogView({
               <div className={styles.overline}>Data flows through this service</div>
               <div className={styles.tagRow}>
                 {viewModel.affectedDataFlows.map(([flowKey, dataFlow]) => (
-                  <span
+                  <button
                     className={styles.linkTag}
                     key={flowKey}
                     onClick={() => {
@@ -379,9 +383,10 @@ export function CatalogView({
                       viewModel.setSelectedDataFlow(flowKey);
                       viewModel.setExpandedDataFlow(flowKey);
                     }}
+                    type="button"
                   >
                     {DATA_TYPE_ICONS[dataFlow.data_type] ?? "?"} {dataFlow.name}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>

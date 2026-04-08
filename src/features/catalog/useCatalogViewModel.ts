@@ -274,6 +274,7 @@ export function useCatalogViewModel(registry: Registry) {
 
   const edges = useMemo(() => {
     const result: Array<{
+      key: string;
       from: string;
       to: string;
       protocol?: string;
@@ -282,7 +283,7 @@ export function useCatalogViewModel(registry: Registry) {
     }> = [];
 
     for (const [serviceKey, service] of serviceEntries) {
-      for (const dependency of service.upstream ?? []) {
+      for (const [index, dependency] of (service.upstream ?? []).entries()) {
         if (
           visibleServices.has(serviceKey) &&
           visibleServices.has(dependency.service) &&
@@ -293,6 +294,7 @@ export function useCatalogViewModel(registry: Registry) {
             criticality: dependency.criticality,
             from: dependency.service,
             isActive: affectedSet.has(serviceKey) && affectedSet.has(dependency.service),
+            key: `${serviceKey}:${index}:${dependency.service}`,
             protocol: dependency.protocol,
             to: serviceKey,
           });

@@ -49,6 +49,7 @@ const SECTION_HINT_SPECS: SectionHintSpec[] = [
 ];
 
 const parsedSchema = registrySchema as JsonSchema;
+const localRefCache = new Map<string, JsonSchema | null>();
 
 function resolveLocalRef(schema: JsonSchema, ref: string): JsonSchema | null {
   if (!ref.startsWith("#/")) {
@@ -77,7 +78,12 @@ function dereferenceSchema(schema: JsonSchema, node: JsonSchema): JsonSchema {
     return node;
   }
 
+  if (localRefCache.has(node.$ref)) {
+    return localRefCache.get(node.$ref) ?? node;
+  }
+
   const resolved = resolveLocalRef(schema, node.$ref);
+  localRefCache.set(node.$ref, resolved);
   return resolved ?? node;
 }
 
