@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 
-import { CatalogView } from "@features/catalog/CatalogView";
-import { RegistryEditor } from "@features/editor/RegistryEditor";
 import {
   DEFAULT_REGISTRY_TEMPLATE,
   getExplorerTitle,
@@ -15,6 +13,12 @@ import {
 import { downloadTextFile } from "@shared/browser";
 
 const LOCAL_STORAGE_THEME_KEY = "green-room.theme";
+const CatalogView = lazy(() =>
+  import("@features/catalog/CatalogView").then((module) => ({ default: module.CatalogView })),
+);
+const RegistryEditor = lazy(() =>
+  import("@features/editor/RegistryEditor").then((module) => ({ default: module.RegistryEditor })),
+);
 
 type AppStartupState = {
   appliedRegistry: Registry | null;
@@ -231,32 +235,36 @@ export default function App() {
     return (
       <div className="app-shell" data-theme={theme}>
         {loadError ? <div className="load-error-banner">{loadError}</div> : null}
-        <RegistryEditor
-          canApply={validation.registry !== null}
-          checklist={validation.checklist}
-          draftText={draftText}
-          issues={validation.issues}
-          onApply={handleApplyRegistry}
-          onChange={setDraftText}
-          onClose={appliedRegistry ? () => setShowEditor(false) : undefined}
-          onDownload={handleDownload}
-          onImport={handleImport}
-          onToggleTheme={handleToggleTheme}
-          sourceLabel={sourceLabel}
-          theme={theme}
-          title={explorerTitle}
-        />
+        <Suspense fallback={<div className="app-subtitle">Loading editor…</div>}>
+          <RegistryEditor
+            canApply={validation.registry !== null}
+            checklist={validation.checklist}
+            draftText={draftText}
+            issues={validation.issues}
+            onApply={handleApplyRegistry}
+            onChange={setDraftText}
+            onClose={appliedRegistry ? () => setShowEditor(false) : undefined}
+            onDownload={handleDownload}
+            onImport={handleImport}
+            onToggleTheme={handleToggleTheme}
+            sourceLabel={sourceLabel}
+            theme={theme}
+            title={explorerTitle}
+          />
+        </Suspense>
       </div>
     );
   }
 
   return (
-    <CatalogView
-      onEditRegistry={() => setShowEditor(true)}
-      onToggleTheme={handleToggleTheme}
-      registry={appliedRegistry}
-      sourceLabel={sourceLabel}
-      theme={theme}
-    />
+    <Suspense fallback={<div className="app-subtitle">Loading explorer…</div>}>
+      <CatalogView
+        onEditRegistry={() => setShowEditor(true)}
+        onToggleTheme={handleToggleTheme}
+        registry={appliedRegistry}
+        sourceLabel={sourceLabel}
+        theme={theme}
+      />
+    </Suspense>
   );
 }
