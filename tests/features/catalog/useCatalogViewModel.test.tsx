@@ -34,6 +34,14 @@ const registry: Registry = {
   services: {},
 };
 
+function getDefaultRegistry(): Registry {
+  const parsed = validateRegistryText(DEFAULT_REGISTRY_TEMPLATE);
+  if (!parsed.registry) {
+    throw new Error("Expected default registry template to validate in tests.");
+  }
+  return parsed.registry;
+}
+
 describe("useCatalogViewModel business flow sorting", () => {
   it("sorts business flow options by priority then alphabetical", () => {
     const { result } = renderHook(() => useCatalogViewModel(registry));
@@ -56,12 +64,7 @@ describe("useCatalogViewModel business flow sorting", () => {
   });
 
   it("switches from overview to impact when selecting a service", () => {
-    const parsed = validateRegistryText(DEFAULT_REGISTRY_TEMPLATE);
-    if (!parsed.registry) {
-      throw new Error("Expected default registry template to validate in tests.");
-    }
-
-    const { result } = renderHook(() => useCatalogViewModel(parsed.registry));
+    const { result } = renderHook(() => useCatalogViewModel(getDefaultRegistry()));
 
     act(() => {
       result.current.handleServiceClick("example_ui");
@@ -74,12 +77,7 @@ describe("useCatalogViewModel business flow sorting", () => {
   });
 
   it("returns null impact export when no service is selected", () => {
-    const parsed = validateRegistryText(DEFAULT_REGISTRY_TEMPLATE);
-    if (!parsed.registry) {
-      throw new Error("Expected default registry template to validate in tests.");
-    }
-
-    const { result } = renderHook(() => useCatalogViewModel(parsed.registry));
+    const { result } = renderHook(() => useCatalogViewModel(getDefaultRegistry()));
 
     act(() => {
       result.current.handleTabChange("impact");
@@ -91,12 +89,7 @@ describe("useCatalogViewModel business flow sorting", () => {
   });
 
   it("clears graph and data selections when returning to overview", () => {
-    const parsed = validateRegistryText(DEFAULT_REGISTRY_TEMPLATE);
-    if (!parsed.registry) {
-      throw new Error("Expected default registry template to validate in tests.");
-    }
-
-    const { result } = renderHook(() => useCatalogViewModel(parsed.registry));
+    const { result } = renderHook(() => useCatalogViewModel(getDefaultRegistry()));
 
     act(() => {
       result.current.handleServiceClick("example_ui");

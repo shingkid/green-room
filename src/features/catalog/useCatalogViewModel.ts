@@ -78,6 +78,16 @@ export function useCatalogViewModel(registry: Registry) {
   const [expandedDataFlow, setExpandedDataFlow] = useState<string | null>(null);
 
   const graph = useMemo(() => buildGraph(services), [services]);
+  const impactedServices = useMemo(() => {
+    if (!selectedService) {
+      return null;
+    }
+
+    return collectReachable(
+      selectedService,
+      impactDirection === "downstream" ? graph.downstream : graph.upstream,
+    );
+  }, [graph, impactDirection, selectedService]);
   const stakeholderOptions = useMemo(() => {
     const stakeholders = new Set<string>();
 
@@ -231,14 +241,11 @@ export function useCatalogViewModel(registry: Registry) {
       };
     }
 
-    if (mode === "impact" && selectedService) {
+    if (mode === "impact" && selectedService && impactedServices) {
       return {
         // Impact mode keeps the full visible graph on screen and uses affectedSet/highlightKey
         // to drive emphasis instead of removing unrelated services from the layout.
-        affectedSet: collectReachable(
-          selectedService,
-          impactDirection === "downstream" ? graph.downstream : graph.upstream,
-        ),
+        affectedSet: impactedServices,
         highlightKey: selectedService,
         visibleServices: allServices,
       };
@@ -251,8 +258,7 @@ export function useCatalogViewModel(registry: Registry) {
     };
   }, [
     eligibleFlowKeys,
-    graph,
-    impactDirection,
+    impactedServices,
     mode,
     selectedFlow,
     selectedService,
@@ -302,10 +308,10 @@ export function useCatalogViewModel(registry: Registry) {
       return [];
     }
 
-    const affectedServices = collectReachable(
-      selectedService,
-      impactDirection === "downstream" ? graph.downstream : graph.upstream,
-    );
+    const affectedServices = impactedServices;
+    if (!affectedServices) {
+      return [];
+    }
     const flowKeys = new Set<string>();
 
     for (const serviceKey of affectedServices) {
@@ -315,7 +321,7 @@ export function useCatalogViewModel(registry: Registry) {
     }
 
     return [...flowKeys];
-  }, [graph, impactDirection, mode, selectedService, services]);
+  }, [impactedServices, mode, selectedService, services]);
 
   const affectedDataFlows = useMemo(() => {
     if (!selectedService || mode === "data") {

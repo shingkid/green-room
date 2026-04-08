@@ -16,6 +16,59 @@ import { downloadTextFile } from "@shared/browser";
 
 const LOCAL_STORAGE_THEME_KEY = "green-room.theme";
 
+type AppStartupState = {
+  appliedRegistry: Registry | null;
+  draftText: string;
+  loadError: string | null;
+  showEditor: boolean;
+  sourceLabel: string | null;
+  validationText: string;
+};
+
+function buildTemplateStartupState(loadError: string | null): AppStartupState {
+  return {
+    appliedRegistry: null,
+    draftText: DEFAULT_REGISTRY_TEMPLATE,
+    loadError,
+    showEditor: true,
+    sourceLabel: null,
+    validationText: DEFAULT_REGISTRY_TEMPLATE,
+  };
+}
+
+function resolveStartupState(
+  initialSource: Awaited<ReturnType<typeof loadInitialRegistrySource>>,
+  storedDraft: string | null,
+): AppStartupState {
+  if (initialSource) {
+    const initialValidation = validateRegistryText(initialSource.sourceText);
+
+    return {
+      appliedRegistry: initialValidation.registry,
+      draftText: initialSource.sourceText,
+      loadError: null,
+      showEditor: !initialValidation.registry,
+      sourceLabel: initialSource.sourceLabel,
+      validationText: initialSource.sourceText,
+    };
+  }
+
+  if (storedDraft) {
+    const storedValidation = validateRegistryText(storedDraft);
+
+    return {
+      appliedRegistry: storedValidation.registry,
+      draftText: storedDraft,
+      loadError: null,
+      showEditor: true,
+      sourceLabel: "saved local draft",
+      validationText: storedDraft,
+    };
+  }
+
+  return buildTemplateStartupState(null);
+}
+
 function getPreferredTheme(): Theme {
   if (typeof window === "undefined") {
     return "dark";
@@ -77,49 +130,27 @@ export default function App() {
           return;
         }
 
-        if (initialSource) {
-          setSourceLabel(initialSource.sourceLabel);
-          setDraftText(initialSource.sourceText);
-          setValidationText(initialSource.sourceText);
-
-          const initialValidation = validateRegistryText(initialSource.sourceText);
-
-          if (initialValidation.registry) {
-            setAppliedRegistry(initialValidation.registry);
-            setShowEditor(false);
-          } else {
-            setAppliedRegistry(null);
-            setShowEditor(true);
-          }
-        } else if (storedDraft) {
-          setSourceLabel("saved local draft");
-          setDraftText(storedDraft);
-          setValidationText(storedDraft);
-
-          const storedValidation = validateRegistryText(storedDraft);
-
-          if (storedValidation.registry) {
-            setAppliedRegistry(storedValidation.registry);
-          }
-
-          setShowEditor(true);
-        } else {
-          setSourceLabel(null);
-          setDraftText(DEFAULT_REGISTRY_TEMPLATE);
-          setValidationText(DEFAULT_REGISTRY_TEMPLATE);
-          setAppliedRegistry(null);
-          setShowEditor(true);
-        }
+        const startupState = resolveStartupState(initialSource, storedDraft);
+        setSourceLabel(startupState.sourceLabel);
+        setDraftText(startupState.draftText);
+        setValidationText(startupState.validationText);
+        setAppliedRegistry(startupState.appliedRegistry);
+        setShowEditor(startupState.showEditor);
+        setLoadError(startupState.loadError);
       } catch (error) {
         if (cancelled) {
           return;
         }
 
-        setLoadError(error instanceof Error ? error.message : "Failed to load registry.");
-        setSourceLabel(null);
-        setDraftText(DEFAULT_REGISTRY_TEMPLATE);
-        setValidationText(DEFAULT_REGISTRY_TEMPLATE);
-        setShowEditor(true);
+        const startupState = buildTemplateStartupState(
+          error instanceof Error ? error.message : "Failed to load registry.",
+        );
+        setSourceLabel(startupState.sourceLabel);
+        setDraftText(startupState.draftText);
+        setValidationText(startupState.validationText);
+        setAppliedRegistry(startupState.appliedRegistry);
+        setShowEditor(startupState.showEditor);
+        setLoadError(startupState.loadError);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
