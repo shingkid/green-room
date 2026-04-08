@@ -70,4 +70,111 @@ describe("CatalogView", () => {
     expect(screen.getAllByText("Example UI").length).toBeGreaterThan(0);
     expect(screen.getByText("processes · transform")).toBeInTheDocument();
   });
+
+  it("supports selecting services in impact mode and toggling direction", async () => {
+    render(
+      <CatalogView
+        onEditRegistry={() => {}}
+        onToggleTheme={() => {}}
+        registry={registry}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Dependency Impact" }));
+    await userEvent.click(screen.getByRole("button", { name: /select a service/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
+
+    expect(screen.getByText("Direct dependencies")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Upstream" }));
+    expect(screen.getByText(/upstream deps/i)).toBeInTheDocument();
+  });
+
+  it("jumps from impact details into data lineage and renders on-call links", async () => {
+    const service = registry.services.example_ui;
+    const enrichedRegistry = {
+      ...registry,
+      services: {
+        ...registry.services,
+        example_ui: {
+          ...service,
+          dashboard: "https://example.com/dashboards/example-ui",
+          on_call: "https://pagerduty.example.com/example-ui",
+          incident_channel: "#incidents-platform",
+          slo: "99.9%",
+        },
+      },
+    };
+
+    render(
+      <CatalogView
+        onEditRegistry={() => {}}
+        onToggleTheme={() => {}}
+        registry={enrichedRegistry}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Dependency Impact" }));
+    await userEvent.click(screen.getByRole("button", { name: /select a service/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
+
+    expect(screen.getByRole("link", { name: "Runbook ↗" })).toHaveAttribute(
+      "href",
+      "https://example.com/runbooks/example-ui",
+    );
+    expect(screen.getByRole("link", { name: "Health check ↗" })).toHaveAttribute(
+      "href",
+      "https://example.com/health/example-ui",
+    );
+    expect(screen.getByRole("link", { name: "Dashboard ↗" })).toHaveAttribute(
+      "href",
+      "https://example.com/dashboards/example-ui",
+    );
+    expect(screen.getByRole("link", { name: "On-call ↗" })).toHaveAttribute(
+      "href",
+      "https://pagerduty.example.com/example-ui",
+    );
+    expect(screen.getByText("#incidents-platform")).toBeInTheDocument();
+    expect(screen.getByText("SLO 99.9%")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText(/Example Data Flow/));
+    expect(screen.getByText("Describe how data moves between services.")).toBeInTheDocument();
+    expect(screen.getByText("Data Lineage")).toBeInTheDocument();
+  });
+
+  it("toggles legend filters for status, ownership, and type in graph modes", async () => {
+    render(
+      <CatalogView
+        onEditRegistry={() => {}}
+        onToggleTheme={() => {}}
+        registry={registry}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+      />,
+    );
+
+    const activeStatusButton = screen.getByRole("button", { name: "active" });
+    const teamOwnedButton = screen.getByRole("button", { name: "team-owned" });
+    const externalButton = screen.getByRole("button", { name: "external" });
+    const frontendTypeButton = screen.getByRole("button", { name: /frontend/i });
+
+    expect(activeStatusButton.className).not.toMatch(/legendToggleOff/);
+    expect(teamOwnedButton.className).not.toMatch(/legendToggleOff/);
+    expect(externalButton.className).not.toMatch(/legendToggleOff/);
+    expect(frontendTypeButton.className).not.toMatch(/legendToggleOff/);
+
+    await userEvent.click(activeStatusButton);
+    await userEvent.click(teamOwnedButton);
+    await userEvent.click(externalButton);
+    await userEvent.click(frontendTypeButton);
+
+    expect(activeStatusButton.className).toMatch(/legendToggleOff/);
+    expect(teamOwnedButton.className).toMatch(/legendToggleOff/);
+    expect(externalButton.className).toMatch(/legendToggleOff/);
+    expect(frontendTypeButton.className).toMatch(/legendToggleOff/);
+  });
 });
