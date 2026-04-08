@@ -98,7 +98,7 @@ services:
     expect(getStageSubtypeLabel(producerStage)).toBeNull();
   });
 
-  it("accepts empty business_flows, data_flows, and services sections", () => {
+  it("rejects empty business_flows, data_flows, and services sections", () => {
     const minimalRegistry = `
 metadata:
   team: Platform
@@ -114,13 +114,19 @@ services: {}
 
     const result = validateRegistryText(minimalRegistry);
 
-    expect(result.issues).toHaveLength(0);
-    expect(result.registry).not.toBeNull();
+    expect(result.registry).toBeNull();
+    expect(result.issues.map((issue) => issue.message)).toEqual(
+      expect.arrayContaining([
+        "must NOT have fewer than 1 properties",
+        "must NOT have fewer than 1 properties",
+        "must NOT have fewer than 1 properties",
+      ]),
+    );
     expect(result.checklist.find((group) => group.title === "Sections")?.items).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: "business_flows section", checked: true }),
-        expect.objectContaining({ label: "data_flows section", checked: true }),
-        expect.objectContaining({ label: "services section", checked: true }),
+        expect.objectContaining({ label: "business_flows (min 1)", checked: false }),
+        expect.objectContaining({ label: "data_flows (min 1)", checked: false }),
+        expect.objectContaining({ label: "services (min 1)", checked: false }),
       ]),
     );
   });

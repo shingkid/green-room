@@ -19,7 +19,7 @@
 
 .pane {
   display: flex;
-  min-height: 70vh;
+  height: 70vh;
   flex-direction: column;
   border: 1px solid var(--border-default);
   border-radius: 10px;
@@ -139,7 +139,7 @@
 
 .cmWrapper :global(.cm-scroller) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  min-height: calc(70vh - 44px); /* match the pane min-height minus paneTitle */
+  min-height: calc(70vh - 44px); /* match the pane height minus paneTitle */
 }
 
 /* Squiggly underline for lint errors */
@@ -152,12 +152,17 @@
 
 /* ---- Validation pane ---- */
 
+.validationBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
 .validationList {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-  overflow: auto;
 }
 
 .validationItem {
@@ -340,8 +345,16 @@
 .checklistItem {
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 12px;
+}
+
+.checklistItemMain {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
 
 .checklistIcon {
@@ -355,17 +368,45 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+.checklistJumpIconButton {
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.checklistJumpIconButton:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.checklistJumpIconButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
 .checklistItemChecked .checklistIcon {
   color: var(--validation-success);
 }
-.checklistItemChecked .checklistLabel {
+.checklistItemChecked .checklistLabel,
+.checklistItemChecked .checklistJumpIconButton {
   color: var(--text-muted);
 }
 
 .checklistItemUnchecked .checklistIcon {
   color: var(--text-subtle);
 }
-.checklistItemUnchecked .checklistLabel {
+.checklistItemUnchecked .checklistLabel,
+.checklistItemUnchecked .checklistJumpIconButton {
   color: var(--text-primary);
 }
 
@@ -375,7 +416,7 @@
   }
 
   .pane {
-    min-height: 40vh;
+    height: 40vh;
   }
 
   .cmWrapper :global(.cm-scroller) {

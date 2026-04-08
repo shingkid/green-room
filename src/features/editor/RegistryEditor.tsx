@@ -33,6 +33,11 @@ type RegistryEditorProps = {
 };
 
 type SectionKey = "services" | "business_flows" | "data_flows";
+const SECTION_CHECKLIST_LABEL_TO_KEY: Record<string, SectionKey> = {
+  "business_flows (min 1)": "business_flows",
+  "data_flows (min 1)": "data_flows",
+  "services (min 1)": "services",
+};
 
 function findSectionOffset(sourceText: string, sectionKey: SectionKey) {
   const escapedKey = sectionKey.replaceAll("_", "\\_");
@@ -184,27 +189,6 @@ export function RegistryEditor({
             <div className={styles.editorActions}>
               <button
                 className={styles.findReplaceButton}
-                onClick={() => jumpToSection("services")}
-                type="button"
-              >
-                Services
-              </button>
-              <button
-                className={styles.findReplaceButton}
-                onClick={() => jumpToSection("business_flows")}
-                type="button"
-              >
-                Business Flows
-              </button>
-              <button
-                className={styles.findReplaceButton}
-                onClick={() => jumpToSection("data_flows")}
-                type="button"
-              >
-                Data Flows
-              </button>
-              <button
-                className={styles.findReplaceButton}
                 onClick={handleOpenFindReplace}
                 type="button"
               >
@@ -227,52 +211,67 @@ export function RegistryEditor({
 
         <section className={styles.pane}>
           <div className={styles.paneTitle}>Validation</div>
-          <div className={styles.checklist}>
-            {checklist.map((group) => (
-              <div className={styles.checklistGroup} key={group.title}>
-                <div className={styles.checklistGroupTitle}>{group.title}</div>
-                {group.items.map((item) => (
-                  <div
-                    className={`${styles.checklistItem} ${item.checked ? styles.checklistItemChecked : styles.checklistItemUnchecked}`}
-                    key={item.label}
-                  >
-                    <span aria-hidden="true" className={styles.checklistIcon}>
-                      {item.checked ? "✓" : "○"}
-                    </span>
-                    <span className={styles.checklistLabel}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-          <SchemaHintsPanel hint={activeHint} />
-          {issues.length === 0 ? (
-            <div className={styles.validationOk}>
-              <div className={styles.validationOkTitle}>Schema validation passed.</div>
-              <div className={styles.validationOkBody}>
-                The registry is syntactically valid, matches the schema, and all known references
-                resolve.
-              </div>
-            </div>
-          ) : (
-            <div className={styles.validationList}>
-              {issues.map((issue, index) => (
-                <div
-                  className={styles.validationItem}
-                  key={`${issue.path}-${issue.message}-${index}`}
-                >
-                  <div className={styles.validationItemHeader}>
-                    <span className={styles.validationSeverity}>Error</span>
-                    {issue.location ? (
-                      <span className={styles.validationLocation}>{issue.location}</span>
-                    ) : null}
-                  </div>
-                  <div className={styles.validationMessage}>{issue.message}</div>
-                  <div className={styles.validationPath}>{pointerToLabel(issue.path)}</div>
+          <div className={styles.validationBody}>
+            <div className={styles.checklist}>
+              {checklist.map((group) => (
+                <div className={styles.checklistGroup} key={group.title}>
+                  <div className={styles.checklistGroupTitle}>{group.title}</div>
+                  {group.items.map((item) => (
+                    <div
+                      className={`${styles.checklistItem} ${item.checked ? styles.checklistItemChecked : styles.checklistItemUnchecked}`}
+                      key={item.label}
+                    >
+                      <div className={styles.checklistItemMain}>
+                        <span aria-hidden="true" className={styles.checklistIcon}>
+                          {item.checked ? "✓" : "○"}
+                        </span>
+                        <span className={styles.checklistLabel}>{item.label}</span>
+                      </div>
+                      {group.title === "Sections" &&
+                      SECTION_CHECKLIST_LABEL_TO_KEY[item.label] ? (
+                        <button
+                          aria-label={`Jump to ${SECTION_CHECKLIST_LABEL_TO_KEY[item.label]} section`}
+                          className={styles.checklistJumpIconButton}
+                          onClick={() => jumpToSection(SECTION_CHECKLIST_LABEL_TO_KEY[item.label])}
+                          type="button"
+                        >
+                          ↗
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
-          )}
+            <SchemaHintsPanel hint={activeHint} />
+            {issues.length === 0 ? (
+              <div className={styles.validationOk}>
+                <div className={styles.validationOkTitle}>Schema validation passed.</div>
+                <div className={styles.validationOkBody}>
+                  The registry is syntactically valid, matches the schema, and all known
+                  references resolve.
+                </div>
+              </div>
+            ) : (
+              <div className={styles.validationList}>
+                {issues.map((issue, index) => (
+                  <div
+                    className={styles.validationItem}
+                    key={`${issue.path}-${issue.message}-${index}`}
+                  >
+                    <div className={styles.validationItemHeader}>
+                      <span className={styles.validationSeverity}>Error</span>
+                      {issue.location ? (
+                        <span className={styles.validationLocation}>{issue.location}</span>
+                      ) : null}
+                    </div>
+                    <div className={styles.validationMessage}>{issue.message}</div>
+                    <div className={styles.validationPath}>{pointerToLabel(issue.path)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </div>

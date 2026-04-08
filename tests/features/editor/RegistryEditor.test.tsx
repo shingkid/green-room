@@ -289,11 +289,20 @@ describe("RegistryEditor", () => {
     expect(screen.getByText("Optional fields")).toBeInTheDocument();
   });
 
-  it("jumps to top-level sections from header actions", async () => {
+  it("jumps to top-level sections from validation checklist jump buttons", async () => {
     render(
       <RegistryEditor
         canApply
-        checklist={[]}
+        checklist={[
+          {
+            title: "Sections",
+            items: [
+              { label: "business_flows (min 1)", checked: false },
+              { label: "data_flows (min 1)", checked: false },
+              { label: "services (min 1)", checked: false },
+            ],
+          },
+        ]}
         draftText="metadata: {}"
         issues={[]}
         onApply={() => {}}
@@ -307,9 +316,11 @@ describe("RegistryEditor", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Services" }));
-    await userEvent.click(screen.getByRole("button", { name: "Business Flows" }));
-    await userEvent.click(screen.getByRole("button", { name: "Data Flows" }));
+    await userEvent.click(screen.getByRole("button", { name: "Jump to services section" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Jump to business_flows section" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Jump to data_flows section" }));
 
     expect(mockDispatch).toHaveBeenCalled();
     expect(mockView.focus).toHaveBeenCalled();
