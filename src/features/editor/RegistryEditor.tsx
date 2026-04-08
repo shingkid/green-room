@@ -210,7 +210,7 @@ export function RegistryEditor({
         </section>
 
         <section className={styles.pane}>
-          <div className={styles.paneTitle}>Validation</div>
+          <div className={styles.paneTitle}>Schema Guidance</div>
           <div className={styles.validationBody}>
             <div className={styles.checklist}>
               {checklist.map((group) => (
@@ -244,36 +244,38 @@ export function RegistryEditor({
               ))}
             </div>
             <SchemaHintsPanel hint={activeHint} />
-            {issues.length === 0 ? (
-              <div className={styles.validationOk}>
-                <div className={styles.validationOkTitle}>Schema validation passed.</div>
-                <div className={styles.validationOkBody}>
-                  The registry is syntactically valid, matches the schema, and all known
-                  references resolve.
-                </div>
-              </div>
-            ) : (
-              <div className={styles.validationList}>
-                {issues.map((issue, index) => (
-                  <div
-                    className={styles.validationItem}
-                    key={`${issue.path}-${issue.message}-${index}`}
-                  >
-                    <div className={styles.validationItemHeader}>
-                      <span className={styles.validationSeverity}>Error</span>
-                      {issue.location ? (
-                        <span className={styles.validationLocation}>{issue.location}</span>
-                      ) : null}
-                    </div>
-                    <div className={styles.validationMessage}>{issue.message}</div>
-                    <div className={styles.validationPath}>{pointerToLabel(issue.path)}</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </section>
       </div>
+      {issues.length > 0 ? (
+        <div className={styles.validationFooter}>
+          <div className={styles.validationFooterTitle}>Validation</div>
+          <div className={styles.validationList}>
+            {issues.map((issue, index) => (
+              <div className={styles.validationItem} key={`${issue.path}-${issue.message}-${index}`}>
+                <div className={styles.validationItemHeader}>
+                  <span className={styles.validationSeverity}>Error</span>
+                  {issue.location ? (
+                    <span className={styles.validationLocation}>{issue.location}</span>
+                  ) : null}
+                </div>
+                <div className={styles.validationMessage}>{issue.message}</div>
+                <div className={styles.validationPath}>{pointerToLabel(issue.path)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {issues.length === 0 ? (
+        <div className={styles.validationFooter}>
+          <div className={styles.validationFooterTitle}>Validation</div>
+          <div className={styles.validationOkTitle}>Schema validation passed.</div>
+          <div className={styles.validationOkBody}>
+            The registry is syntactically valid, matches the schema, and all known references
+            resolve.
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
