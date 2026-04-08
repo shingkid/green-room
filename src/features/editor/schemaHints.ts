@@ -20,6 +20,7 @@ export type HintField = {
   description: string | null;
   enumValues: string[] | null;
   name: string;
+  summaryDescription: string | null;
 };
 
 export type HintContent = {
@@ -27,6 +28,7 @@ export type HintContent = {
   optionalFields: HintField[];
   requiredFields: HintField[];
   snippet: string;
+  summaryDescription: string | null;
   title: string;
 };
 
@@ -81,14 +83,35 @@ function dereferenceSchema(schema: JsonSchema, node: JsonSchema): JsonSchema {
 
 function normalizeField(schema: JsonSchema, fieldNode: JsonSchema, name: string): HintField {
   const resolvedField = dereferenceSchema(schema, fieldNode);
+  const fullDescription = fieldNode.description ?? resolvedField.description ?? null;
 
   return {
-    description: fieldNode.description ?? resolvedField.description ?? null,
+    description: fullDescription,
     enumValues: Array.isArray(resolvedField.enum)
       ? resolvedField.enum.filter((value): value is string => typeof value === "string")
       : null,
     name,
+    summaryDescription: summarizeDescription(fullDescription),
   };
+}
+
+function summarizeDescription(description: string | null): string | null {
+  if (!description) {
+    return null;
+  }
+
+  const normalized = description.trim().replace(/\s+/g, " ");
+  if (!normalized) {
+    return null;
+  }
+
+  const listMarkerIndex = normalized.indexOf(" - ");
+  const baseText = listMarkerIndex >= 0 ? normalized.slice(0, listMarkerIndex).trim() : normalized;
+  const sentenceMatch = baseText.match(/^(.+?[.!?])(\s|$)/);
+  const firstSentence = sentenceMatch?.[1]?.trim() ?? baseText;
+  const capped = firstSentence.length > 120 ? `${firstSentence.slice(0, 117).trimEnd()}...` : firstSentence;
+
+  return capped;
 }
 
 function getSectionEntrySchema(schema: JsonSchema, sectionKey: SectionHintSpec["sectionKey"]): JsonSchema | null {
@@ -199,6 +222,7 @@ function buildHintContent(schema: JsonSchema, spec: SectionHintSpec): HintConten
       .filter(([name]) => requiredSet.has(name))
       .map(([name, node]) => normalizeField(schema, node, name)),
     snippet: entrySchema ? generateSnippet(entrySchema, spec.sectionKey) : "",
+    summaryDescription: summarizeDescription(entrySchema?.description ?? null),
     title: spec.title,
   };
 }

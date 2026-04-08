@@ -41,6 +41,8 @@ describe("schemaHints", () => {
     expect(HINTS_BY_CONTEXT.service.snippet).toContain("name:");
     expect(HINTS_BY_CONTEXT.businessFlow.snippet).toContain("example_key:");
     expect(HINTS_BY_CONTEXT.dataFlow.snippet).toContain("stages:");
+    expect(HINTS_BY_CONTEXT.service.summaryDescription).toBeTruthy();
+    expect(HINTS_BY_CONTEXT.service.requiredFields[0]?.summaryDescription).toBeTruthy();
   });
 
   it("detects context for service, business flow, and data flow entries", () => {

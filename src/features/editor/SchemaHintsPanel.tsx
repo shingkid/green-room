@@ -12,14 +12,19 @@ export function SchemaHintsPanel({ hint }: SchemaHintsPanelProps) {
       {hint ? (
         <div className={styles.hintsBody}>
           <div className={styles.hintsContext}>{hint.title}</div>
-          {hint.description ? <div className={styles.hintsDescription}>{hint.description}</div> : null}
+          {hint.summaryDescription ? (
+            <div className={styles.hintsDescription}>{hint.summaryDescription}</div>
+          ) : null}
+          <div className={styles.hintsSchemaNote}>
+            See <code>service_registry.schema.json</code> for full details.
+          </div>
           <div className={styles.hintsLabel}>Required fields</div>
           <div className={styles.hintsFields}>
             {hint.requiredFields.map((field) => (
               <div className={styles.hintsField} key={`required-${field.name}`}>
                 <div className={styles.hintsFieldName}>{field.name}</div>
-                {field.description ? (
-                  <div className={styles.hintsFieldDescription}>{field.description}</div>
+                {field.summaryDescription ? (
+                  <div className={styles.hintsFieldDescription}>{field.summaryDescription}</div>
                 ) : null}
                 {field.enumValues?.length ? (
                   <div className={styles.hintsEnumValues}>Allowed: {field.enumValues.join(", ")}</div>
@@ -34,8 +39,8 @@ export function SchemaHintsPanel({ hint }: SchemaHintsPanelProps) {
                 {hint.optionalFields.map((field) => (
                   <div className={styles.hintsField} key={`optional-${field.name}`}>
                     <div className={styles.hintsFieldName}>{field.name}</div>
-                    {field.description ? (
-                      <div className={styles.hintsFieldDescription}>{field.description}</div>
+                    {field.summaryDescription ? (
+                      <div className={styles.hintsFieldDescription}>{field.summaryDescription}</div>
                     ) : null}
                     {field.enumValues?.length ? (
                       <div className={styles.hintsEnumValues}>Allowed: {field.enumValues.join(", ")}</div>

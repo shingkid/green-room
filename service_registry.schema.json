@@ -128,7 +128,7 @@
     },
     "dataFlow": {
       "type": "object",
-      "description": "Describes how a specific dataset or event travels through the system, from the service that originates it to the service that finally consumes it.",
+      "description": "Tracks data lineage from the originating service to the final destination.",
       "additionalProperties": false,
       "required": [
         "name",

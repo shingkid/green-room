@@ -285,6 +285,11 @@
   font-size: 12px;
 }
 
+.hintsSchemaNote {
+  color: var(--text-subtle);
+  font-size: 11px;
+}
+
 .hintsLabel {
   color: var(--text-muted);
   font-size: 10px;
