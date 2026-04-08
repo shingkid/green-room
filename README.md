@@ -1,6 +1,7 @@
 # Green Room
 
 [![CI](https://github.com/shingkid/green-room/actions/workflows/ci.yml/badge.svg)](https://github.com/shingkid/green-room/actions/workflows/ci.yml)
+[![E2E (Playwright)](https://github.com/shingkid/green-room/actions/workflows/e2e.yml/badge.svg)](https://github.com/shingkid/green-room/actions/workflows/e2e.yml)
 [![Deploy](https://github.com/shingkid/green-room/actions/workflows/deploy.yml/badge.svg)](https://github.com/shingkid/green-room/actions/workflows/deploy.yml)
 [![License](https://img.shields.io/github/license/shingkid/green-room)](./LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/shingkid/green-room)](https://github.com/shingkid/green-room/commits/main)
