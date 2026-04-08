@@ -1,13 +1,11 @@
 name: Deploy to GitHub Pages
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: ["main"]
-    types: [completed]
+  push:
+    branches:
+      - main
 
 permissions:
-  actions: read
   contents: read
   pages: write
   id-token: write
@@ -18,16 +16,17 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Download CI build artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: web-dist
-          path: dist
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:
