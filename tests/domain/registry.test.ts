@@ -97,4 +97,31 @@ services:
     expect(getStageSubtypeLabel(storageStage)).toBe("database");
     expect(getStageSubtypeLabel(producerStage)).toBeNull();
   });
+
+  it("accepts empty business_flows, data_flows, and services sections", () => {
+    const minimalRegistry = `
+metadata:
+  team: Platform
+  team_id: platform
+  last_updated: 2026-04-08
+  maintainers:
+    - name: Jane
+      slack: "@jane"
+business_flows: {}
+data_flows: {}
+services: {}
+`;
+
+    const result = validateRegistryText(minimalRegistry);
+
+    expect(result.issues).toHaveLength(0);
+    expect(result.registry).not.toBeNull();
+    expect(result.checklist.find((group) => group.title === "Sections")?.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "business_flows section", checked: true }),
+        expect.objectContaining({ label: "data_flows section", checked: true }),
+        expect.objectContaining({ label: "services section", checked: true }),
+      ]),
+    );
+  });
 });

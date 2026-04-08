@@ -48,8 +48,14 @@
   border-bottom: 0;
 }
 
+.editorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 10px 8px 0;
+}
+
 .findReplaceButton {
-  margin-right: 10px;
   border: 1px solid var(--border-default);
   border-radius: 6px;
   background: var(--surface-panel-strong);
@@ -224,6 +230,96 @@
   gap: 12px;
   padding: 14px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.hintsSection {
+  padding: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hintsTitle {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hintsBody {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hintsContext {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hintsDescription {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.hintsLabel {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hintsFields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hintsField {
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--surface-panel);
+}
+
+.hintsFieldName {
+  color: var(--text-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hintsFieldDescription {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.hintsEnumValues {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.hintsSnippet {
+  margin: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.hintsEmpty {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .checklistGroup {

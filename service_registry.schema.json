@@ -39,7 +39,6 @@
     "business_flows": {
       "type": "object",
       "description": "Map of business flow keys to flow definitions. A business flow represents a user-facing journey or product capability that spans multiple services.",
-      "minProperties": 1,
       "propertyNames": {
         "$ref": "#/$defs/registryKey"
       },
@@ -50,7 +49,6 @@
     "data_flows": {
       "type": "object",
       "description": "Map of data flow keys to data flow definitions. A data flow describes how a specific dataset or event moves through the system from origin to consumption.",
-      "minProperties": 1,
       "propertyNames": {
         "$ref": "#/$defs/registryKey"
       },
@@ -61,7 +59,6 @@
     "services": {
       "type": "object",
       "description": "Map of service keys to service definitions.",
-      "minProperties": 1,
       "propertyNames": {
         "$ref": "#/$defs/registryKey"
       },

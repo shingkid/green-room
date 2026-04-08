@@ -1,12 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import CodeMirror, { EditorView, type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { yaml } from "@codemirror/lang-yaml";
 import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
-import { type Diagnostic, forceLinting, lintGutter, linter } from "@codemirror/lint";
+import { lintGutter } from "@codemirror/lint";
 import { openSearchPanel, search } from "@codemirror/search";
 
 import type { ChecklistGroup, Theme, ValidationIssue } from "@domain/registry";
 import { pointerToLabel } from "@domain/registry";
+import {
+  detectHintContextFromParsed,
+  HINTS_BY_CONTEXT,
+  parseHintDocument,
+} from "./schemaHints";
+import { syncEditorDiagnostics } from "./editorDiagnostics";
+import { SchemaHintsPanel } from "./SchemaHintsPanel";
 import styles from "./RegistryEditor.module.css";
 
 type RegistryEditorProps = {
@@ -25,19 +32,18 @@ type RegistryEditorProps = {
   sourceLabel: string | null;
 };
 
-function parseLocation(
-  doc: { line: (n: number) => { from: number; to: number }; lines: number },
-  location: string | null,
-): { from: number; to: number } | null {
-  if (!location) return null;
-  const match = /line (\d+), col (\d+)/.exec(location);
-  if (!match) return null;
-  const lineNum = parseInt(match[1], 10);
-  const col = parseInt(match[2], 10);
-  if (lineNum < 1 || lineNum > doc.lines) return null;
-  const line = doc.line(lineNum);
-  const from = Math.min(line.from + col - 1, line.to);
-  return { from, to: Math.min(from + 1, line.to) };
+type SectionKey = "services" | "business_flows" | "data_flows";
+
+function findSectionOffset(sourceText: string, sectionKey: SectionKey) {
+  const escapedKey = sectionKey.replaceAll("_", "\\_");
+  const pattern = new RegExp(`(^|\\n)${escapedKey}:\\s*(?=\\n|$)`);
+  const match = pattern.exec(sourceText);
+
+  if (!match || match.index == null) {
+    return null;
+  }
+
+  return match.index + (match[1] ? match[1].length : 0);
 }
 
 export function RegistryEditor({
@@ -57,30 +63,26 @@ export function RegistryEditor({
 }: RegistryEditorProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
-
-  // Keep a ref so the stable lintSource callback always sees current issues.
-  const issuesRef = useRef<ValidationIssue[]>(issues);
-  issuesRef.current = issues;
-
-  const lintSource = useCallback((view: EditorView): Diagnostic[] => {
-    return issuesRef.current.flatMap((issue) => {
-      const pos = parseLocation(view.state.doc, issue.location);
-      if (!pos) return [];
-      return [{ from: pos.from, to: pos.to, severity: "error" as const, message: issue.message }];
-    });
-  }, []);
+  const [cursorOffset, setCursorOffset] = useState(0);
 
   const extensions = useMemo(
-    () => [yaml(), search({ top: true }), lintGutter(), linter(lintSource, { delay: 0 })],
-    [lintSource],
+    () => [yaml(), search({ top: true }), lintGutter()],
+    [],
   );
 
   const cmTheme = theme === "dark" ? githubDark : githubLight;
+  const parsedHintDocument = useMemo(() => parseHintDocument(draftText), [draftText]);
+  const hintContext = useMemo(
+    () => detectHintContextFromParsed(parsedHintDocument, cursorOffset),
+    [parsedHintDocument, cursorOffset],
+  );
+  const activeHint = hintContext === "none" ? null : HINTS_BY_CONTEXT[hintContext];
 
-  // Force CM to re-run linting immediately whenever the React-computed issues change.
   useEffect(() => {
     const view = editorRef.current?.view;
-    if (view) forceLinting(view);
+    if (view) {
+      syncEditorDiagnostics(view, issues);
+    }
   }, [issues]);
 
   const handleOpenFindReplace = useCallback(() => {
@@ -93,6 +95,38 @@ export function RegistryEditor({
     openSearchPanel(view);
     view.focus();
   }, []);
+
+  const handleEditorUpdate = useCallback(
+    (update: { state: { selection: { main: { head: number } } } }) => {
+      const nextOffset = update.state.selection.main.head;
+      setCursorOffset((currentOffset) =>
+        currentOffset === nextOffset ? currentOffset : nextOffset,
+      );
+    },
+    [],
+  );
+
+  const jumpToSection = useCallback(
+    (sectionKey: SectionKey) => {
+      const view = editorRef.current?.view;
+      if (!view) {
+        return;
+      }
+
+      const offset = findSectionOffset(view.state.doc.toString(), sectionKey);
+      if (offset == null) {
+        return;
+      }
+
+      view.dispatch({
+        selection: { anchor: offset },
+        effects: EditorView.scrollIntoView(offset, { y: "start" }),
+      });
+      view.focus();
+      setCursorOffset(offset);
+    },
+    [],
+  );
 
   return (
     <div className={styles.shell}>
@@ -147,19 +181,43 @@ export function RegistryEditor({
         <section className={styles.pane}>
           <div className={styles.paneTitleRow}>
             <div className={styles.paneTitle}>YAML</div>
-            <button
-              className={styles.findReplaceButton}
-              onClick={handleOpenFindReplace}
-              type="button"
-            >
-              Find / Replace
-            </button>
+            <div className={styles.editorActions}>
+              <button
+                className={styles.findReplaceButton}
+                onClick={() => jumpToSection("services")}
+                type="button"
+              >
+                Services
+              </button>
+              <button
+                className={styles.findReplaceButton}
+                onClick={() => jumpToSection("business_flows")}
+                type="button"
+              >
+                Business Flows
+              </button>
+              <button
+                className={styles.findReplaceButton}
+                onClick={() => jumpToSection("data_flows")}
+                type="button"
+              >
+                Data Flows
+              </button>
+              <button
+                className={styles.findReplaceButton}
+                onClick={handleOpenFindReplace}
+                type="button"
+              >
+                Find / Replace
+              </button>
+            </div>
           </div>
           <div className={styles.cmWrapper}>
             <CodeMirror
               basicSetup={{ foldGutter: false }}
               extensions={extensions}
               onChange={onChange}
+              onUpdate={handleEditorUpdate}
               ref={editorRef}
               theme={cmTheme}
               value={draftText}
@@ -187,6 +245,7 @@ export function RegistryEditor({
               </div>
             ))}
           </div>
+          <SchemaHintsPanel hint={activeHint} />
           {issues.length === 0 ? (
             <div className={styles.validationOk}>
               <div className={styles.validationOkTitle}>Schema validation passed.</div>

@@ -491,14 +491,9 @@ function buildChecklist(raw: unknown): ChecklistGroup[] {
 
   const nonEmptyStr = (v: unknown) => typeof v === "string" && v.trim().length > 0;
 
-  const hasEntries = (key: string) => {
+  const hasSectionObject = (key: string) => {
     const val = root[key];
-    return (
-      val != null &&
-      typeof val === "object" &&
-      !Array.isArray(val) &&
-      Object.keys(val as object).length > 0
-    );
+    return val != null && typeof val === "object" && !Array.isArray(val);
   };
 
   return [
@@ -518,9 +513,9 @@ function buildChecklist(raw: unknown): ChecklistGroup[] {
     {
       title: "Sections",
       items: [
-        { label: "business_flows (min 1)", checked: hasEntries("business_flows") },
-        { label: "data_flows (min 1)", checked: hasEntries("data_flows") },
-        { label: "services (min 1)", checked: hasEntries("services") },
+        { label: "business_flows section", checked: hasSectionObject("business_flows") },
+        { label: "data_flows section", checked: hasSectionObject("data_flows") },
+        { label: "services section", checked: hasSectionObject("services") },
       ],
     },
   ];

@@ -11,6 +11,7 @@
 - **Data lineage** — trace how a dataset or event travels through your system stage by stage
 - **On-call quick-links** — surface runbooks, dashboards, incident channels, and SLOs directly from the service graph
 - **Live validation** — paste or edit your registry in-browser; schema and cross-reference errors are highlighted instantly
+- **Schema hints in editor** — move the cursor inside service/business/data flow entries to see required fields and allowed values
 - **Mermaid export** — copy the current graph as a Mermaid diagram with one click
 
 ## Quick start
@@ -30,6 +31,8 @@ Drop a `service_registry.yaml` into `public/` and the app loads it automatically
 | `business_flows` | Named user journeys with priority and stakeholder lists                                                        |
 | `data_flows`     | Ordered stage pipelines — which service produces, queues, processes, stores, serves, and consumes each dataset |
 | `services`       | One entry per deployable unit: type, status, upstream deps, business flows, and on-call links                  |
+
+`business_flows`, `data_flows`, and `services` can be empty objects (`{}`) while you scaffold incrementally.
 
 A minimal service entry:
 
@@ -92,6 +95,7 @@ Validation runs in two tiers: JSON Schema checks structural correctness and enum
 - `src/domain` — pure domain logic (graphing, validation, export)
 - `src/shared` — reusable UI components and browser utilities
 - `src/styles` — global design tokens and base styles
+- `tests` — unit and component test suites
 
 Imports use aliases (`@app`, `@features`, `@domain`, `@shared`, `@styles`) to avoid fragile deep relative paths.
 
