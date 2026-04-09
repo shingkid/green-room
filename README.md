@@ -12,8 +12,10 @@
 
 ## Why I built it
 
-Green Room takes its name from the room just offstage where performers wait before going on — a nod to Backstage, and a metaphor for what this tool is meant to be: everything you need to know about what’s running, right before it matters.
-I built it after being tasked with drawing a large system’s architecture diagram and hating every minute of it — too big to read, too brittle to stay current, too much friction for anyone to bother maintaining. Backstage solves this well, but adopting it means convincing a platform team to host it and every other team to onboard — a real multi-quarter effort. Green Room is the lightweight middle ground: a single YAML file as the source of truth, a browser-based explorer for dependency and data flow visualization, and live schema validation to keep the registry honest. Versioning is left to you; a Git repo or a Confluence page is enough for most small teams.
+**Green Room** takes its name from the room just offstage where performers wait before going on — a nod to [Backstage](https://backstage.io/), and a metaphor for what this tool is meant to be: everything you need to know about what’s running, right before it matters.
+
+I built it after being tasked with drawing a large system’s architecture diagram and hating every minute of it — too big to read, too brittle to stay current, too much friction for anyone to bother maintaining. *Backstage* solves this well, but adopting it means convincing a platform team to host it and every other team to onboard — a real multi-quarter effort. Green Room is the lightweight middle ground: a single YAML file as the source of truth, a browser-based explorer for dependency and data flow visualization, and live schema validation to keep the registry honest. Versioning is left to you; a Git repo or a Confluence page is enough for most small teams.
+
 Deploy in a day. Get out of the way.
 
 ## Features
