@@ -26,6 +26,7 @@ Deploy in a day. Get out of the way.
 - **On-call quick-links** — surface runbooks, dashboards, incident channels, and SLOs directly from the service graph
 - **Live validation** — paste or edit your registry in-browser; schema and cross-reference errors are highlighted instantly
 - **Schema hints in editor** — move the cursor inside service/business/data flow entries to see required fields and allowed values
+- **Jump-to-definition** — hold Ctrl/⌘ in the YAML editor to turn any service, business flow, or data flow key into a hyperlink; click to jump to its definition and highlight every reference
 - **Mermaid export** — copy the current graph as a Mermaid diagram with one click
 
 ## Quick start
@@ -91,6 +92,10 @@ services:
 | `slo`              | no       | Availability target as a percentage or URL to the SLO doc (e.g. `99.9%`)                                         |
 
 Full descriptions for every field, enum value, and constraint are embedded in `service_registry.schema.json` as `description` properties. Editors with JSON Schema support (VS Code, JetBrains) surface these as hover text and autocomplete.
+
+### Extending jump-to-definition
+
+The Ctrl+click navigation works for any key defined at **exactly 2-space indentation** — which is the convention for all named items in `services`, `business_flows`, and `data_flows`. If you add a new top-level section that follows the same pattern (e.g. `teams:` with `  platform_engineering:` underneath), its keys become jumpable automatically with no code changes.
 
 ### Customizing the schema
 
