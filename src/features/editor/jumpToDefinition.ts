@@ -40,6 +40,8 @@ export function findReferences(docText: string, key: string, defPos: number): nu
 
 const setHighlights = StateEffect.define<Range<Decoration>[]>();
 const clearHighlights = StateEffect.define<void>();
+const setFlash = StateEffect.define<number>(); // line-start pos
+const clearFlash = StateEffect.define<void>();
 
 /** Stores the current set of reference-highlight decorations. */
 const refHighlightState = StateField.define<DecorationSet>({
@@ -57,6 +59,34 @@ const refHighlightState = StateField.define<DecorationSet>({
   },
   provide: (f) => EditorView.decorations.from(f),
 });
+
+/** Briefly highlights the definition line after a jump to draw the eye to it. */
+const flashState = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(deco, tr) {
+    if (tr.docChanged) return Decoration.none;
+    for (const e of tr.effects) {
+      if (e.is(clearFlash)) return Decoration.none;
+      if (e.is(setFlash))
+        return Decoration.set([Decoration.line({ class: "cm-def-flash" }).range(e.value)]);
+    }
+    return deco.map(tr.changes);
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
+
+// @keyframes can't be expressed in baseTheme — inject once into the document head.
+let flashStyleInjected = false;
+function ensureFlashStyle() {
+  if (flashStyleInjected || typeof document === "undefined") return;
+  flashStyleInjected = true;
+  const style = document.createElement("style");
+  style.textContent =
+    "@keyframes cmDefFlash{0%{background-color:#fef08a}100%{background-color:transparent}}";
+  document.head.appendChild(style);
+}
 
 /** Resolves the word under `pos` if it looks like a registry key. */
 function getRegistryWord(
@@ -94,11 +124,17 @@ function applyJumpAndHighlight(view: EditorView, pos: number): boolean {
     // Clicked the definition — stay put, highlight all references.
     view.dispatch({ effects: [setHighlights.of(ranges)] });
   } else {
-    // Clicked a reference — scroll to definition AND highlight references.
+    // Clicked a reference — scroll to definition, highlight references, flash the landing line.
+    const lineStart = view.state.doc.lineAt(defPos).from;
     view.dispatch({
       selection: { anchor: defPos },
-      effects: [setHighlights.of(ranges), EditorView.scrollIntoView(defPos, { y: "start" })],
+      effects: [
+        setHighlights.of(ranges),
+        setFlash.of(lineStart),
+        EditorView.scrollIntoView(defPos, { y: "start" }),
+      ],
     });
+    setTimeout(() => view.dispatch({ effects: clearFlash.of() }), 800);
   }
 
   return true;
@@ -175,6 +211,9 @@ const theme = EditorView.baseTheme({
     fontSize: "12px",
     borderRadius: "4px",
   },
+  ".cm-def-flash": {
+    animation: "cmDefFlash 0.8s ease-out forwards",
+  },
 });
 
 /**
@@ -184,5 +223,6 @@ const theme = EditorView.baseTheme({
  * Stable — call once, no React dependencies.
  */
 export function jumpToDefinition(): Extension {
-  return [refHighlightState, eventHandlers, jumpToDefinitionTooltip, theme];
+  ensureFlashStyle();
+  return [refHighlightState, flashState, eventHandlers, jumpToDefinitionTooltip, theme];
 }
