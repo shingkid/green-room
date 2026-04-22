@@ -68,7 +68,10 @@ export function RegistryEditor({
   const [cursorOffset, setCursorOffset] = useState(0);
 
   // jumpToDefinition() is stable (no React deps) — computed once outside useMemo.
-  const extensions = useMemo(() => [yaml(), search({ top: true }), lintGutter(), jumpToDefinition()], []);
+  const extensions = useMemo(
+    () => [yaml(), search({ top: true }), lintGutter(), jumpToDefinition()],
+    [],
+  );
 
   const cmTheme = theme === "dark" ? githubDark : githubLight;
   const parsedHintDocument = useMemo(() => parseHintDocument(draftText), [draftText]);

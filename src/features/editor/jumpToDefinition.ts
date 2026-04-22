@@ -24,11 +24,7 @@ export function findDefinition(docText: string, key: string): number | null {
  * Returns char offsets of all reference sites — every word-boundary occurrence
  * of `key` that is NOT the definition itself.
  */
-export function findReferences(
-  docText: string,
-  key: string,
-  defPos: number,
-): number[] {
+export function findReferences(docText: string, key: string, defPos: number): number[] {
   const re = new RegExp(`(?<![a-z0-9_])${key}(?![a-z0-9_])`, "g");
   const refs: number[] = [];
   for (const match of docText.matchAll(re)) {
@@ -101,10 +97,7 @@ function applyJumpAndHighlight(view: EditorView, pos: number): boolean {
     // Clicked a reference — scroll to definition AND highlight references.
     view.dispatch({
       selection: { anchor: defPos },
-      effects: [
-        setHighlights.of(ranges),
-        EditorView.scrollIntoView(defPos, { y: "start" }),
-      ],
+      effects: [setHighlights.of(ranges), EditorView.scrollIntoView(defPos, { y: "start" })],
     });
   }
 
