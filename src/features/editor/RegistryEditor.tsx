@@ -9,6 +9,7 @@ import type { ChecklistGroup, Theme, ValidationIssue } from "@domain/registry";
 import { pointerToLabel } from "@domain/registry";
 import { detectHintContextFromParsed, HINTS_BY_CONTEXT, parseHintDocument } from "./schemaHints";
 import { syncEditorDiagnostics } from "./editorDiagnostics";
+import { jumpToDefinition } from "./jumpToDefinition";
 import { SchemaHintsPanel } from "./SchemaHintsPanel";
 import styles from "./RegistryEditor.module.css";
 
@@ -66,7 +67,11 @@ export function RegistryEditor({
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const [cursorOffset, setCursorOffset] = useState(0);
 
-  const extensions = useMemo(() => [yaml(), search({ top: true }), lintGutter()], []);
+  // jumpToDefinition() is stable (no React deps) — computed once outside useMemo.
+  const extensions = useMemo(
+    () => [yaml(), search({ top: true }), lintGutter(), jumpToDefinition()],
+    [],
+  );
 
   const cmTheme = theme === "dark" ? githubDark : githubLight;
   const parsedHintDocument = useMemo(() => parseHintDocument(draftText), [draftText]);
