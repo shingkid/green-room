@@ -5,7 +5,7 @@
   "description": "Schema for service_registry.yaml used by the Green Room explorer.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["metadata", "business_flows", "data_flows", "services"],
+  "required": ["metadata", "stakeholders", "business_flows", "data_flows", "services"],
   "properties": {
     "metadata": {
       "type": "object",
@@ -34,6 +34,17 @@
             "$ref": "#/$defs/maintainer"
           }
         }
+      }
+    },
+    "stakeholders": {
+      "type": "object",
+      "description": "Map of stakeholder keys to stakeholder definitions. A stakeholder is a team or individual with a vested interest in the reliability or direction of one or more business flows.",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/registryKey"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/stakeholder"
       }
     },
     "business_flows": {
@@ -94,6 +105,27 @@
         }
       }
     },
+    "stakeholder": {
+      "type": "object",
+      "description": "A team or individual with a vested interest in the reliability or direction of one or more business flows.",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the stakeholder team or individual.",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "What this stakeholder does and why they care about the flows they are listed on."
+        },
+        "contact": {
+          "type": "string",
+          "description": "Primary contact point for this stakeholder (e.g. Slack handle, email address, or channel name)."
+        }
+      }
+    },
     "businessFlow": {
       "type": "object",
       "description": "A user-facing journey or product capability that one or more services collaborate to deliver.",
@@ -117,11 +149,10 @@
         },
         "stakeholders": {
           "type": "array",
-          "description": "Teams or groups with a stake in this flow's reliability (e.g. Product, Finance, Legal).",
+          "description": "Keys of stakeholders with a stake in this flow's reliability. Must reference keys defined in the top-level stakeholders section.",
           "minItems": 1,
           "items": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/registryKey"
           }
         }
       }

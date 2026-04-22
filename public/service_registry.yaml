@@ -7,9 +7,10 @@
 #
 # Sections:
 #   1. metadata        — team info, maintainers
-#   2. business_flows  — high-level business processes
-#   3. data_flows      — how data moves between services
-#   4. services        — individual service definitions
+#   2. stakeholders    — teams and individuals with a stake in this registry
+#   3. business_flows  — high-level business processes
+#   4. data_flows      — how data moves between services
+#   5. services        — individual service definitions
 # ============================================================
 
 metadata:
@@ -25,6 +26,55 @@ metadata:
       slack: "@falrashid"
 
 # ============================================================
+# Stakeholders
+# ============================================================
+stakeholders:
+  product_team:
+    name: Product Team
+    description:
+    contact:
+  nutrition_team:
+    name: Nutrition Team
+    description:
+    contact:
+  user_experience_team:
+    name: User Experience Team
+    description:
+    contact:
+  data_science_team:
+    name: Data Science Team
+    description:
+    contact:
+  ml_engineering_team:
+    name: ML Engineering Team
+    description:
+    contact:
+  operations_team:
+    name: Operations Team
+    description:
+    contact:
+  supply_chain_team:
+    name: Supply Chain Team
+    description:
+    contact:
+  sustainability_team:
+    name: Sustainability Team
+    description:
+    contact:
+  community_team:
+    name: Community Team
+    description:
+    contact:
+  content_moderation_team:
+    name: Content Moderation Team
+    description:
+    contact:
+  marketing_team:
+    name: Marketing Team
+    description:
+    contact:
+
+# ============================================================
 # Business Flows
 # ============================================================
 business_flows:
@@ -33,33 +83,33 @@ business_flows:
     description: "Core user experience for discovering recipes, planning meals, and generating shopping lists"
     priority: "P1"
     stakeholders:
-      - "Product Team"
-      - "Nutrition Team"
-      - "User Experience Team"
+      - product_team
+      - nutrition_team
+      - user_experience_team
   personalized_recommendations:
     name: "Personalized Recipe Recommendations"
     description: "ML-powered recipe suggestions based on user preferences, dietary restrictions, and cooking history"
     priority: "P1"
     stakeholders:
-      - "Data Science Team"
-      - "ML Engineering Team"
-      - "Product Team"
+      - data_science_team
+      - ml_engineering_team
+      - product_team
   ingredient_optimization:
     name: "Ingredient Optimization"
     description: "Smart shopping list generation, waste reduction, and pantry inventory management"
     priority: "P2"
     stakeholders:
-      - "Operations Team"
-      - "Supply Chain Team"
-      - "Sustainability Team"
+      - operations_team
+      - supply_chain_team
+      - sustainability_team
   community_features:
     name: "Community & Social Features"
     description: "User-generated content, recipe sharing, ratings, and community-driven recipe discovery"
     priority: "P2"
     stakeholders:
-      - "Community Team"
-      - "Content Moderation Team"
-      - "Marketing Team"
+      - community_team
+      - content_moderation_team
+      - marketing_team
 
 # ============================================================
 # Data Flows
