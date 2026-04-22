@@ -1,13 +1,14 @@
 import { memo, useMemo } from "react";
 
-import type { DependencyCriticality, Mode, Service } from "@domain/registry";
-import { STATUS_STYLES, TYPE_ICONS } from "@domain/registry";
+import type { DependencyCriticality, Hosting, Mode, Service } from "@domain/registry";
+import { HOSTING_ENVIRONMENT_COLORS, STATUS_STYLES, TYPE_ICONS } from "@domain/registry";
 import { formatServiceLabel, getNodeRadius, type Layout } from "@domain/catalog";
 import styles from "./GraphCanvas.module.css";
 
 type ServiceNodeProps = {
   id: string;
   service: Service;
+  hostingConfig: Hosting | undefined;
   position: { x: number; y: number };
   width: number;
   height: number;
@@ -21,6 +22,7 @@ type ServiceNodeProps = {
 const ServiceNode = memo(function ServiceNode({
   id,
   service,
+  hostingConfig,
   position,
   width,
   height,
@@ -31,9 +33,13 @@ const ServiceNode = memo(function ServiceNode({
   onSelect,
 }: ServiceNodeProps) {
   const statusStyle = STATUS_STYLES[service.status] ?? STATUS_STYLES.active;
+  const hostingColor = hostingConfig
+    ? (HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ?? statusStyle.border)
+    : statusStyle.border;
   // Interaction state wins over status styling so selection/impact remains readable even when
   // ownership and status already contribute their own visual signals.
-  const stroke = isHighlight ? "#dc2626" : isAffected ? "#f97316" : statusStyle.border;
+  const stroke = isHighlight ? "#dc2626" : isAffected ? "#f97316" : hostingColor;
+  const rx = getNodeRadius(service.type);
 
   return (
     <g
@@ -45,11 +51,21 @@ const ServiceNode = memo(function ServiceNode({
       <rect
         fill={statusStyle.bg}
         height={height}
-        rx={getNodeRadius(service.type)}
+        rx={rx}
         stroke={stroke}
-        strokeWidth={isHighlight ? 3 : isAffected ? 2 : 1}
+        strokeWidth={isHighlight ? 3 : isAffected ? 2 : 2}
         width={width}
       />
+      {hostingConfig ? (
+        <rect
+          fill={hostingColor}
+          height={4}
+          pointerEvents="none"
+          rx={rx}
+          width={width}
+          y={height - 4}
+        />
+      ) : null}
       {!isInternal ? (
         <rect
           // Ownership uses an overlay instead of replacing the status fill so external services
@@ -81,7 +97,9 @@ const ServiceNode = memo(function ServiceNode({
         x={width / 2}
         y={height / 2 + 10}
       >
-        {service.status !== "active" ? service.status.toUpperCase() : service.type}
+        {service.status !== "active"
+          ? service.status.toUpperCase()
+          : (hostingConfig?.environment ?? service.type)}
       </text>
     </g>
   );
@@ -145,6 +163,7 @@ type GraphCanvasProps = {
   visibleServices: Set<string>;
   affectedSet: Set<string>;
   highlightKey: string | null;
+  hostingMap: Record<string, Hosting>;
   mode: Mode;
   services: Record<string, Service>;
   getOwnershipKind: (service: Service) => "internal" | "external";
@@ -157,6 +176,7 @@ export function GraphCanvas({
   visibleServices,
   affectedSet,
   highlightKey,
+  hostingMap,
   mode,
   services,
   getOwnershipKind,
@@ -201,6 +221,7 @@ export function GraphCanvas({
         return (
           <ServiceNode
             height={layout.nodeH}
+            hostingConfig={service.hosting ? hostingMap[service.hosting] : undefined}
             id={serviceKey}
             isAffected={affectedSet.has(serviceKey)}
             isDimmed={mode !== "overview" && !affectedSet.has(serviceKey)}

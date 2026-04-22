@@ -5,7 +5,7 @@
   "description": "Schema for service_registry.yaml used by the Green Room explorer.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["metadata", "stakeholders", "business_flows", "data_flows", "services"],
+  "required": ["metadata", "hosting", "stakeholders", "business_flows", "data_flows", "services"],
   "properties": {
     "metadata": {
       "type": "object",
@@ -34,6 +34,17 @@
             "$ref": "#/$defs/maintainer"
           }
         }
+      }
+    },
+    "hosting": {
+      "type": "object",
+      "description": "Map of hosting config keys to hosting definitions. Each entry describes a named infrastructure environment that services can reference.",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/registryKey"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/hostingConfig"
       }
     },
     "stakeholders": {
@@ -343,6 +354,27 @@
         }
       }
     },
+    "hostingConfig": {
+      "type": "object",
+      "description": "A named infrastructure environment — the environment kind, optional provider, and optional account.",
+      "additionalProperties": false,
+      "required": ["environment"],
+      "properties": {
+        "environment": {
+          "type": "string",
+          "description": "Infrastructure topology this hosting config represents.\n- cloud: Public cloud platform (AWS, GCP, Azure, etc.)\n- on_premises: Hardware operated on the organisation's own facilities\n- dmz: Demilitarised zone / perimeter network\n- private_cloud: Internal cloud platform (OpenStack, VMware vSphere, Nutanix)\n- colocation: Organisation-owned hardware hosted in a third-party data centre\n- edge: Edge nodes, CDN PoPs, IoT gateways",
+          "enum": ["cloud", "on_premises", "dmz", "private_cloud", "colocation", "edge"]
+        },
+        "provider": {
+          "type": "string",
+          "description": "Cloud or infrastructure provider name (e.g. aws, gcp, azure, vmware, equinix). Free-form to cover both public cloud and private/colocation vendors."
+        },
+        "account": {
+          "type": "string",
+          "description": "Cloud account, subscription, or project ID where services in this hosting config are deployed."
+        }
+      }
+    },
     "service": {
       "type": "object",
       "description": "A deployable unit in the architecture — a service, application, or platform component.",
@@ -352,6 +384,7 @@
         "description",
         "type",
         "status",
+        "hosting",
         "upstream",
         "business_flows",
         "owner",
@@ -378,6 +411,10 @@
           "type": "string",
           "description": "Operational lifecycle stage of this service.\n- active: Healthy, serving production traffic under normal SLA and on-call coverage\n- experimental: Deployed but not production-grade; not covered by on-call rotation; may break without notice\n- migrating: In active transition (data migration, replatforming); behaviour may temporarily differ from steady-state; treat with extra caution during incidents\n- deprecated: Still running but scheduled for removal; consumers must migrate to a replacement before the sunset date",
           "enum": ["active", "experimental", "migrating", "deprecated"]
+        },
+        "hosting": {
+          "$ref": "#/$defs/registryKey",
+          "description": "Key of the hosting config (defined in the top-level hosting section) that describes where this service runs."
         },
         "upstream": {
           "type": "array",

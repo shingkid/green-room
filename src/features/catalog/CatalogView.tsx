@@ -5,6 +5,7 @@ import {
   DATA_TYPE_ICONS,
   FLOW_COLORS,
   getStageSubtypeLabel,
+  HOSTING_ENVIRONMENT_COLORS,
   type Registry,
   type ServiceStatus,
   SENSITIVITY_COLORS,
@@ -222,6 +223,7 @@ export function CatalogView({
           edges={viewModel.edges}
           getOwnershipKind={viewModel.getOwnershipKind}
           highlightKey={viewModel.highlightKey}
+          hostingMap={registry.hosting}
           layout={viewModel.layout}
           mode={viewModel.mode}
           onSelectService={viewModel.handleServiceClick}
@@ -351,6 +353,29 @@ export function CatalogView({
                 : `${viewModel.affectedSet.size - 1} upstream deps`}
             </Badge>
           </div>
+
+          {(() => {
+            const hostingKey = viewModel.selectedServiceDetails.hosting;
+            const hostingConfig = hostingKey ? registry.hosting?.[hostingKey] : undefined;
+            if (!hostingConfig) return null;
+            return (
+              <div className={styles.detailsSection}>
+                <div className={styles.overline}>Hosting</div>
+                <div className={styles.tagRow}>
+                  <Tag
+                    color={
+                      HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ?? "var(--tag-neutral)"
+                    }
+                  >
+                    {hostingConfig.environment}
+                  </Tag>
+                  {hostingConfig.provider ? <Tag>{hostingConfig.provider}</Tag> : null}
+                  {hostingConfig.account ? <Tag>acct: {hostingConfig.account}</Tag> : null}
+                  <Tag color="var(--tag-muted)">{hostingKey}</Tag>
+                </div>
+              </div>
+            );
+          })()}
 
           {(viewModel.selectedServiceDetails.upstream?.length ?? 0) > 0 ? (
             <div className={styles.detailsSection}>

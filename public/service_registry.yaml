@@ -7,10 +7,11 @@
 #
 # Sections:
 #   1. metadata        — team info, maintainers
-#   2. stakeholders    — teams and individuals with a stake in this registry
-#   3. business_flows  — high-level business processes
-#   4. data_flows      — how data moves between services
-#   5. services        — individual service definitions
+#   2. hosting         — named infrastructure environments
+#   3. stakeholders    — teams and individuals with a stake in this registry
+#   4. business_flows  — high-level business processes
+#   5. data_flows      — how data moves between services
+#   6. services        — individual service definitions
 # ============================================================
 
 metadata:
@@ -24,6 +25,33 @@ metadata:
       slack: "@dkim"
     - name: "Fatima Al-Rashid"
       slack: "@falrashid"
+
+# ============================================================
+# Hosting
+# ============================================================
+hosting:
+  aws_prod:
+    environment: cloud
+    provider: aws
+    account: "123456789"
+  gcp_ml:
+    environment: cloud
+    provider: gcp
+    account: "recipe-rec-prod"
+  vmware_internal:
+    environment: private_cloud
+    provider: vmware
+  equinix_colo:
+    environment: colocation
+    provider: equinix
+  aws_dmz:
+    environment: dmz
+    provider: aws
+  on_prem:
+    environment: on_premises
+  azure_cloud:
+    environment: cloud
+    provider: azure
 
 # ============================================================
 # Stakeholders
@@ -193,6 +221,7 @@ services:
     description: "React Native app for meal planning, recipe browsing, and cooking guidance"
     type: "frontend"
     status: "active"
+    hosting: aws_prod
     upstream:
       - service: "recipe_api"
         protocol: "HTTPS/GraphQL"
@@ -216,6 +245,7 @@ services:
     description: "GraphQL API providing recipe data, user profiles, and meal planning functionality"
     type: "backend"
     status: "active"
+    hosting: aws_prod
     upstream:
       - service: "recipe_database"
         protocol: "PostgreSQL"
@@ -246,6 +276,7 @@ services:
     description: "Machine learning service using collaborative filtering and content-based recommendations"
     type: "backend"
     status: "active"
+    hosting: gcp_ml
     upstream:
       - service: "user_behavior_warehouse"
         protocol: "PostgreSQL"
@@ -268,6 +299,7 @@ services:
     description: "PostgreSQL database storing recipes, ingredients, nutritional data, and user-generated content"
     type: "datastore"
     status: "active"
+    hosting: aws_prod
     upstream: []
     business_flows:
       - "meal_planning"
@@ -282,6 +314,7 @@ services:
     description: "Analytics database storing cooking sessions, preferences, and interaction patterns"
     type: "datastore"
     status: "active"
+    hosting: vmware_internal
     upstream: []
     business_flows:
       - "personalized_recommendations"
@@ -295,6 +328,7 @@ services:
     description: "Elasticsearch cluster for recipe search with filtering by cuisine, dietary restrictions, and ingredients"
     type: "datastore"
     status: "active"
+    hosting: aws_prod
     upstream: []
     business_flows:
       - "meal_planning"
@@ -308,6 +342,7 @@ services:
     description: "Batch processing service for recipe validation, nutritional analysis, and content moderation"
     type: "worker"
     status: "migrating"
+    hosting: equinix_colo
     upstream:
       - service: "recipe_database"
         protocol: "PostgreSQL"
@@ -327,6 +362,7 @@ services:
     description: "Automated pipeline for training and deploying recommendation models"
     type: "worker"
     status: "deprecated"
+    hosting: gcp_ml
     upstream:
       - service: "user_behavior_warehouse"
         protocol: "PostgreSQL"
@@ -342,6 +378,7 @@ services:
     description: "API for chefs and users to submit new recipes and recipe modifications"
     type: "backend"
     status: "active"
+    hosting: aws_dmz
     upstream:
       - service: "user_auth_service"
         protocol: "HTTPS/OAuth"
@@ -361,6 +398,7 @@ services:
     description: "Centralized authentication and user profile management"
     type: "backend"
     status: "active"
+    hosting: aws_prod
     upstream:
       - service: "user_profile_db"
         protocol: "PostgreSQL"
@@ -382,6 +420,7 @@ services:
     description: "Database storing user accounts, preferences, dietary restrictions, and profile data"
     type: "datastore"
     status: "active"
+    hosting: on_prem
     upstream: []
     business_flows:
       - "meal_planning"
@@ -396,6 +435,7 @@ services:
     description: "AI-powered service for moderating user-generated recipe content"
     type: "backend"
     status: "deprecated"
+    hosting: azure_cloud
     upstream: []
     business_flows:
       - "community_features"
