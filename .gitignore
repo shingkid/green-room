@@ -1,6 +1,9 @@
 # OS / editor files
 .DS_Store
 
+# Git worktrees
+.worktrees/
+
 # JS generated files
 node_modules/
 .vite/
