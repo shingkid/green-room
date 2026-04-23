@@ -95,7 +95,7 @@ export async function computeLayout(
       layoutOptions: {
         "elk.algorithm": "layered",
         "elk.direction": "DOWN",
-        "elk.spacing.nodeNode": "30",
+        "elk.spacing.nodeNode": "60",
         "elk.layered.spacing.nodeNodeBetweenLayers": "50",
         "elk.padding": "[top=20, left=20, bottom=20, right=20]",
       },
@@ -112,12 +112,38 @@ export async function computeLayout(
     };
 
     const result = await elk.layout(elkGraph);
-    const rfNodes: Node[] = (result.children ?? [])
-      .filter((child) => child.id && child.x !== undefined && child.y !== undefined)
+    const elkChildren = result.children ?? [];
+
+    // Compute the max X extent to use as the target spread width for all layers
+    const maxX = Math.max(0, ...elkChildren.map((c) => (c.x ?? 0) + nodeW));
+
+    // Group nodes by Y layer (layered algo assigns the same Y to all nodes in a layer)
+    const layerMap = new Map<number, typeof elkChildren>();
+    for (const child of elkChildren) {
+      if (!child.id || child.x === undefined || child.y === undefined) continue;
+      const yKey = Math.round(child.y);
+      if (!layerMap.has(yKey)) layerMap.set(yKey, []);
+      layerMap.get(yKey)!.push(child);
+    }
+
+    // Redistribute X within each layer to fill the full max width
+    const spreadPositions = new Map<string, { x: number; y: number }>();
+    for (const [y, layerNodes] of layerMap) {
+      const sorted = [...layerNodes].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+      const n = sorted.length;
+      sorted.forEach((node, i) => {
+        const x =
+          n === 1 ? (maxX - nodeW) / 2 : (i * (maxX - nodeW)) / (n - 1);
+        spreadPositions.set(node.id!, { x, y });
+      });
+    }
+
+    const rfNodes: Node[] = elkChildren
+      .filter((child) => child.id && spreadPositions.has(child.id))
       .map((child) => ({
         id: child.id!,
         type: "serviceNode",
-        position: { x: child.x!, y: child.y! },
+        position: spreadPositions.get(child.id!)!,
         data: { serviceKey: child.id! },
         width: nodeW,
         height: nodeH,
@@ -145,8 +171,8 @@ export async function computeLayout(
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
       "elk.partitioning.activate": "true",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
-      "elk.spacing.nodeNode": "40",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+      "elk.spacing.nodeNode": "60",
       "elk.padding": "[top=60, left=40, bottom=40, right=40]",
     },
     children: keys.map((key) => {
