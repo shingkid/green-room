@@ -24,7 +24,11 @@ const mockView = {
       lines: 1,
       toString: vi.fn(
         () =>
-          `services:
+          `hosting:
+  aws: {}
+stakeholders:
+  platform_team: {}
+services:
   api: {}
 business_flows:
   checkout: {}
@@ -297,6 +301,8 @@ describe("RegistryEditor", () => {
           {
             title: "Sections",
             items: [
+              { label: "hosting (min 1)", checked: false },
+              { label: "stakeholders (min 1)", checked: false },
               { label: "business_flows (min 1)", checked: false },
               { label: "data_flows (min 1)", checked: false },
               { label: "services (min 1)", checked: false },
@@ -316,6 +322,8 @@ describe("RegistryEditor", () => {
       />,
     );
 
+    await userEvent.click(screen.getByRole("button", { name: "Jump to hosting section" }));
+    await userEvent.click(screen.getByRole("button", { name: "Jump to stakeholders section" }));
     await userEvent.click(screen.getByRole("button", { name: "Jump to services section" }));
     await userEvent.click(screen.getByRole("button", { name: "Jump to business_flows section" }));
     await userEvent.click(screen.getByRole("button", { name: "Jump to data_flows section" }));
