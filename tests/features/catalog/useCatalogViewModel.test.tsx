@@ -120,22 +120,22 @@ describe("useCatalogViewModel business flow sorting", () => {
       result.current.setSelectedStakeholder("Product");
       result.current.setSelectedFlow("example_flow");
       result.current.setSelectedDataFlow("example_data_flow");
-      result.current.handleToggleStatus("active");
-      result.current.handleToggleType("frontend");
-      result.current.handleToggleOwnership("internal");
+      result.current.handleToggleStatus("deprecated");
+      result.current.handleToggleType("backend");
+      result.current.handleToggleOwnership("external");
     });
 
-    expect(result.current.visibleStatusSet.has("active")).toBe(false);
-    expect(result.current.visibleTypeSet.has("frontend")).toBe(false);
-    expect(result.current.visibleOwnershipSet.has("internal")).toBe(false);
+    expect(result.current.visibleStatusSet.has("deprecated")).toBe(false);
+    expect(result.current.visibleTypeSet.has("backend")).toBe(false);
+    expect(result.current.visibleOwnershipSet.has("external")).toBe(false);
 
     act(() => {
       result.current.resetLegendFilters();
     });
 
-    expect(result.current.visibleStatusSet.has("active")).toBe(true);
-    expect(result.current.visibleTypeSet.has("frontend")).toBe(true);
-    expect(result.current.visibleOwnershipSet.has("internal")).toBe(true);
+    expect(result.current.visibleStatusSet.has("deprecated")).toBe(true);
+    expect(result.current.visibleTypeSet.has("backend")).toBe(true);
+    expect(result.current.visibleOwnershipSet.has("external")).toBe(true);
     expect(result.current.selectedService).toBe("example_ui");
     expect(result.current.selectedStakeholder).toBe("Product");
     expect(result.current.selectedFlow).toBe("example_flow");

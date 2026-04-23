@@ -234,19 +234,23 @@ describe("CatalogView", () => {
     await userEvent.click(screen.getByRole("button", { name: /select a service/i }));
     await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
 
-    const activeStatusButton = screen.getByRole("button", { name: "active" });
-    const teamOwnedButton = screen.getByRole("button", { name: "team-owned" });
+    const deprecatedStatusButton = screen.getByRole("button", { name: "deprecated" });
+    const externalOwnershipButton = screen.getByRole("button", { name: "external" });
+    const backendTypeButton = screen.getByRole("button", { name: /backend/i });
 
-    await userEvent.click(activeStatusButton);
-    await userEvent.click(teamOwnedButton);
+    await userEvent.click(deprecatedStatusButton);
+    await userEvent.click(externalOwnershipButton);
+    await userEvent.click(backendTypeButton);
 
-    expect(activeStatusButton).toHaveAttribute("aria-pressed", "false");
-    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "false");
+    expect(deprecatedStatusButton).toHaveAttribute("aria-pressed", "false");
+    expect(externalOwnershipButton).toHaveAttribute("aria-pressed", "false");
+    expect(backendTypeButton).toHaveAttribute("aria-pressed", "false");
 
     await userEvent.click(screen.getByRole("button", { name: "Reset filters" }));
 
-    expect(activeStatusButton).toHaveAttribute("aria-pressed", "true");
-    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "true");
+    expect(deprecatedStatusButton).toHaveAttribute("aria-pressed", "true");
+    expect(externalOwnershipButton).toHaveAttribute("aria-pressed", "true");
+    expect(backendTypeButton).toHaveAttribute("aria-pressed", "true");
     const detailsDock = screen.getByTestId("graph-workspace-dock");
     expect(detailsDock).toContainElement(within(detailsDock).getByText("Example UI"));
   });
