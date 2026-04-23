@@ -80,7 +80,7 @@ describe("App", () => {
     });
   });
 
-  it("loads saved local draft into editor mode and validates it", async () => {
+  it("loads saved local draft and uses it as startup source", async () => {
     vi.spyOn(registryDomain, "loadInitialRegistrySource").mockResolvedValue(null);
     window.localStorage.setItem(
       registryDomain.LOCAL_STORAGE_DRAFT_KEY,
@@ -91,8 +91,49 @@ describe("App", () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText("Schema validation passed.")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Use this registry" })).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Loaded from saved local draft. Edit the registry to validate and preview changes in-browser.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("prefers saved local draft over file-backed source on startup", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockResolvedValue({
+      sourceLabel: "/service_registry.yaml",
+      sourceText: registryDomain.DEFAULT_REGISTRY_TEMPLATE,
+    });
+    window.localStorage.setItem(
+      registryDomain.LOCAL_STORAGE_DRAFT_KEY,
+      registryDomain.DEFAULT_REGISTRY_TEMPLATE.replace("Example Team", "Draft Team"),
+    );
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Loaded from saved local draft. Edit the registry to validate and preview changes in-browser.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("opens editor when saved local draft is invalid even if file-backed source exists", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockResolvedValue({
+      sourceLabel: "/service_registry.yaml",
+      sourceText: registryDomain.DEFAULT_REGISTRY_TEMPLATE,
+    });
+    window.localStorage.setItem(registryDomain.LOCAL_STORAGE_DRAFT_KEY, "metadata:\n  team:");
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText("YAML")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Fix validation errors" })).toBeDisabled();
     });
   });
 
