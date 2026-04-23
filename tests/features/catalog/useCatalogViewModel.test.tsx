@@ -10,6 +10,8 @@ const registry: Registry = {
     last_updated: "2026-04-08",
     maintainers: [{ name: "Jane", slack: "@jane" }],
   },
+  hosting: {},
+  stakeholders: {},
   business_flows: {
     p2_alpha: {
       name: "Alpha Flow",

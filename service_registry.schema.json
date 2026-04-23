@@ -128,11 +128,11 @@
           "minLength": 1
         },
         "description": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "What this stakeholder does and why they care about the flows they are listed on."
         },
         "contact": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "Primary contact point for this stakeholder (e.g. Slack handle, email address, or channel name)."
         }
       }

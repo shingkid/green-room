@@ -1,5 +1,9 @@
+import ELK from "elkjs/lib/elk.bundled.js";
+
 import type { DataFlow, DependencyCriticality, Registry, Service, ServiceType } from "./registry";
 import { getStageSubtypeLabel } from "./registry";
+
+const elk = new ELK();
 
 export type GraphEdge = {
   service: string;
@@ -71,78 +75,84 @@ export function getAffectedDataFlows(serviceKey: string, dataFlows: Record<strin
   );
 }
 
-export function computeLayout(
+export async function computeLayout(
   visibleServices: Set<string>,
   services: Record<string, Service>,
   graph: Graph,
-): Layout {
-  const keys = [...visibleServices];
-  const inDegree: Record<string, number> = {};
-
-  for (const key of keys) {
-    inDegree[key] = 0;
-  }
-
-  for (const key of keys) {
-    for (const dependency of services[key]?.upstream ?? []) {
-      if (visibleServices.has(dependency.service)) {
-        inDegree[key] += 1;
-      }
-    }
-  }
-
-  const layers: string[][] = [];
-  const remaining = new Set(keys);
-
-  while (remaining.size > 0) {
-    // This is a lightweight topological layering pass. When cycles remain, fall back to placing
-    // the rest in one layer instead of trying to solve a harder graph-layout problem in-browser.
-    const layer = [...remaining].filter((key) => inDegree[key] === 0);
-
-    if (layer.length === 0) {
-      layers.push([...remaining]);
-      break;
-    }
-
-    layers.push(layer);
-
-    for (const key of layer) {
-      remaining.delete(key);
-
-      for (const dependency of graph.downstream[key] ?? []) {
-        if (remaining.has(dependency.service)) {
-          inDegree[dependency.service] -= 1;
-        }
-      }
-    }
-  }
-
+): Promise<Layout> {
   const nodeW = 140;
   const nodeH = 56;
-  const gapX = 40;
-  const gapY = 80;
-  const maxLayerWidth = Math.max(...layers.map((layer) => layer.length), 1);
-  const totalWidth = Math.max(800, maxLayerWidth * (nodeW + gapX));
-  const positions: Layout["positions"] = {};
 
-  layers.forEach((layer, layerIndex) => {
-    const layerWidth = layer.length * (nodeW + gapX) - gapX;
-    const offsetX = (totalWidth - layerWidth) / 2;
+  if (visibleServices.size === 0) {
+    return { positions: {}, svgW: 800, svgH: 200, nodeW, nodeH };
+  }
 
-    layer.forEach((key, columnIndex) => {
-      positions[key] = {
-        x: offsetX + columnIndex * (nodeW + gapX),
-        y: 60 + layerIndex * (nodeH + gapY),
+  const keys = [...visibleServices];
+
+  // Assign a partition index per hosting key (most-frequent group = 0) so ELK never
+  // interleaves nodes from different hosting environments within the same column band.
+  const hostingFrequency = new Map<string, number>();
+  for (const key of keys) {
+    const h = services[key]?.hosting;
+    if (h) hostingFrequency.set(h, (hostingFrequency.get(h) ?? 0) + 1);
+  }
+  const hostingRank = new Map(
+    [...hostingFrequency.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([h], i) => [h, i]),
+  );
+  const ungroupedPartition = hostingRank.size;
+
+  const elkGraph = {
+    id: "root",
+    layoutOptions: {
+      "elk.algorithm": "layered",
+      "elk.direction": "DOWN",
+      "elk.partitioning.activate": "true",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.spacing.nodeNode": "40",
+      "elk.padding": "[top=60, left=40, bottom=40, right=40]",
+    },
+    children: keys.map((key) => {
+      const h = services[key]?.hosting;
+      const partition = h !== undefined ? (hostingRank.get(h) ?? ungroupedPartition) : ungroupedPartition;
+      return {
+        id: key,
+        width: nodeW,
+        height: nodeH,
+        layoutOptions: { "partitioning.partition": String(partition) },
       };
-    });
-  });
+    }),
+    edges: keys.flatMap((key) =>
+      (graph.upstream[key] ?? [])
+        .filter((e) => visibleServices.has(e.service))
+        .map((e, i) => ({
+          id: `${e.service}->${key}:${i}`,
+          sources: [e.service],
+          targets: [key],
+        })),
+    ),
+  };
+
+  const result = await elk.layout(elkGraph);
+
+  const positions: Layout["positions"] = {};
+  for (const child of result.children ?? []) {
+    if (child.id && child.x !== undefined && child.y !== undefined) {
+      positions[child.id] = { x: child.x, y: child.y };
+    }
+  }
+
+  const positionValues = Object.values(positions);
+  const maxX = positionValues.length > 0 ? Math.max(...positionValues.map((p) => p.x)) : 0;
+  const maxY = positionValues.length > 0 ? Math.max(...positionValues.map((p) => p.y)) : 0;
 
   return {
     positions,
-    svgH: 60 + layers.length * (nodeH + gapY) + 40,
-    svgW: totalWidth + 40,
-    nodeH,
+    svgW: Math.max(800, maxX + nodeW + 40),
+    svgH: maxY + nodeH + 40,
     nodeW,
+    nodeH,
   };
 }
 

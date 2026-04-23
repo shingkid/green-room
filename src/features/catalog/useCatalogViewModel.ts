@@ -7,6 +7,7 @@ import {
   collectReachable,
   computeLayout,
   getAffectedDataFlows,
+  type Layout,
   slugify,
 } from "@domain/catalog";
 import {
@@ -267,10 +268,18 @@ export function useCatalogViewModel(registry: Registry) {
     isServiceVisibleInGraph,
   ]);
 
-  const layout = useMemo(
-    () => computeLayout(visibleServices, services, graph),
-    [graph, services, visibleServices],
-  );
+  const emptyLayout: Layout = { positions: {}, svgW: 800, svgH: 200, nodeW: 140, nodeH: 56 };
+  const [layout, setLayout] = useState<Layout>(emptyLayout);
+
+  useEffect(() => {
+    let cancelled = false;
+    computeLayout(visibleServices, services, graph).then((result) => {
+      if (!cancelled) setLayout(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [graph, services, visibleServices]);
 
   const edges = useMemo(() => {
     const result: Array<{

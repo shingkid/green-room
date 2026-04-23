@@ -97,9 +97,7 @@ const ServiceNode = memo(function ServiceNode({
         x={width / 2}
         y={height / 2 + 10}
       >
-        {service.status !== "active"
-          ? service.status.toUpperCase()
-          : (hostingConfig?.environment ?? service.type)}
+        {service.status !== "active" ? service.status.toUpperCase() : service.type}
       </text>
     </g>
   );
@@ -207,6 +205,37 @@ export function GraphCanvas({
     [edges, layout.nodeH, layout.nodeW, layout.positions, mode],
   );
   const visibleServiceKeys = useMemo(() => [...visibleServices], [visibleServices]);
+
+  const hostingBubbles = useMemo(() => {
+    const PADDING = 20;
+    const groups = new Map<string, { positions: Array<{ x: number; y: number }>; color: string }>();
+
+    for (const serviceKey of visibleServiceKeys) {
+      const service = services[serviceKey];
+      const position = layout.positions[serviceKey];
+      if (!service?.hosting || !position) continue;
+
+      const config = hostingMap[service.hosting];
+      if (!config) continue;
+
+      if (!groups.has(service.hosting)) {
+        groups.set(service.hosting, {
+          positions: [],
+          color: HOSTING_ENVIRONMENT_COLORS[config.environment] ?? "#6b7280",
+        });
+      }
+      groups.get(service.hosting)!.positions.push(position);
+    }
+
+    return [...groups.entries()].map(([key, { positions, color }]) => {
+      const x = Math.min(...positions.map((p) => p.x)) - PADDING;
+      const y = Math.min(...positions.map((p) => p.y)) - PADDING;
+      const maxX = Math.max(...positions.map((p) => p.x + layout.nodeW)) + PADDING;
+      const maxY = Math.max(...positions.map((p) => p.y + layout.nodeH)) + PADDING;
+      return { key, color, x, y, width: maxX - x, height: maxY - y };
+    });
+  }, [visibleServiceKeys, services, layout.positions, layout.nodeW, layout.nodeH, hostingMap]);
+
   const renderedNodes = useMemo(
     () =>
       visibleServiceKeys.map((serviceKey) => {
@@ -275,6 +304,34 @@ export function GraphCanvas({
             <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--graph-arrow)" />
           </marker>
         </defs>
+        {hostingBubbles.map(({ key, color, x, y, width, height }) => (
+          <g key={key} pointerEvents="none">
+            <rect
+              fill={color}
+              fillOpacity={0.07}
+              height={height}
+              rx={14}
+              stroke={color}
+              strokeDasharray="6 3"
+              strokeOpacity={0.25}
+              strokeWidth={1.5}
+              width={width}
+              x={x}
+              y={y}
+            />
+            <text
+              fill={color}
+              fillOpacity={0.7}
+              fontFamily="system-ui"
+              fontSize={9}
+              fontWeight={600}
+              x={x + 10}
+              y={y + 14}
+            >
+              {key}
+            </text>
+          </g>
+        ))}
         {renderedEdges}
         {renderedNodes}
       </svg>

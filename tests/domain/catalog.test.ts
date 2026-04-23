@@ -60,13 +60,13 @@ describe("catalog domain helpers", () => {
     expect([...reachable].sort()).toEqual(["api", "db", "worker"]);
   });
 
-  it("computes layout even when a cycle exists", () => {
+  it("computes layout even when a cycle exists", async () => {
     const cyclicServices: Record<string, Service> = {
       a: { ...services.api, upstream: [{ service: "b", criticality: "hard" }] },
       b: { ...services.api, upstream: [{ service: "a", criticality: "hard" }] },
     };
     const graph = buildGraph(cyclicServices);
-    const layout = computeLayout(new Set(["a", "b"]), cyclicServices, graph);
+    const layout = await computeLayout(new Set(["a", "b"]), cyclicServices, graph);
 
     expect(Object.keys(layout.positions).sort()).toEqual(["a", "b"]);
     expect(layout.svgW).toBeGreaterThanOrEqual(800);
@@ -113,6 +113,8 @@ describe("catalog domain helpers", () => {
         last_updated: "2026-04-08",
         maintainers: [],
       },
+      hosting: {},
+      stakeholders: {},
       business_flows: {
         checkout: {
           name: "Checkout",

@@ -81,7 +81,7 @@ export type Registry = {
     maintainers: Array<{ name: string; slack: string }>;
   };
   hosting: Record<string, Hosting>;
-  stakeholders: Record<string, { name: string; description?: string; contact?: string }>;
+  stakeholders: Record<string, { name: string; description?: string | null; contact?: string | null }>;
   business_flows: Record<string, BusinessFlow>;
   data_flows: Record<string, DataFlow>;
   services: Record<string, Service>;

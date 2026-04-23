@@ -30,12 +30,18 @@ metadata:
   maintainers:
     - name: Jane
       slack: "@jane"
+hosting:
+  prod:
+    environment: cloud
+stakeholders:
+  product:
+    name: Product
 business_flows:
   checkout:
     name: Checkout
     description: Checkout flow
     priority: P1
-    stakeholders: [Product]
+    stakeholders: [product]
 data_flows:
   broken:
     name: Broken flow
@@ -53,6 +59,7 @@ services:
     description: Backend
     type: backend
     status: active
+    hosting: prod
     upstream:
       - service: missing_dependency
         protocol: HTTPS

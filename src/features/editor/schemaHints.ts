@@ -48,7 +48,7 @@ const SECTION_HINT_SPECS: SectionHintSpec[] = [
   { context: "dataFlow", sectionKey: "data_flows", title: "Data Flow Entry" },
 ];
 
-const parsedSchema = registrySchema as JsonSchema;
+const parsedSchema = registrySchema as unknown as JsonSchema;
 const localRefCache = new Map<string, JsonSchema | null>();
 
 function resolveLocalRef(schema: JsonSchema, ref: string): JsonSchema | null {
