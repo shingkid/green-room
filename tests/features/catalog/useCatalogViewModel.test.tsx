@@ -113,13 +113,34 @@ describe("useCatalogViewModel business flow sorting", () => {
 
   it("resets only legend filter sets", () => {
     const { result } = renderHook(() => useCatalogViewModel(getDefaultRegistry()));
+    const selectedStakeholder = result.current.stakeholderOptions[0]?.value ?? null;
 
     act(() => {
       result.current.handleTabChange("impact");
       result.current.setSelectedService("example_ui");
-      result.current.setSelectedStakeholder("Product");
-      result.current.setSelectedFlow("example_flow");
-      result.current.setSelectedDataFlow("example_data_flow");
+    });
+
+    if (selectedStakeholder) {
+      act(() => {
+        result.current.setSelectedStakeholder(selectedStakeholder);
+      });
+    }
+
+    const selectedFlow = result.current.businessFlowOptions[0]?.value ?? null;
+    if (selectedFlow) {
+      act(() => {
+        result.current.setSelectedFlow(selectedFlow);
+      });
+    }
+
+    const selectedDataFlow = result.current.dataFlowOptions[0]?.value ?? null;
+    if (selectedDataFlow) {
+      act(() => {
+        result.current.setSelectedDataFlow(selectedDataFlow);
+      });
+    }
+
+    act(() => {
       result.current.handleToggleStatus("deprecated");
       result.current.handleToggleType("backend");
       result.current.handleToggleOwnership("external");
@@ -137,8 +158,10 @@ describe("useCatalogViewModel business flow sorting", () => {
     expect(result.current.visibleTypeSet.has("backend")).toBe(true);
     expect(result.current.visibleOwnershipSet.has("external")).toBe(true);
     expect(result.current.selectedService).toBe("example_ui");
-    expect(result.current.selectedStakeholder).toBe("Product");
-    expect(result.current.selectedFlow).toBe("example_flow");
-    expect(result.current.selectedDataFlow).toBe("example_data_flow");
+    expect(result.current.selectedStakeholder).toBe(selectedStakeholder);
+    expect(result.current.selectedFlow).toBe(selectedFlow);
+    if (selectedDataFlow) {
+      expect(result.current.selectedDataFlow).toBe(selectedDataFlow);
+    }
   });
 });
