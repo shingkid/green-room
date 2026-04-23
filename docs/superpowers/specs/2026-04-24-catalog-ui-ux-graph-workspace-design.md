@@ -1,7 +1,7 @@
 # Catalog UI/UX Improvements with GraphWorkspace — Design Spec
 
 **Date:** 2026-04-24
-**Branch:** chore/ui-ux-graph-workspace-design
+**Branch:** refactor/ui-ux-graph-workspace-design
 
 ---
 
