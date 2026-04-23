@@ -227,18 +227,18 @@ export function CatalogView({
             />
             <div aria-label="impact direction" className={styles.directionToggle} role="group">
               <button
-                className={`${styles.directionToggleButton}${viewModel.impactDirection === "downstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
-                onClick={handleSetDownstreamDirection}
-                type="button"
-              >
-                Downstream
-              </button>
-              <button
                 className={`${styles.directionToggleButton}${viewModel.impactDirection === "upstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
                 onClick={handleSetUpstreamDirection}
                 type="button"
               >
                 Upstream
+              </button>
+              <button
+                className={`${styles.directionToggleButton}${viewModel.impactDirection === "downstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
+                onClick={handleSetDownstreamDirection}
+                type="button"
+              >
+                Downstream
               </button>
             </div>
           </>

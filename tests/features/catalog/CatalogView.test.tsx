@@ -30,7 +30,12 @@ describe("CatalogView", () => {
     expect(screen.getByTestId("graph-workspace")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Dependency Impact" }));
-    expect(screen.getByText("Downstream")).toBeInTheDocument();
+    const directionGroup = screen.getByRole("group", { name: "impact direction" });
+    const directionButtons = within(directionGroup).getAllByRole("button");
+    expect(directionButtons.map((button) => button.textContent)).toEqual([
+      "Upstream",
+      "Downstream",
+    ]);
     await userEvent.click(screen.getByText("Upstream"));
 
     await userEvent.click(screen.getByRole("button", { name: "Data Lineage" }));
@@ -89,6 +94,7 @@ describe("CatalogView", () => {
     await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
 
     const detailsDock = screen.getByTestId("graph-workspace-dock");
+    expect(detailsDock).toContainElement(within(detailsDock).getByText("Example UI"));
     expect(within(detailsDock).getByText("Direct dependencies")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Upstream" }));
