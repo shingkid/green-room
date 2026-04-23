@@ -121,6 +121,26 @@ describe("App", () => {
     });
   });
 
+  it("prefers saved valid local draft when initial source loading throws", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockRejectedValue(new Error("boom"));
+    window.localStorage.setItem(
+      registryDomain.LOCAL_STORAGE_DRAFT_KEY,
+      registryDomain.DEFAULT_REGISTRY_TEMPLATE.replace("Example Team", "Draft Team"),
+    );
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Copy Mermaid" })).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Loaded from saved local draft. Edit the registry to validate and preview changes in-browser.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
   it("opens editor when saved local draft is invalid even if file-backed source exists", async () => {
     vi.spyOn(registryDomain, "loadInitialRegistrySource").mockResolvedValue({
       sourceLabel: "/service_registry.yaml",
@@ -134,6 +154,20 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("YAML")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Fix validation errors" })).toBeDisabled();
+    });
+  });
+
+  it("prefers saved invalid local draft when initial source loading throws", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockRejectedValue(new Error("boom"));
+    window.localStorage.setItem(registryDomain.LOCAL_STORAGE_DRAFT_KEY, "metadata:\n  team:");
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText("YAML")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Fix validation errors" })).toBeDisabled();
+      expect(screen.getByText("boom")).toBeInTheDocument();
     });
   });
 

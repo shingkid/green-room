@@ -146,15 +146,17 @@ export default function App() {
           return;
         }
 
-        const startupState = buildTemplateStartupState(
-          error instanceof Error ? error.message : "Failed to load registry.",
-        );
+        const errorMessage = error instanceof Error ? error.message : "Failed to load registry.";
+        const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
+        const startupState = storedDraft
+          ? resolveStartupState(null, storedDraft)
+          : buildTemplateStartupState(errorMessage);
         setSourceLabel(startupState.sourceLabel);
         setDraftText(startupState.draftText);
         setValidationText(startupState.validationText);
         setAppliedRegistry(startupState.appliedRegistry);
         setShowEditor(startupState.showEditor);
-        setLoadError(startupState.loadError);
+        setLoadError(startupState.loadError ?? errorMessage);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
