@@ -13,6 +13,7 @@ export type ServiceNodeData = {
   isHighlight: boolean;
   isAffected: boolean;
   isDimmed: boolean;
+  layoutDirection: "LR" | "TB";
   onSelect: (serviceKey: string) => void;
 };
 
@@ -30,8 +31,10 @@ export const ServiceNode = memo(function ServiceNode({
     isHighlight,
     isAffected,
     isDimmed,
+    layoutDirection,
     onSelect,
   } = data;
+  const isLR = layoutDirection === "LR";
 
   if (!service) return null;
   const statusStyle = STATUS_STYLES[service.status] ?? STATUS_STYLES.active;
@@ -47,7 +50,7 @@ export const ServiceNode = memo(function ServiceNode({
       style={{ opacity: isDimmed ? 0.15 : 1, cursor: "pointer", width: nodeW, height: nodeH }}
     >
       <Handle
-        position={Position.Top}
+        position={isLR ? Position.Left : Position.Top}
         style={{ opacity: 0, pointerEvents: "none" }}
         type="target"
       />
@@ -115,7 +118,7 @@ export const ServiceNode = memo(function ServiceNode({
         </text>
       </svg>
       <Handle
-        position={Position.Bottom}
+        position={isLR ? Position.Right : Position.Bottom}
         style={{ opacity: 0, pointerEvents: "none" }}
         type="source"
       />

@@ -78,6 +78,7 @@ export async function computeLayout(
   graph: Graph,
   showHosting: boolean,
   hostingMap: Record<string, Hosting> = {},
+  layoutDirection: "LR" | "TB" = "TB",
 ): Promise<Layout> {
   const nodeW = 140;
   const nodeH = 56;
@@ -88,15 +89,23 @@ export async function computeLayout(
 
   const keys = [...visibleServices];
 
-  if (!showHosting) {
-    // Compact mode: flat layered layout, no partitioning
+  if (!showHosting || layoutDirection === "LR") {
+    // Compact mode: flat layered layout, no partitioning.
+    // LR (request-flow): consumers are ELK sources so entry-points land on the left; edges are
+    // expressed consumer→dependency so arrows point left-to-right in the direction of requests.
+    // TB (dependency/infra): dependencies are ELK sources so they land at the top; edges are
+    // expressed dependency→consumer so arrows point downward.
+    const isLR = layoutDirection === "LR";
     const elkGraph = {
       id: "root",
       layoutOptions: {
         "elk.algorithm": "layered",
-        "elk.direction": "DOWN",
-        "elk.spacing.nodeNode": "60",
-        "elk.layered.spacing.nodeNodeBetweenLayers": "50",
+        "elk.direction": isLR ? "RIGHT" : "DOWN",
+        // In LR mode the secondary axis is vertical, so nodeNode is the within-column vertical
+        // gap. Keep it compact (20) and let the redistribution step spread columns evenly.
+        // Between-layers is the horizontal column gap — wider to give edges room to breathe.
+        "elk.spacing.nodeNode": isLR ? "20" : "60",
+        "elk.layered.spacing.nodeNodeBetweenLayers": isLR ? "80" : "50",
         "elk.padding": "[top=20, left=20, bottom=20, right=20]",
       },
       children: keys.map((key) => ({ id: key, width: nodeW, height: nodeH })),
@@ -105,8 +114,8 @@ export async function computeLayout(
           .filter((e) => visibleServices.has(e.service))
           .map((e, i) => ({
             id: `${e.service}->${key}:${i}`,
-            sources: [e.service],
-            targets: [key],
+            sources: isLR ? [key] : [e.service],
+            targets: isLR ? [e.service] : [key],
           })),
       ),
     };
@@ -114,28 +123,44 @@ export async function computeLayout(
     const result = await elk.layout(elkGraph);
     const elkChildren = result.children ?? [];
 
-    // Compute the max X extent to use as the target spread width for all layers
-    const maxX = Math.max(0, ...elkChildren.map((c) => (c.x ?? 0) + nodeW));
-
-    // Group nodes by Y layer (layered algo assigns the same Y to all nodes in a layer)
-    const layerMap = new Map<number, typeof elkChildren>();
-    for (const child of elkChildren) {
-      if (!child.id || child.x === undefined || child.y === undefined) continue;
-      const yKey = Math.round(child.y);
-      if (!layerMap.has(yKey)) layerMap.set(yKey, []);
-      layerMap.get(yKey)!.push(child);
-    }
-
-    // Redistribute X within each layer to fill the full max width
+    // Redistribute nodes within each layer so all layers fill the same extent on the secondary
+    // axis. TB: group by Y-layer, spread X to fill max width. LR: group by X-column, spread Y to
+    // fill max height. ELK assigns the same primary-axis coordinate to all nodes in a layer.
     const spreadPositions = new Map<string, { x: number; y: number }>();
-    for (const [y, layerNodes] of layerMap) {
-      const sorted = [...layerNodes].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-      const n = sorted.length;
-      sorted.forEach((node, i) => {
-        const x =
-          n === 1 ? (maxX - nodeW) / 2 : (i * (maxX - nodeW)) / (n - 1);
-        spreadPositions.set(node.id!, { x, y });
-      });
+    if (isLR) {
+      const maxY = Math.max(0, ...elkChildren.map((c) => (c.y ?? 0) + nodeH));
+      const columnMap = new Map<number, typeof elkChildren>();
+      for (const child of elkChildren) {
+        if (!child.id || child.x === undefined || child.y === undefined) continue;
+        const xKey = Math.round(child.x);
+        if (!columnMap.has(xKey)) columnMap.set(xKey, []);
+        columnMap.get(xKey)!.push(child);
+      }
+      for (const [x, colNodes] of columnMap) {
+        const sorted = [...colNodes].sort((a, b) => (a.y ?? 0) - (b.y ?? 0));
+        const n = sorted.length;
+        sorted.forEach((node, i) => {
+          const y = n === 1 ? (maxY - nodeH) / 2 : (i * (maxY - nodeH)) / (n - 1);
+          spreadPositions.set(node.id!, { x, y });
+        });
+      }
+    } else {
+      const maxX = Math.max(0, ...elkChildren.map((c) => (c.x ?? 0) + nodeW));
+      const layerMap = new Map<number, typeof elkChildren>();
+      for (const child of elkChildren) {
+        if (!child.id || child.x === undefined || child.y === undefined) continue;
+        const yKey = Math.round(child.y);
+        if (!layerMap.has(yKey)) layerMap.set(yKey, []);
+        layerMap.get(yKey)!.push(child);
+      }
+      for (const [y, layerNodes] of layerMap) {
+        const sorted = [...layerNodes].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+        const n = sorted.length;
+        sorted.forEach((node, i) => {
+          const x = n === 1 ? (maxX - nodeW) / 2 : (i * (maxX - nodeW)) / (n - 1);
+          spreadPositions.set(node.id!, { x, y });
+        });
+      }
     }
 
     const rfNodes: Node[] = elkChildren

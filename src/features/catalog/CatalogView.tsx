@@ -69,6 +69,7 @@ export function CatalogView({
             isHighlight: serviceKey === viewModel.highlightKey,
             isAffected: viewModel.affectedSet.has(serviceKey),
             isDimmed: viewModel.mode !== "overview" && !viewModel.affectedSet.has(serviceKey),
+            layoutDirection: viewModel.mode === "flow" ? "LR" : "TB",
             onSelect: viewModel.handleServiceClick,
           } satisfies ServiceNodeData,
         };
@@ -531,14 +532,18 @@ export function CatalogView({
                   {icon} {type}
                 </button>
               )),
-              <button
-                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.showHosting ? "" : ` ${styles.legendToggleOff}`}`}
-                key="hosting-view"
-                onClick={viewModel.handleToggleHosting}
-                type="button"
-              >
-                ☁ hosting
-              </button>,
+              ...(viewModel.mode !== "flow"
+                ? [
+                    <button
+                      className={`${styles.legendItem} ${styles.legendToggle}${viewModel.showHosting ? "" : ` ${styles.legendToggleOff}`}`}
+                      key="hosting-view"
+                      onClick={viewModel.handleToggleHosting}
+                      type="button"
+                    >
+                      ☁ hosting
+                    </button>,
+                  ]
+                : []),
             ]
           : ACTION_COLOR_ENTRIES.map(([action, color]) => (
               <span className={styles.legendItem} key={action}>

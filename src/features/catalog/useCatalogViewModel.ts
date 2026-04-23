@@ -275,7 +275,8 @@ export function useCatalogViewModel(registry: Registry) {
 
   useEffect(() => {
     let cancelled = false;
-    computeLayout(visibleServices, services, graph, showHosting, registry.hosting).then(
+    const layoutDirection = mode === "flow" ? "LR" : "TB";
+    computeLayout(visibleServices, services, graph, showHosting, registry.hosting, layoutDirection).then(
       ({ rfNodes: nodes }) => {
         if (!cancelled) setRfNodes(nodes);
       },
@@ -283,7 +284,7 @@ export function useCatalogViewModel(registry: Registry) {
     return () => {
       cancelled = true;
     };
-  }, [graph, registry.hosting, services, showHosting, visibleServices]);
+  }, [graph, mode, registry.hosting, services, showHosting, visibleServices]);
 
   const rfEdges = useMemo<Edge<ServiceEdgeData>[]>(() => {
     const result: Edge<ServiceEdgeData>[] = [];
@@ -294,10 +295,13 @@ export function useCatalogViewModel(registry: Registry) {
           continue;
         }
         const isActive = affectedSet.has(serviceKey) && affectedSet.has(dependency.service);
+        // LR (flow mode): arrows go consumer → dependency (left-to-right request direction).
+        // TB (other modes): arrows go dependency → consumer (top-down data-provision direction).
+        const isLR = mode === "flow";
         result.push({
           id: `${serviceKey}:${index}:${dependency.service}`,
-          source: dependency.service,
-          target: serviceKey,
+          source: isLR ? serviceKey : dependency.service,
+          target: isLR ? dependency.service : serviceKey,
           type: "serviceEdge",
           data: {
             protocol: dependency.protocol,

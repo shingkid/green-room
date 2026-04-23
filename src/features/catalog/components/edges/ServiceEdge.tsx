@@ -11,12 +11,14 @@ export type ServiceEdgeData = {
 export const ServiceEdge = memo(function ServiceEdge({
   sourceX,
   sourceY,
+  sourcePosition,
   targetX,
   targetY,
+  targetPosition,
   data,
   id,
 }: EdgeProps & { data: ServiceEdgeData }) {
-  const [edgePath] = getBezierPath({ sourceX, sourceY, targetX, targetY });
+  const [edgePath] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
   const { protocol, criticality, isActive = false, isDimmed = false } = data ?? {};
 
   return (
