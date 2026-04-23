@@ -1,7 +1,8 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 
-import type { DataFlow, DependencyCriticality, Registry, Service, ServiceType } from "./registry";
-import { getStageSubtypeLabel } from "./registry";
+import type { Node } from "@xyflow/react";
+import type { DataFlow, DependencyCriticality, Hosting, Registry, Service, ServiceType } from "./registry";
+import { getStageSubtypeLabel, HOSTING_ENVIRONMENT_COLORS } from "./registry";
 
 const elk = new ELK();
 
@@ -17,11 +18,7 @@ export type Graph = {
 };
 
 export type Layout = {
-  positions: Record<string, { x: number; y: number }>;
-  svgW: number;
-  svgH: number;
-  nodeW: number;
-  nodeH: number;
+  rfNodes: Node[];
 };
 
 export type MermaidExport = {
@@ -79,18 +76,57 @@ export async function computeLayout(
   visibleServices: Set<string>,
   services: Record<string, Service>,
   graph: Graph,
+  showHosting: boolean,
+  hostingMap: Record<string, Hosting> = {},
 ): Promise<Layout> {
   const nodeW = 140;
   const nodeH = 56;
 
   if (visibleServices.size === 0) {
-    return { positions: {}, svgW: 800, svgH: 200, nodeW, nodeH };
+    return { rfNodes: [] };
   }
 
   const keys = [...visibleServices];
 
-  // Assign a partition index per hosting key (most-frequent group = 0) so ELK never
-  // interleaves nodes from different hosting environments within the same column band.
+  if (!showHosting) {
+    // Compact mode: flat layered layout, no partitioning
+    const elkGraph = {
+      id: "root",
+      layoutOptions: {
+        "elk.algorithm": "layered",
+        "elk.direction": "DOWN",
+        "elk.spacing.nodeNode": "30",
+        "elk.layered.spacing.nodeNodeBetweenLayers": "50",
+        "elk.padding": "[top=20, left=20, bottom=20, right=20]",
+      },
+      children: keys.map((key) => ({ id: key, width: nodeW, height: nodeH })),
+      edges: keys.flatMap((key) =>
+        (graph.upstream[key] ?? [])
+          .filter((e) => visibleServices.has(e.service))
+          .map((e, i) => ({
+            id: `${e.service}->${key}:${i}`,
+            sources: [e.service],
+            targets: [key],
+          })),
+      ),
+    };
+
+    const result = await elk.layout(elkGraph);
+    const rfNodes: Node[] = (result.children ?? [])
+      .filter((child) => child.id && child.x !== undefined && child.y !== undefined)
+      .map((child) => ({
+        id: child.id!,
+        type: "serviceNode",
+        position: { x: child.x!, y: child.y! },
+        data: { serviceKey: child.id! },
+        width: nodeW,
+        height: nodeH,
+      }));
+
+    return { rfNodes };
+  }
+
+  // Hosting mode: partitioned ELK layout → post-process into RF parent nodes
   const hostingFrequency = new Map<string, number>();
   for (const key of keys) {
     const h = services[key]?.hosting;
@@ -115,7 +151,8 @@ export async function computeLayout(
     },
     children: keys.map((key) => {
       const h = services[key]?.hosting;
-      const partition = h !== undefined ? (hostingRank.get(h) ?? ungroupedPartition) : ungroupedPartition;
+      const partition =
+        h !== undefined ? (hostingRank.get(h) ?? ungroupedPartition) : ungroupedPartition;
       return {
         id: key,
         width: nodeW,
@@ -136,24 +173,88 @@ export async function computeLayout(
 
   const result = await elk.layout(elkGraph);
 
-  const positions: Layout["positions"] = {};
+  // Collect flat positions from ELK output
+  const positions: Record<string, { x: number; y: number }> = {};
   for (const child of result.children ?? []) {
     if (child.id && child.x !== undefined && child.y !== undefined) {
       positions[child.id] = { x: child.x, y: child.y };
     }
   }
 
-  const positionValues = Object.values(positions);
-  const maxX = positionValues.length > 0 ? Math.max(...positionValues.map((p) => p.x)) : 0;
-  const maxY = positionValues.length > 0 ? Math.max(...positionValues.map((p) => p.y)) : 0;
+  // Compute bounding box per hosting group
+  const PADDING = 20;
+  type GroupInfo = { positions: { x: number; y: number }[]; color: string };
+  const groups = new Map<string, GroupInfo>();
+  for (const key of keys) {
+    const hostingKey = services[key]?.hosting;
+    const position = positions[key];
+    if (!hostingKey || !position) continue;
+    if (!groups.has(hostingKey)) {
+      const config = hostingMap[hostingKey];
+      const color = config
+        ? (HOSTING_ENVIRONMENT_COLORS[config.environment] ?? "#6b7280")
+        : "#6b7280";
+      groups.set(hostingKey, { positions: [], color });
+    }
+    groups.get(hostingKey)!.positions.push(position);
+  }
 
-  return {
-    positions,
-    svgW: Math.max(800, maxX + nodeW + 40),
-    svgH: maxY + nodeH + 40,
-    nodeW,
-    nodeH,
-  };
+  // Pre-compute bounds for each group (needed for both parent nodes and child offsets)
+  type GroupBounds = { minX: number; minY: number; maxX: number; maxY: number; color: string };
+  const groupBounds = new Map<string, GroupBounds>();
+  for (const [hostingKey, { positions: gPositions, color }] of groups) {
+    groupBounds.set(hostingKey, {
+      minX: Math.min(...gPositions.map((p) => p.x)) - PADDING,
+      minY: Math.min(...gPositions.map((p) => p.y)) - PADDING,
+      maxX: Math.max(...gPositions.map((p) => p.x + nodeW)) + PADDING,
+      maxY: Math.max(...gPositions.map((p) => p.y + nodeH)) + PADDING,
+      color,
+    });
+  }
+
+  // Build React Flow nodes: group parent nodes first, then service nodes
+  const rfNodes: Node[] = [];
+
+  for (const [hostingKey, { minX, minY, maxX, maxY, color }] of groupBounds) {
+    rfNodes.push({
+      id: `__hosting_${hostingKey}`,
+      type: "hostingGroupNode",
+      position: { x: minX, y: minY },
+      data: { hostingKey, color },
+      style: { width: maxX - minX, height: maxY - minY },
+      selectable: false,
+    });
+  }
+
+  for (const key of keys) {
+    const hostingKey = services[key]?.hosting;
+    const position = positions[key];
+    if (!position) continue;
+
+    if (hostingKey && groupBounds.has(hostingKey)) {
+      const { minX, minY } = groupBounds.get(hostingKey)!;
+      rfNodes.push({
+        id: key,
+        type: "serviceNode",
+        position: { x: position.x - minX, y: position.y - minY },
+        parentId: `__hosting_${hostingKey}`,
+        data: { serviceKey: key },
+        width: nodeW,
+        height: nodeH,
+      });
+    } else {
+      rfNodes.push({
+        id: key,
+        type: "serviceNode",
+        position,
+        data: { serviceKey: key },
+        width: nodeW,
+        height: nodeH,
+      });
+    }
+  }
+
+  return { rfNodes };
 }
 
 export function formatServiceLabel(name: string, limit: number) {
