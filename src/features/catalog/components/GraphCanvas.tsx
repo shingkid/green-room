@@ -3,6 +3,7 @@ import {
   ReactFlow,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   Controls,
   type Edge,
   type Node,
@@ -24,6 +25,18 @@ const nodeTypes: NodeTypes = {
 const edgeTypes: EdgeTypes = {
   serviceEdge: ServiceEdge,
 };
+
+function FitViewOnChange({ rfNodes }: { rfNodes: Node[] }) {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      fitView({ duration: 200 });
+    });
+  }, [rfNodes, fitView]);
+
+  return null;
+}
 
 type GraphCanvasProps = {
   rfNodes: Node[];
@@ -55,6 +68,7 @@ export function GraphCanvas({ rfNodes, rfEdges }: GraphCanvasProps) {
         onEdgesChange={onEdgesChange}
         onNodesChange={onNodesChange}
       >
+        <FitViewOnChange rfNodes={rfNodes} />
         <Controls />
       </ReactFlow>
     </section>

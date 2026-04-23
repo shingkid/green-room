@@ -238,6 +238,7 @@ export async function computeLayout(
         type: "serviceNode",
         position: { x: position.x - minX, y: position.y - minY },
         parentId: `__hosting_${hostingKey}`,
+        extent: "parent" as const,
         data: { serviceKey: key },
         width: nodeW,
         height: nodeH,

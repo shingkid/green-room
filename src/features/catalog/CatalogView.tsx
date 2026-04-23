@@ -53,7 +53,9 @@ export function CatalogView({
     () =>
       viewModel.rfNodes.map((node) => {
         if (node.type !== "serviceNode") return node;
-        const serviceKey = (node.data as { serviceKey: string }).serviceKey;
+        const rawData = node.data as Record<string, unknown>;
+        const serviceKey = typeof rawData.serviceKey === "string" ? rawData.serviceKey : null;
+        if (!serviceKey) return node;
         const service = registry.services[serviceKey];
         if (!service) return node;
         const hostingConfig = service.hosting ? registry.hosting[service.hosting] : undefined;
