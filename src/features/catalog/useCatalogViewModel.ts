@@ -536,7 +536,6 @@ export function useCatalogViewModel(registry: Registry) {
     handleTabChange,
     handleToggleHosting,
     handleToggleOwnership,
-    handleResetLegendFilters,
     handleToggleStatus,
     handleToggleType,
     highlightKey,

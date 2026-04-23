@@ -16,7 +16,7 @@ export function GraphWorkspace({ graph, controls, details, showDetails }: GraphW
       data-testid="graph-workspace"
     >
       <div className={styles.graphArea}>
-        <div className={styles.controls}>{controls}</div>
+        {controls ? <div className={styles.controls}>{controls}</div> : null}
         {graph}
       </div>
       {showDetails ? (
