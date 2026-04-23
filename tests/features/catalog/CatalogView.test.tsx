@@ -80,7 +80,10 @@ describe("CatalogView", () => {
 
     const initialPressed = hostingToggle.getAttribute("aria-pressed");
     await userEvent.click(hostingToggle);
-    expect(hostingToggle).toHaveAttribute("aria-pressed", initialPressed === "true" ? "false" : "true");
+    expect(hostingToggle).toHaveAttribute(
+      "aria-pressed",
+      initialPressed === "true" ? "false" : "true",
+    );
   });
 
   it("expands data flow details and renders pipeline stages", async () => {

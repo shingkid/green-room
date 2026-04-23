@@ -275,9 +275,12 @@ export function CatalogView({
             <section className={`${styles.panel} ${styles.detailsPanel}`}>
               <div className={styles.detailsHeader}>
                 <div>
-                  <div className={styles.detailsTitle}>{viewModel.selectedServiceDetails?.name}</div>
+                  <div className={styles.detailsTitle}>
+                    {viewModel.selectedServiceDetails?.name}
+                  </div>
                   <div className={styles.detailsMeta}>
-                    {viewModel.selectedServiceDetails?.type} · {viewModel.selectedServiceDetails?.status} ·{" "}
+                    {viewModel.selectedServiceDetails?.type} ·{" "}
+                    {viewModel.selectedServiceDetails?.status} ·{" "}
                     {viewModel.selectedServiceDetails
                       ? viewModel.getOwnershipKind(viewModel.selectedServiceDetails)
                       : null}
@@ -300,7 +303,8 @@ export function CatalogView({
                     <div className={styles.tagRow}>
                       <Tag
                         color={
-                          HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ?? "var(--tag-neutral)"
+                          HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ??
+                          "var(--tag-neutral)"
                         }
                       >
                         {hostingConfig.environment}
@@ -359,7 +363,8 @@ export function CatalogView({
                 const svc = viewModel.selectedServiceDetails;
                 const links: Array<{ label: string; href: string }> = [];
                 if (svc?.runbook) links.push({ label: "Runbook", href: svc.runbook });
-                if (svc?.health_check) links.push({ label: "Health check", href: svc.health_check });
+                if (svc?.health_check)
+                  links.push({ label: "Health check", href: svc.health_check });
                 if (svc?.dashboard) links.push({ label: "Dashboard", href: svc.dashboard });
                 if (svc?.on_call) links.push({ label: "On-call", href: svc.on_call });
                 if (links.length === 0) return null;
@@ -393,9 +398,11 @@ export function CatalogView({
               rfNodes={enrichedNodes}
             />
           }
-          showDetails={
-            Boolean(viewModel.selectedServiceDetails && viewModel.isGraphMode && viewModel.mode === "impact")
-          }
+          showDetails={Boolean(
+            viewModel.selectedServiceDetails &&
+            viewModel.isGraphMode &&
+            viewModel.mode === "impact",
+          )}
         />
       ) : null}
 
