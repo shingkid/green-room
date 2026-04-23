@@ -124,11 +124,12 @@ export default function App() {
     let cancelled = false;
 
     async function load() {
+      const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
+
       try {
         // Prefer any unfinished in-browser draft first, then checked-in registry sources,
         // before finally showing the starter template.
         const initialSource = await loadInitialRegistrySource();
-        const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
 
         if (cancelled) {
           return;
@@ -147,7 +148,6 @@ export default function App() {
         }
 
         const errorMessage = error instanceof Error ? error.message : "Failed to load registry.";
-        const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
         const startupState = storedDraft
           ? resolveStartupState(null, storedDraft)
           : buildTemplateStartupState(errorMessage);
