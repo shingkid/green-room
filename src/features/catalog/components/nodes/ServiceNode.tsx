@@ -33,6 +33,7 @@ export const ServiceNode = memo(function ServiceNode({
     onSelect,
   } = data;
 
+  if (!service) return null;
   const statusStyle = STATUS_STYLES[service.status] ?? STATUS_STYLES.active;
   const hostingColor = hostingConfig
     ? (HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ?? statusStyle.border)
@@ -53,7 +54,7 @@ export const ServiceNode = memo(function ServiceNode({
       <svg height={nodeH} width={nodeW}>
         <defs>
           <pattern
-            id="externalNodeStripe"
+            id={`externalNodeStripe-${serviceKey}`}
             height="8"
             patternTransform="rotate(45)"
             patternUnits="userSpaceOnUse"
@@ -83,7 +84,7 @@ export const ServiceNode = memo(function ServiceNode({
         ) : null}
         {!isInternal ? (
           <rect
-            fill="url(#externalNodeStripe)"
+            fill={`url(#externalNodeStripe-${serviceKey})`}
             height={nodeH}
             opacity={0.35}
             pointerEvents="none"

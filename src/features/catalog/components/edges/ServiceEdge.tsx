@@ -17,7 +17,7 @@ export const ServiceEdge = memo(function ServiceEdge({
   id,
 }: EdgeProps & { data: ServiceEdgeData }) {
   const [edgePath] = getBezierPath({ sourceX, sourceY, targetX, targetY });
-  const { protocol, criticality, isActive, isDimmed } = data;
+  const { protocol, criticality, isActive = false, isDimmed = false } = data ?? {};
 
   return (
     <g opacity={isDimmed ? 0.06 : isActive ? 0.9 : 0.35}>
