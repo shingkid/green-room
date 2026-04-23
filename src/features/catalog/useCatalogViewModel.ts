@@ -235,7 +235,14 @@ export function useCatalogViewModel(registry: Registry) {
     }
 
     return allServices;
-  }, [eligibleFlowKeys, isServiceVisibleInGraph, mode, selectedFlow, selectedStakeholder, serviceEntries]);
+  }, [
+    eligibleFlowKeys,
+    isServiceVisibleInGraph,
+    mode,
+    selectedFlow,
+    selectedStakeholder,
+    serviceEntries,
+  ]);
 
   const { affectedSet, highlightKey } = useMemo(() => {
     if (mode === "flow") {
