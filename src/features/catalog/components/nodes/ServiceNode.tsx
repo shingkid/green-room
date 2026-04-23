@@ -3,7 +3,7 @@ import { type NodeProps, Handle, Position } from "@xyflow/react";
 
 import type { Hosting, Service } from "@domain/registry";
 import { HOSTING_ENVIRONMENT_COLORS, STATUS_STYLES, TYPE_ICONS } from "@domain/registry";
-import { formatServiceLabel, getNodeRadius } from "@domain/catalog";
+import { formatServiceLabel, getNodeRadius, type LayoutDirection } from "@domain/catalog";
 
 export type ServiceNodeData = {
   serviceKey: string;
@@ -13,7 +13,7 @@ export type ServiceNodeData = {
   isHighlight: boolean;
   isAffected: boolean;
   isDimmed: boolean;
-  layoutDirection: "LR" | "TB";
+  layoutDirection: LayoutDirection;
   onSelect: (serviceKey: string) => void;
 };
 

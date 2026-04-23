@@ -10,6 +10,7 @@ import {
   collectReachable,
   computeLayout,
   getAffectedDataFlows,
+  type LayoutDirection,
   slugify,
 } from "@domain/catalog";
 import {
@@ -271,11 +272,11 @@ export function useCatalogViewModel(registry: Registry) {
     isServiceVisibleInGraph,
   ]);
 
+  const layoutDirection: LayoutDirection = mode === "flow" ? "LR" : "TB";
   const [rfNodes, setRfNodes] = useState<Node[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    const layoutDirection = mode === "flow" ? "LR" : "TB";
     computeLayout(visibleServices, services, graph, showHosting, registry.hosting, layoutDirection).then(
       ({ rfNodes: nodes }) => {
         if (!cancelled) setRfNodes(nodes);
@@ -284,7 +285,9 @@ export function useCatalogViewModel(registry: Registry) {
     return () => {
       cancelled = true;
     };
-  }, [graph, mode, registry.hosting, services, showHosting, visibleServices]);
+  // layoutDirection is derived from mode; using it here instead of mode means the effect only
+  // re-runs when the layout actually changes (e.g. overview→impact both map to TB: no recompute).
+  }, [graph, layoutDirection, registry.hosting, services, showHosting, visibleServices]);
 
   const rfEdges = useMemo<Edge<ServiceEdgeData>[]>(() => {
     const result: Edge<ServiceEdgeData>[] = [];
@@ -295,9 +298,7 @@ export function useCatalogViewModel(registry: Registry) {
           continue;
         }
         const isActive = affectedSet.has(serviceKey) && affectedSet.has(dependency.service);
-        // LR (flow mode): arrows go consumer → dependency (left-to-right request direction).
-        // TB (other modes): arrows go dependency → consumer (top-down data-provision direction).
-        const isLR = mode === "flow";
+        const isLR = layoutDirection === "LR";
         result.push({
           id: `${serviceKey}:${index}:${dependency.service}`,
           source: isLR ? serviceKey : dependency.service,
@@ -314,7 +315,7 @@ export function useCatalogViewModel(registry: Registry) {
     }
 
     return result;
-  }, [affectedSet, mode, serviceEntries, visibleServices]);
+  }, [affectedSet, layoutDirection, mode, serviceEntries, visibleServices]);
 
   const affectedBusinessFlows = useMemo(() => {
     if (!selectedService || mode === "overview" || mode === "data") {
