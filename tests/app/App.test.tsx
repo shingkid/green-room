@@ -18,7 +18,10 @@ vi.mock("@uiw/react-codemirror", () => {
 
 describe("App", () => {
   beforeEach(() => {
-    window.localStorage.clear();
+    const clearLocalStorage = window.localStorage?.clear;
+    if (typeof clearLocalStorage === "function") {
+      clearLocalStorage.call(window.localStorage);
+    }
   });
 
   function stubMatchMedia() {
