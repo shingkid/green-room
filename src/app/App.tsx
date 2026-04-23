@@ -44,6 +44,19 @@ function resolveStartupState(
   initialSource: Awaited<ReturnType<typeof loadInitialRegistrySource>>,
   storedDraft: string | null,
 ): AppStartupState {
+  if (storedDraft) {
+    const storedValidation = validateRegistryText(storedDraft);
+
+    return {
+      appliedRegistry: storedValidation.registry,
+      draftText: storedDraft,
+      loadError: null,
+      showEditor: !storedValidation.registry,
+      sourceLabel: "saved local draft",
+      validationText: storedDraft,
+    };
+  }
+
   if (initialSource) {
     const initialValidation = validateRegistryText(initialSource.sourceText);
 
@@ -54,19 +67,6 @@ function resolveStartupState(
       showEditor: !initialValidation.registry,
       sourceLabel: initialSource.sourceLabel,
       validationText: initialSource.sourceText,
-    };
-  }
-
-  if (storedDraft) {
-    const storedValidation = validateRegistryText(storedDraft);
-
-    return {
-      appliedRegistry: storedValidation.registry,
-      draftText: storedDraft,
-      loadError: null,
-      showEditor: true,
-      sourceLabel: "saved local draft",
-      validationText: storedDraft,
     };
   }
 
@@ -124,11 +124,12 @@ export default function App() {
     let cancelled = false;
 
     async function load() {
+      const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
+
       try {
-        // Prefer a checked-in registry when available, then fall back to any unfinished
-        // in-browser draft before showing the starter template.
+        // Prefer any unfinished in-browser draft first, then checked-in registry sources,
+        // before finally showing the starter template.
         const initialSource = await loadInitialRegistrySource();
-        const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
 
         if (cancelled) {
           return;
@@ -146,15 +147,16 @@ export default function App() {
           return;
         }
 
-        const startupState = buildTemplateStartupState(
-          error instanceof Error ? error.message : "Failed to load registry.",
-        );
+        const errorMessage = error instanceof Error ? error.message : "Failed to load registry.";
+        const startupState = storedDraft
+          ? resolveStartupState(null, storedDraft)
+          : buildTemplateStartupState(errorMessage);
         setSourceLabel(startupState.sourceLabel);
         setDraftText(startupState.draftText);
         setValidationText(startupState.validationText);
         setAppliedRegistry(startupState.appliedRegistry);
         setShowEditor(startupState.showEditor);
-        setLoadError(startupState.loadError);
+        setLoadError(startupState.loadError ?? errorMessage);
       } finally {
         if (!cancelled) {
           setIsLoading(false);

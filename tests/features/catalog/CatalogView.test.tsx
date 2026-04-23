@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { DEFAULT_REGISTRY_TEMPLATE, validateRegistryText } from "@domain/registry";
@@ -27,9 +27,15 @@ describe("CatalogView", () => {
     expect(screen.getByRole("button", { name: "Dependency Impact" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Business Flow" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Data Lineage" })).toBeInTheDocument();
+    expect(screen.getByTestId("graph-workspace")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Dependency Impact" }));
-    expect(screen.getByText("Downstream")).toBeInTheDocument();
+    const directionGroup = screen.getByRole("group", { name: "impact direction" });
+    const directionButtons = within(directionGroup).getAllByRole("button");
+    expect(directionButtons.map((button) => button.textContent)).toEqual([
+      "Upstream",
+      "Downstream",
+    ]);
     await userEvent.click(screen.getByText("Upstream"));
 
     await userEvent.click(screen.getByRole("button", { name: "Data Lineage" }));
@@ -48,8 +54,33 @@ describe("CatalogView", () => {
     );
 
     await userEvent.click(screen.getByRole("button", { name: "Business Flow" }));
+    expect(screen.getByTestId("graph-workspace")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /filter by stakeholder/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /filter business flows/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /toggle hosting boxes/i })).not.toBeInTheDocument();
+  });
+
+  it("shows hosting toggle in graph workspace controls and not in footer legend", async () => {
+    render(
+      <CatalogView
+        onEditRegistry={() => {}}
+        onToggleTheme={() => {}}
+        registry={registry}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+      />,
+    );
+
+    const graphWorkspace = screen.getByTestId("graph-workspace");
+    const hostingToggle = within(graphWorkspace).getByRole("button", {
+      name: /toggle hosting boxes/i,
+    });
+    expect(hostingToggle).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "☁ hosting" })).not.toBeInTheDocument();
+
+    const initialPressed = hostingToggle.getAttribute("aria-pressed");
+    await userEvent.click(hostingToggle);
+    expect(hostingToggle).toHaveAttribute("aria-pressed", initialPressed === "true" ? "false" : "true");
   });
 
   it("expands data flow details and renders pipeline stages", async () => {
@@ -86,7 +117,9 @@ describe("CatalogView", () => {
     await userEvent.click(screen.getByRole("button", { name: /select a service/i }));
     await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
 
-    expect(screen.getByText("Direct dependencies")).toBeInTheDocument();
+    const detailsDock = screen.getByTestId("graph-workspace-dock");
+    expect(detailsDock).toContainElement(within(detailsDock).getByText("Example UI"));
+    expect(within(detailsDock).getByText("Direct dependencies")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Upstream" }));
     expect(screen.getByText(/upstream deps/i)).toBeInTheDocument();
@@ -162,10 +195,14 @@ describe("CatalogView", () => {
     const externalButton = screen.getByRole("button", { name: "external" });
     const frontendTypeButton = screen.getByRole("button", { name: /frontend/i });
 
-    expect(activeStatusButton.className).not.toMatch(/legendToggleOff/);
-    expect(teamOwnedButton.className).not.toMatch(/legendToggleOff/);
-    expect(externalButton.className).not.toMatch(/legendToggleOff/);
-    expect(frontendTypeButton.className).not.toMatch(/legendToggleOff/);
+    expect(activeStatusButton.className).toMatch(/legendToggleOn/);
+    expect(teamOwnedButton.className).toMatch(/legendToggleOn/);
+    expect(externalButton.className).toMatch(/legendToggleOn/);
+    expect(frontendTypeButton.className).toMatch(/legendToggleOn/);
+    expect(activeStatusButton).toHaveAttribute("aria-pressed", "true");
+    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "true");
+    expect(externalButton).toHaveAttribute("aria-pressed", "true");
+    expect(frontendTypeButton).toHaveAttribute("aria-pressed", "true");
 
     await userEvent.click(activeStatusButton);
     await userEvent.click(teamOwnedButton);
@@ -176,5 +213,45 @@ describe("CatalogView", () => {
     expect(teamOwnedButton.className).toMatch(/legendToggleOff/);
     expect(externalButton.className).toMatch(/legendToggleOff/);
     expect(frontendTypeButton.className).toMatch(/legendToggleOff/);
+    expect(activeStatusButton).toHaveAttribute("aria-pressed", "false");
+    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "false");
+    expect(externalButton).toHaveAttribute("aria-pressed", "false");
+    expect(frontendTypeButton).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("resets legend filters without clearing tab-level selections", async () => {
+    render(
+      <CatalogView
+        onEditRegistry={() => {}}
+        onToggleTheme={() => {}}
+        registry={registry}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Dependency Impact" }));
+    await userEvent.click(screen.getByRole("button", { name: /select a service/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
+
+    const deprecatedStatusButton = screen.getByRole("button", { name: "deprecated" });
+    const externalOwnershipButton = screen.getByRole("button", { name: "external" });
+    const backendTypeButton = screen.getByRole("button", { name: /backend/i });
+
+    await userEvent.click(deprecatedStatusButton);
+    await userEvent.click(externalOwnershipButton);
+    await userEvent.click(backendTypeButton);
+
+    expect(deprecatedStatusButton).toHaveAttribute("aria-pressed", "false");
+    expect(externalOwnershipButton).toHaveAttribute("aria-pressed", "false");
+    expect(backendTypeButton).toHaveAttribute("aria-pressed", "false");
+
+    await userEvent.click(screen.getByRole("button", { name: "Reset filters" }));
+
+    expect(deprecatedStatusButton).toHaveAttribute("aria-pressed", "true");
+    expect(externalOwnershipButton).toHaveAttribute("aria-pressed", "true");
+    expect(backendTypeButton).toHaveAttribute("aria-pressed", "true");
+    const detailsDock = screen.getByTestId("graph-workspace-dock");
+    expect(detailsDock).toContainElement(within(detailsDock).getByText("Example UI"));
   });
 });
