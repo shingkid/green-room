@@ -110,4 +110,35 @@ describe("useCatalogViewModel business flow sorting", () => {
     expect(result.current.selectedFlow).toBeNull();
     expect(result.current.selectedDataFlow).toBeNull();
   });
+
+  it("resets only legend filter sets", () => {
+    const { result } = renderHook(() => useCatalogViewModel(getDefaultRegistry()));
+
+    act(() => {
+      result.current.handleTabChange("impact");
+      result.current.setSelectedService("example_ui");
+      result.current.setSelectedStakeholder("Product");
+      result.current.setSelectedFlow("example_flow");
+      result.current.setSelectedDataFlow("example_data_flow");
+      result.current.handleToggleStatus("active");
+      result.current.handleToggleType("frontend");
+      result.current.handleToggleOwnership("internal");
+    });
+
+    expect(result.current.visibleStatusSet.has("active")).toBe(false);
+    expect(result.current.visibleTypeSet.has("frontend")).toBe(false);
+    expect(result.current.visibleOwnershipSet.has("internal")).toBe(false);
+
+    act(() => {
+      result.current.resetLegendFilters();
+    });
+
+    expect(result.current.visibleStatusSet.has("active")).toBe(true);
+    expect(result.current.visibleTypeSet.has("frontend")).toBe(true);
+    expect(result.current.visibleOwnershipSet.has("internal")).toBe(true);
+    expect(result.current.selectedService).toBe("example_ui");
+    expect(result.current.selectedStakeholder).toBe("Product");
+    expect(result.current.selectedFlow).toBe("example_flow");
+    expect(result.current.selectedDataFlow).toBe("example_data_flow");
+  });
 });

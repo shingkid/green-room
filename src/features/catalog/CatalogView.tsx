@@ -509,7 +509,8 @@ export function CatalogView({
           ? [
               ...STATUS_STYLE_ENTRIES.map(([status, style]) => (
                 <button
-                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleStatusSet.has(status as ServiceStatus) ? "" : ` ${styles.legendToggleOff}`}`}
+                  aria-pressed={viewModel.visibleStatusSet.has(status as ServiceStatus)}
+                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleStatusSet.has(status as ServiceStatus) ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                   key={status}
                   onClick={() => viewModel.handleToggleStatus(status as ServiceStatus)}
                   type="button"
@@ -522,7 +523,8 @@ export function CatalogView({
                 </button>
               )),
               <button
-                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("internal") ? "" : ` ${styles.legendToggleOff}`}`}
+                aria-pressed={viewModel.visibleOwnershipSet.has("internal")}
+                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("internal") ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                 key="internal-owner"
                 onClick={() => viewModel.handleToggleOwnership("internal")}
                 type="button"
@@ -531,7 +533,8 @@ export function CatalogView({
                 team-owned
               </button>,
               <button
-                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("external") ? "" : ` ${styles.legendToggleOff}`}`}
+                aria-pressed={viewModel.visibleOwnershipSet.has("external")}
+                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("external") ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                 key="external-owner"
                 onClick={() => viewModel.handleToggleOwnership("external")}
                 type="button"
@@ -549,7 +552,8 @@ export function CatalogView({
               </span>,
               ...TYPE_ICON_ENTRIES.map(([type, icon]) => (
                 <button
-                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleTypeSet.has(type as ServiceType) ? "" : ` ${styles.legendToggleOff}`}`}
+                  aria-pressed={viewModel.visibleTypeSet.has(type as ServiceType)}
+                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleTypeSet.has(type as ServiceType) ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                   key={type}
                   onClick={() => viewModel.handleToggleType(type as ServiceType)}
                   type="button"
@@ -557,6 +561,14 @@ export function CatalogView({
                   {icon} {type}
                 </button>
               )),
+              <button
+                className={`${styles.legendItem} ${styles.legendResetButton}`}
+                key="reset-legend-filters"
+                onClick={viewModel.resetLegendFilters}
+                type="button"
+              >
+                Reset filters
+              </button>,
             ]
           : ACTION_COLOR_ENTRIES.map(([action, color]) => (
               <span className={styles.legendItem} key={action}>

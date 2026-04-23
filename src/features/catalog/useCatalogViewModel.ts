@@ -510,6 +510,11 @@ export function useCatalogViewModel(registry: Registry) {
       return nextKinds;
     });
   }, []);
+  const handleResetLegendFilters = useCallback(() => {
+    setVisibleStatuses(new Set(ALL_SERVICE_STATUSES));
+    setVisibleTypes(new Set(ALL_SERVICE_TYPES));
+    setVisibleOwnershipKinds(new Set(ALL_OWNERSHIP_KINDS));
+  }, []);
 
   const handleToggleHosting = useCallback(() => {
     setShowHosting((prev) => !prev);
@@ -531,6 +536,7 @@ export function useCatalogViewModel(registry: Registry) {
     handleTabChange,
     handleToggleHosting,
     handleToggleOwnership,
+    handleResetLegendFilters,
     handleToggleStatus,
     handleToggleType,
     highlightKey,
@@ -545,6 +551,7 @@ export function useCatalogViewModel(registry: Registry) {
     selectedService,
     selectedServiceDetails,
     selectedStakeholder,
+    resetLegendFilters: handleResetLegendFilters,
     serviceOptions,
     services,
     setExpandedDataFlow,

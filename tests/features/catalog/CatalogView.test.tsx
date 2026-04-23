@@ -195,10 +195,14 @@ describe("CatalogView", () => {
     const externalButton = screen.getByRole("button", { name: "external" });
     const frontendTypeButton = screen.getByRole("button", { name: /frontend/i });
 
-    expect(activeStatusButton.className).not.toMatch(/legendToggleOff/);
-    expect(teamOwnedButton.className).not.toMatch(/legendToggleOff/);
-    expect(externalButton.className).not.toMatch(/legendToggleOff/);
-    expect(frontendTypeButton.className).not.toMatch(/legendToggleOff/);
+    expect(activeStatusButton.className).toMatch(/legendToggleOn/);
+    expect(teamOwnedButton.className).toMatch(/legendToggleOn/);
+    expect(externalButton.className).toMatch(/legendToggleOn/);
+    expect(frontendTypeButton.className).toMatch(/legendToggleOn/);
+    expect(activeStatusButton).toHaveAttribute("aria-pressed", "true");
+    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "true");
+    expect(externalButton).toHaveAttribute("aria-pressed", "true");
+    expect(frontendTypeButton).toHaveAttribute("aria-pressed", "true");
 
     await userEvent.click(activeStatusButton);
     await userEvent.click(teamOwnedButton);
@@ -209,5 +213,41 @@ describe("CatalogView", () => {
     expect(teamOwnedButton.className).toMatch(/legendToggleOff/);
     expect(externalButton.className).toMatch(/legendToggleOff/);
     expect(frontendTypeButton.className).toMatch(/legendToggleOff/);
+    expect(activeStatusButton).toHaveAttribute("aria-pressed", "false");
+    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "false");
+    expect(externalButton).toHaveAttribute("aria-pressed", "false");
+    expect(frontendTypeButton).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("resets legend filters without clearing tab-level selections", async () => {
+    render(
+      <CatalogView
+        onEditRegistry={() => {}}
+        onToggleTheme={() => {}}
+        registry={registry}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Dependency Impact" }));
+    await userEvent.click(screen.getByRole("button", { name: /select a service/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
+
+    const activeStatusButton = screen.getByRole("button", { name: "active" });
+    const teamOwnedButton = screen.getByRole("button", { name: "team-owned" });
+
+    await userEvent.click(activeStatusButton);
+    await userEvent.click(teamOwnedButton);
+
+    expect(activeStatusButton).toHaveAttribute("aria-pressed", "false");
+    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "false");
+
+    await userEvent.click(screen.getByRole("button", { name: "Reset filters" }));
+
+    expect(activeStatusButton).toHaveAttribute("aria-pressed", "true");
+    expect(teamOwnedButton).toHaveAttribute("aria-pressed", "true");
+    const detailsDock = screen.getByTestId("graph-workspace-dock");
+    expect(detailsDock).toContainElement(within(detailsDock).getByText("Example UI"));
   });
 });
