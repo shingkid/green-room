@@ -1,10 +1,11 @@
-import { useCallback, type CSSProperties } from "react";
+import { useCallback, useMemo, type CSSProperties } from "react";
 
 import {
   ACTION_COLORS,
   DATA_TYPE_ICONS,
   FLOW_COLORS,
   getStageSubtypeLabel,
+  HOSTING_ENVIRONMENT_COLORS,
   type Registry,
   type ServiceStatus,
   SENSITIVITY_COLORS,
@@ -20,6 +21,7 @@ import { SearchableSelect } from "@shared/components/SearchableSelect";
 import { Tag } from "@shared/components/Tag";
 import { DataFlowPipeline } from "./components/DataFlowPipeline";
 import { GraphCanvas } from "./components/GraphCanvas";
+import type { ServiceNodeData } from "./components/nodes/ServiceNode";
 import { useCatalogViewModel } from "./useCatalogViewModel";
 import styles from "./CatalogView.module.css";
 
@@ -46,6 +48,43 @@ export function CatalogView({
   const viewModel = useCatalogViewModel(registry);
   const { setExpandedDataFlow, setImpactDirection, setSelectedDataFlow, setSelectedFlow } =
     viewModel;
+
+  const enrichedNodes = useMemo(
+    () =>
+      viewModel.rfNodes.map((node) => {
+        if (node.type !== "serviceNode") return node;
+        const rawData = node.data as Record<string, unknown>;
+        const serviceKey = typeof rawData.serviceKey === "string" ? rawData.serviceKey : null;
+        if (!serviceKey) return node;
+        const service = registry.services[serviceKey];
+        if (!service) return node;
+        const hostingConfig = service.hosting ? registry.hosting[service.hosting] : undefined;
+        return {
+          ...node,
+          data: {
+            serviceKey,
+            service,
+            hostingConfig,
+            isInternal: viewModel.getOwnershipKind(service) === "internal",
+            isHighlight: serviceKey === viewModel.highlightKey,
+            isAffected: viewModel.affectedSet.has(serviceKey),
+            isDimmed: viewModel.mode !== "overview" && !viewModel.affectedSet.has(serviceKey),
+            layoutDirection: viewModel.mode === "flow" ? "LR" : "TB",
+            onSelect: viewModel.handleServiceClick,
+          } satisfies ServiceNodeData,
+        };
+      }),
+    [
+      viewModel.rfNodes,
+      viewModel.affectedSet,
+      viewModel.highlightKey,
+      viewModel.mode,
+      viewModel.getOwnershipKind,
+      viewModel.handleServiceClick,
+      registry.services,
+      registry.hosting,
+    ],
+  );
 
   const handleCopyMermaid = useCallback(async () => {
     if (!viewModel.mermaidExport) {
@@ -218,15 +257,9 @@ export function CatalogView({
 
       {viewModel.isGraphMode ? (
         <GraphCanvas
-          affectedSet={viewModel.affectedSet}
-          edges={viewModel.edges}
-          getOwnershipKind={viewModel.getOwnershipKind}
-          highlightKey={viewModel.highlightKey}
-          layout={viewModel.layout}
-          mode={viewModel.mode}
-          onSelectService={viewModel.handleServiceClick}
-          services={viewModel.services}
-          visibleServices={viewModel.visibleServices}
+          layoutNodes={viewModel.rfNodes}
+          rfEdges={viewModel.rfEdges}
+          rfNodes={enrichedNodes}
         />
       ) : null}
 
@@ -351,6 +384,29 @@ export function CatalogView({
                 : `${viewModel.affectedSet.size - 1} upstream deps`}
             </Badge>
           </div>
+
+          {(() => {
+            const hostingKey = viewModel.selectedServiceDetails.hosting;
+            const hostingConfig = hostingKey ? registry.hosting?.[hostingKey] : undefined;
+            if (!hostingConfig) return null;
+            return (
+              <div className={styles.detailsSection}>
+                <div className={styles.overline}>Hosting</div>
+                <div className={styles.tagRow}>
+                  <Tag
+                    color={
+                      HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ?? "var(--tag-neutral)"
+                    }
+                  >
+                    {hostingConfig.environment}
+                  </Tag>
+                  {hostingConfig.provider ? <Tag>{hostingConfig.provider}</Tag> : null}
+                  {hostingConfig.account ? <Tag>acct: {hostingConfig.account}</Tag> : null}
+                  <Tag color="var(--tag-muted)">{hostingKey}</Tag>
+                </div>
+              </div>
+            );
+          })()}
 
           {(viewModel.selectedServiceDetails.upstream?.length ?? 0) > 0 ? (
             <div className={styles.detailsSection}>
@@ -477,6 +533,18 @@ export function CatalogView({
                   {icon} {type}
                 </button>
               )),
+              ...(viewModel.mode !== "flow"
+                ? [
+                    <button
+                      className={`${styles.legendItem} ${styles.legendToggle}${viewModel.showHosting ? "" : ` ${styles.legendToggleOff}`}`}
+                      key="hosting-view"
+                      onClick={viewModel.handleToggleHosting}
+                      type="button"
+                    >
+                      ☁ hosting
+                    </button>,
+                  ]
+                : []),
             ]
           : ACTION_COLOR_ENTRIES.map(([action, color]) => (
               <span className={styles.legendItem} key={action}>

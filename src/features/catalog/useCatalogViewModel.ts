@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { Edge, Node } from "@xyflow/react";
+import type { ServiceEdgeData } from "@features/catalog/components/edges/ServiceEdge";
+
 import {
   buildDataFlowMermaid,
   buildGraph,
@@ -7,6 +10,7 @@ import {
   collectReachable,
   computeLayout,
   getAffectedDataFlows,
+  type LayoutDirection,
   slugify,
 } from "@domain/catalog";
 import {
@@ -76,6 +80,7 @@ export function useCatalogViewModel(registry: Registry) {
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedDataFlow, setSelectedDataFlow] = useState<string | null>(null);
   const [expandedDataFlow, setExpandedDataFlow] = useState<string | null>(null);
+  const [showHosting, setShowHosting] = useState(false);
 
   const graph = useMemo(() => buildGraph(services), [services]);
   const impactedServices = useMemo(() => {
@@ -202,15 +207,15 @@ export function useCatalogViewModel(registry: Registry) {
     }
   }, [isGraphMode, isServiceVisibleInGraph, selectedService, services]);
 
-  const { affectedSet, highlightKey, visibleServices } = useMemo(() => {
+  const visibleServices = useMemo(() => {
     const allServices = new Set(
       serviceEntries
         .filter(([, service]) => isServiceVisibleInGraph(service))
         .map(([serviceKey]) => serviceKey),
     );
 
-    if (mode === "flow") {
-      const flowServices = new Set(
+    if (mode === "flow" && (selectedFlow || selectedStakeholder)) {
+      return new Set(
         serviceEntries
           .filter(([, service]) => {
             if (!isServiceVisibleInGraph(service)) {
@@ -223,22 +228,27 @@ export function useCatalogViewModel(registry: Registry) {
               return flowKeys.includes(selectedFlow);
             }
 
-            if (selectedStakeholder) {
-              return flowKeys.some((flowKey) => eligibleFlowKeys.has(flowKey));
-            }
-
-            return true;
+            return flowKeys.some((flowKey) => eligibleFlowKeys.has(flowKey));
           })
           .map(([key]) => key),
       );
+    }
 
-      return {
-        affectedSet: flowServices,
-        highlightKey: null,
-        // Business Flow mode narrows the graph itself to the selected flow context rather than
-        // merely highlighting matching services within the full topology.
-        visibleServices: selectedFlow || selectedStakeholder ? flowServices : allServices,
-      };
+    return allServices;
+  }, [
+    eligibleFlowKeys,
+    isServiceVisibleInGraph,
+    mode,
+    selectedFlow,
+    selectedStakeholder,
+    serviceEntries,
+  ]);
+
+  const { affectedSet, highlightKey } = useMemo(() => {
+    if (mode === "flow") {
+      // Business Flow mode narrows the graph itself to the selected flow context rather than
+      // merely highlighting matching services within the full topology.
+      return { affectedSet: visibleServices, highlightKey: null };
     }
 
     if (mode === "impact" && selectedService && impactedServices) {
@@ -247,63 +257,61 @@ export function useCatalogViewModel(registry: Registry) {
         // to drive emphasis instead of removing unrelated services from the layout.
         affectedSet: impactedServices,
         highlightKey: selectedService,
-        visibleServices: allServices,
       };
     }
 
-    return {
-      affectedSet: allServices,
-      highlightKey: null,
-      visibleServices: allServices,
+    return { affectedSet: visibleServices, highlightKey: null };
+  }, [impactedServices, mode, selectedService, visibleServices]);
+
+  const layoutDirection: LayoutDirection = mode === "flow" ? "LR" : "TB";
+  const [rfNodes, setRfNodes] = useState<Node[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    computeLayout(
+      visibleServices,
+      services,
+      graph,
+      showHosting,
+      registry.hosting,
+      layoutDirection,
+    ).then(({ rfNodes: nodes }) => {
+      if (!cancelled) setRfNodes(nodes);
+    });
+    return () => {
+      cancelled = true;
     };
-  }, [
-    eligibleFlowKeys,
-    impactedServices,
-    mode,
-    selectedFlow,
-    selectedService,
-    selectedStakeholder,
-    serviceEntries,
-    isServiceVisibleInGraph,
-  ]);
+    // layoutDirection is derived from mode; using it here instead of mode means the effect only
+    // re-runs when the layout actually changes (e.g. overview→impact both map to TB: no recompute).
+  }, [graph, layoutDirection, registry.hosting, services, showHosting, visibleServices]);
 
-  const layout = useMemo(
-    () => computeLayout(visibleServices, services, graph),
-    [graph, services, visibleServices],
-  );
-
-  const edges = useMemo(() => {
-    const result: Array<{
-      key: string;
-      from: string;
-      to: string;
-      protocol?: string;
-      criticality?: "hard" | "soft";
-      isActive: boolean;
-    }> = [];
+  const rfEdges = useMemo<Edge<ServiceEdgeData>[]>(() => {
+    const result: Edge<ServiceEdgeData>[] = [];
 
     for (const [serviceKey, service] of serviceEntries) {
       for (const [index, dependency] of (service.upstream ?? []).entries()) {
-        if (
-          visibleServices.has(serviceKey) &&
-          visibleServices.has(dependency.service) &&
-          layout.positions[serviceKey] &&
-          layout.positions[dependency.service]
-        ) {
-          result.push({
-            criticality: dependency.criticality,
-            from: dependency.service,
-            isActive: affectedSet.has(serviceKey) && affectedSet.has(dependency.service),
-            key: `${serviceKey}:${index}:${dependency.service}`,
-            protocol: dependency.protocol,
-            to: serviceKey,
-          });
+        if (!visibleServices.has(serviceKey) || !visibleServices.has(dependency.service)) {
+          continue;
         }
+        const isActive = affectedSet.has(serviceKey) && affectedSet.has(dependency.service);
+        const isLR = layoutDirection === "LR";
+        result.push({
+          id: `${serviceKey}:${index}:${dependency.service}`,
+          source: isLR ? serviceKey : dependency.service,
+          target: isLR ? dependency.service : serviceKey,
+          type: "serviceEdge",
+          data: {
+            protocol: dependency.protocol,
+            criticality: dependency.criticality,
+            isActive,
+            isDimmed: mode !== "overview" && !isActive,
+          },
+        });
       }
     }
 
     return result;
-  }, [affectedSet, layout.positions, serviceEntries, visibleServices]);
+  }, [affectedSet, layoutDirection, mode, serviceEntries, visibleServices]);
 
   const affectedBusinessFlows = useMemo(() => {
     if (!selectedService || mode === "overview" || mode === "data") {
@@ -346,10 +354,16 @@ export function useCatalogViewModel(registry: Registry) {
   const selectedServiceDetails = selectedService ? services[selectedService] : null;
   const mermaidExport = useMemo(() => {
     const teamSlug = slugify(registry.metadata.team) || "green-room";
+    const mermaidEdges = rfEdges.map((e) => ({
+      from: e.source,
+      to: e.target,
+      protocol: e.data?.protocol,
+      criticality: e.data?.criticality,
+    }));
 
     if (mode === "overview") {
       return buildGraphMermaid({
-        edges,
+        edges: mermaidEdges,
         filenameStem: `${teamSlug}-overview`,
         registry,
         serviceKeys: visibleServices,
@@ -370,7 +384,7 @@ export function useCatalogViewModel(registry: Registry) {
       // Export only the reachable subgraph, even though the on-screen impact view keeps unrelated
       // nodes dimmed for context.
       return buildGraphMermaid({
-        edges: edges.filter(
+        edges: mermaidEdges.filter(
           (edge) => impactedServices.has(edge.from) && impactedServices.has(edge.to),
         ),
         filenameStem: `${teamSlug}-impact-${slugify(selectedServiceName) || slugify(selectedService) || "service"}-${impactDirection}`,
@@ -388,7 +402,7 @@ export function useCatalogViewModel(registry: Registry) {
           : "business flows";
 
       return buildGraphMermaid({
-        edges,
+        edges: mermaidEdges,
         filenameStem: `${teamSlug}-flow-${slugify(flowLabel) || "all"}`,
         registry,
         serviceKeys: visibleServices,
@@ -415,11 +429,11 @@ export function useCatalogViewModel(registry: Registry) {
     affectedSet,
     businessFlows,
     dataFlows,
-    edges,
     filteredDataFlows,
     impactDirection,
     mode,
     registry,
+    rfEdges,
     selectedDataFlow,
     selectedFlow,
     selectedService,
@@ -497,6 +511,10 @@ export function useCatalogViewModel(registry: Registry) {
     });
   }, []);
 
+  const handleToggleHosting = useCallback(() => {
+    setShowHosting((prev) => !prev);
+  }, []);
+
   return {
     affectedBusinessFlows,
     affectedDataFlows,
@@ -506,21 +524,22 @@ export function useCatalogViewModel(registry: Registry) {
     dataBusinessFlowOptions,
     dataFlowOptions,
     dataFlows,
-    edges,
     expandedDataFlow,
     filteredDataFlows,
     getOwnershipKind,
     handleServiceClick,
     handleTabChange,
+    handleToggleHosting,
     handleToggleOwnership,
     handleToggleStatus,
     handleToggleType,
     highlightKey,
     impactDirection,
     isGraphMode,
-    layout,
     mermaidExport,
     mode,
+    rfEdges,
+    rfNodes,
     selectedDataFlow,
     selectedFlow,
     selectedService,
@@ -534,6 +553,7 @@ export function useCatalogViewModel(registry: Registry) {
     setSelectedFlow,
     setSelectedService,
     setSelectedStakeholder,
+    showHosting,
     stakeholderOptions,
     visibleOwnershipSet,
     visibleServices,

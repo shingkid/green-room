@@ -12,6 +12,7 @@ import {
   normalizeSearchText,
   slugify,
 } from "@domain/catalog";
+import { HOSTING_ENVIRONMENT_COLORS } from "@domain/registry";
 
 const services: Record<string, Service> = {
   api: {
@@ -60,17 +61,56 @@ describe("catalog domain helpers", () => {
     expect([...reachable].sort()).toEqual(["api", "db", "worker"]);
   });
 
-  it("computes layout even when a cycle exists", () => {
+  it("compact mode: produces flat serviceNodes for all visible services", async () => {
     const cyclicServices: Record<string, Service> = {
       a: { ...services.api, upstream: [{ service: "b", criticality: "hard" }] },
       b: { ...services.api, upstream: [{ service: "a", criticality: "hard" }] },
     };
     const graph = buildGraph(cyclicServices);
-    const layout = computeLayout(new Set(["a", "b"]), cyclicServices, graph);
+    const layout = await computeLayout(new Set(["a", "b"]), cyclicServices, graph, false);
 
-    expect(Object.keys(layout.positions).sort()).toEqual(["a", "b"]);
-    expect(layout.svgW).toBeGreaterThanOrEqual(800);
-    expect(layout.svgH).toBeGreaterThan(0);
+    const ids = layout.rfNodes.map((n) => n.id).sort();
+    expect(ids).toEqual(["a", "b"]);
+    expect(layout.rfNodes.every((n) => n.type === "serviceNode")).toBe(true);
+    expect(layout.rfNodes.every((n) => !n.parentId)).toBe(true);
+  });
+
+  it("hosting mode: groups hosted services under a parent node", async () => {
+    const hostedServices: Record<string, Service> = {
+      a: { name: "A", description: "", type: "backend", status: "active", hosting: "cloud_prod" },
+      b: { name: "B", description: "", type: "backend", status: "active", hosting: "cloud_prod" },
+      c: { name: "C", description: "", type: "datastore", status: "active" },
+    };
+    const graph = buildGraph(hostedServices);
+    const layout = await computeLayout(new Set(["a", "b", "c"]), hostedServices, graph, true, {
+      cloud_prod: { environment: "cloud" as const, provider: "AWS" },
+    });
+
+    const groupNodes = layout.rfNodes.filter((n) => n.type === "hostingGroupNode");
+    expect(groupNodes).toHaveLength(1);
+    expect(groupNodes[0]?.id).toBe("__hosting_cloud_prod");
+
+    const groupedServiceNodes = layout.rfNodes.filter((n) => n.parentId === "__hosting_cloud_prod");
+    expect(groupedServiceNodes).toHaveLength(2);
+    expect(groupedServiceNodes.map((n) => n.id).sort()).toEqual(["a", "b"]);
+
+    const ungrouped = layout.rfNodes.find((n) => n.id === "c");
+    expect(ungrouped?.parentId).toBeUndefined();
+    expect(ungrouped?.type).toBe("serviceNode");
+
+    // Parent nodes must appear before their children in the array (React Flow requirement)
+    const groupIndex = layout.rfNodes.findIndex((n) => n.id === "__hosting_cloud_prod");
+    const childIndices = layout.rfNodes
+      .map((n, i) => (n.parentId === "__hosting_cloud_prod" ? i : -1))
+      .filter((i) => i !== -1);
+    expect(childIndices.every((i) => i > groupIndex)).toBe(true);
+
+    expect(groupNodes[0]?.data.color).toBe(HOSTING_ENVIRONMENT_COLORS.cloud);
+  });
+
+  it("returns empty rfNodes for no visible services", async () => {
+    const layout = await computeLayout(new Set(), {}, { upstream: {}, downstream: {} }, false);
+    expect(layout.rfNodes).toEqual([]);
   });
 
   it("handles search and string normalization helpers", () => {
@@ -113,6 +153,8 @@ describe("catalog domain helpers", () => {
         last_updated: "2026-04-08",
         maintainers: [],
       },
+      hosting: {},
+      stakeholders: {},
       business_flows: {
         checkout: {
           name: "Checkout",

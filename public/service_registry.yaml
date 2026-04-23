@@ -7,9 +7,11 @@
 #
 # Sections:
 #   1. metadata        — team info, maintainers
-#   2. business_flows  — high-level business processes
-#   3. data_flows      — how data moves between services
-#   4. services        — individual service definitions
+#   2. hosting         — named infrastructure environments
+#   3. stakeholders    — teams and individuals with a stake in this registry
+#   4. business_flows  — high-level business processes
+#   5. data_flows      — how data moves between services
+#   6. services        — individual service definitions
 # ============================================================
 
 metadata:
@@ -25,6 +27,82 @@ metadata:
       slack: "@falrashid"
 
 # ============================================================
+# Hosting
+# ============================================================
+hosting:
+  aws_prod:
+    environment: cloud
+    provider: aws
+    account: "123456789"
+  gcp_ml:
+    environment: cloud
+    provider: gcp
+    account: "recipe-rec-prod"
+  vmware_internal:
+    environment: private_cloud
+    provider: vmware
+  equinix_colo:
+    environment: colocation
+    provider: equinix
+  aws_dmz:
+    environment: dmz
+    provider: aws
+  on_prem:
+    environment: on_premises
+  azure_cloud:
+    environment: cloud
+    provider: azure
+
+# ============================================================
+# Stakeholders
+# ============================================================
+stakeholders:
+  product_team:
+    name: Product Team
+    description:
+    contact:
+  nutrition_team:
+    name: Nutrition Team
+    description:
+    contact:
+  user_experience_team:
+    name: User Experience Team
+    description:
+    contact:
+  data_science_team:
+    name: Data Science Team
+    description:
+    contact:
+  ml_engineering_team:
+    name: ML Engineering Team
+    description:
+    contact:
+  operations_team:
+    name: Operations Team
+    description:
+    contact:
+  supply_chain_team:
+    name: Supply Chain Team
+    description:
+    contact:
+  sustainability_team:
+    name: Sustainability Team
+    description:
+    contact:
+  community_team:
+    name: Community Team
+    description:
+    contact:
+  content_moderation_team:
+    name: Content Moderation Team
+    description:
+    contact:
+  marketing_team:
+    name: Marketing Team
+    description:
+    contact:
+
+# ============================================================
 # Business Flows
 # ============================================================
 business_flows:
@@ -33,33 +111,33 @@ business_flows:
     description: "Core user experience for discovering recipes, planning meals, and generating shopping lists"
     priority: "P1"
     stakeholders:
-      - "Product Team"
-      - "Nutrition Team"
-      - "User Experience Team"
+      - product_team
+      - nutrition_team
+      - user_experience_team
   personalized_recommendations:
     name: "Personalized Recipe Recommendations"
     description: "ML-powered recipe suggestions based on user preferences, dietary restrictions, and cooking history"
     priority: "P1"
     stakeholders:
-      - "Data Science Team"
-      - "ML Engineering Team"
-      - "Product Team"
+      - data_science_team
+      - ml_engineering_team
+      - product_team
   ingredient_optimization:
     name: "Ingredient Optimization"
     description: "Smart shopping list generation, waste reduction, and pantry inventory management"
     priority: "P2"
     stakeholders:
-      - "Operations Team"
-      - "Supply Chain Team"
-      - "Sustainability Team"
+      - operations_team
+      - supply_chain_team
+      - sustainability_team
   community_features:
     name: "Community & Social Features"
     description: "User-generated content, recipe sharing, ratings, and community-driven recipe discovery"
     priority: "P2"
     stakeholders:
-      - "Community Team"
-      - "Content Moderation Team"
-      - "Marketing Team"
+      - community_team
+      - content_moderation_team
+      - marketing_team
 
 # ============================================================
 # Data Flows
@@ -143,6 +221,7 @@ services:
     description: "React Native app for meal planning, recipe browsing, and cooking guidance"
     type: "frontend"
     status: "active"
+    hosting: aws_prod
     upstream:
       - service: "recipe_api"
         protocol: "HTTPS/GraphQL"
@@ -166,6 +245,7 @@ services:
     description: "GraphQL API providing recipe data, user profiles, and meal planning functionality"
     type: "backend"
     status: "active"
+    hosting: aws_prod
     upstream:
       - service: "recipe_database"
         protocol: "PostgreSQL"
@@ -196,6 +276,7 @@ services:
     description: "Machine learning service using collaborative filtering and content-based recommendations"
     type: "backend"
     status: "active"
+    hosting: gcp_ml
     upstream:
       - service: "user_behavior_warehouse"
         protocol: "PostgreSQL"
@@ -218,6 +299,7 @@ services:
     description: "PostgreSQL database storing recipes, ingredients, nutritional data, and user-generated content"
     type: "datastore"
     status: "active"
+    hosting: aws_prod
     upstream: []
     business_flows:
       - "meal_planning"
@@ -232,6 +314,7 @@ services:
     description: "Analytics database storing cooking sessions, preferences, and interaction patterns"
     type: "datastore"
     status: "active"
+    hosting: vmware_internal
     upstream: []
     business_flows:
       - "personalized_recommendations"
@@ -245,6 +328,7 @@ services:
     description: "Elasticsearch cluster for recipe search with filtering by cuisine, dietary restrictions, and ingredients"
     type: "datastore"
     status: "active"
+    hosting: aws_prod
     upstream: []
     business_flows:
       - "meal_planning"
@@ -258,6 +342,7 @@ services:
     description: "Batch processing service for recipe validation, nutritional analysis, and content moderation"
     type: "worker"
     status: "migrating"
+    hosting: equinix_colo
     upstream:
       - service: "recipe_database"
         protocol: "PostgreSQL"
@@ -277,6 +362,7 @@ services:
     description: "Automated pipeline for training and deploying recommendation models"
     type: "worker"
     status: "deprecated"
+    hosting: gcp_ml
     upstream:
       - service: "user_behavior_warehouse"
         protocol: "PostgreSQL"
@@ -292,6 +378,7 @@ services:
     description: "API for chefs and users to submit new recipes and recipe modifications"
     type: "backend"
     status: "active"
+    hosting: aws_dmz
     upstream:
       - service: "user_auth_service"
         protocol: "HTTPS/OAuth"
@@ -311,6 +398,7 @@ services:
     description: "Centralized authentication and user profile management"
     type: "backend"
     status: "active"
+    hosting: aws_prod
     upstream:
       - service: "user_profile_db"
         protocol: "PostgreSQL"
@@ -332,6 +420,7 @@ services:
     description: "Database storing user accounts, preferences, dietary restrictions, and profile data"
     type: "datastore"
     status: "active"
+    hosting: on_prem
     upstream: []
     business_flows:
       - "meal_planning"
@@ -346,6 +435,7 @@ services:
     description: "AI-powered service for moderating user-generated recipe content"
     type: "backend"
     status: "deprecated"
+    hosting: azure_cloud
     upstream: []
     business_flows:
       - "community_features"

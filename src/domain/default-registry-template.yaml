@@ -1,0 +1,82 @@
+metadata:
+  team: Platform Engineering
+  team_id: platform_engineering
+  last_updated: 2026-04-06
+  maintainers:
+    - name: Jane Doe
+      slack: "@jane"
+
+hosting:
+  cloud_prod:
+    environment: cloud
+    provider: aws
+    account: "123456789"
+  on_prem:
+    environment: on_premises
+
+stakeholders:
+  product_team:
+    name: Product Team
+    # description:
+    # contact:
+
+business_flows:
+  example_flow:
+    name: Example Flow
+    description: Replace this placeholder with a real business journey.
+    priority: P1
+    stakeholders:
+      - product_team
+
+data_flows:
+  example_data_flow:
+    name: Example Data Flow
+    description: Describe how data moves between services.
+    business_flow: example_flow
+    data_type: event
+    sensitivity: internal
+    freshness: near-real-time
+    stages:
+      - service: example_ui
+        action: produces
+        format: JSON
+      - service: example_api
+        action: processes
+        process_kind: transform
+        format: JSON
+
+services:
+  example_ui:
+    name: Example UI
+    description: User-facing application.
+    type: frontend
+    status: active
+    hosting: cloud_prod
+    upstream:
+      - service: example_api
+        protocol: HTTPS
+        criticality: hard
+    business_flows:
+      - example_flow
+    owner: platform_engineering
+    runbook: https://example.com/runbooks/example-ui
+    health_check: https://example.com/health/example-ui
+    port: 443
+    # dashboard: https://grafana.example.com/d/example-ui
+    # on_call: Example UI PagerDuty
+    # incident_channel: "#incidents-platform"
+    # slo: "99.9%"
+
+  example_api:
+    name: Example API
+    description: Backend API for the example flow.
+    type: backend
+    status: active
+    hosting: cloud_prod
+    upstream: []
+    business_flows:
+      - example_flow
+    owner: platform_engineering
+    runbook: https://example.com/runbooks/example-api
+    health_check: https://example.com/health/example-api
+    port: 8080

@@ -2,10 +2,20 @@ import Ajv2020, { type ErrorObject } from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { LineCounter, isMap, isSeq, parseDocument } from "yaml";
 
+import DEFAULT_REGISTRY_TEMPLATE_RAW from "./default-registry-template.yaml?raw";
+
 import registrySchema from "../../service_registry.schema.json";
 
 export type ServiceStatus = "active" | "experimental" | "migrating" | "deprecated";
 export type ServiceType = "frontend" | "backend" | "worker" | "datastore" | "infrastructure";
+export type HostingEnvironment =
+  | "cloud"
+  | "on_premises"
+  | "dmz"
+  | "private_cloud"
+  | "colocation"
+  | "edge";
+export type Hosting = { environment: HostingEnvironment; provider?: string; account?: string };
 export type DependencyCriticality = "hard" | "soft";
 export type DataFlowAction = "produces" | "queues" | "processes" | "stores" | "serves" | "consumes";
 export type ProcessKind = "transform" | "enrich" | "filter" | "aggregate" | "validate";
@@ -29,6 +39,7 @@ export type Service = {
   description: string;
   type: ServiceType;
   status: ServiceStatus;
+  hosting?: string;
   upstream?: Dependency[];
   business_flows?: string[];
   owner?: string;
@@ -75,6 +86,11 @@ export type Registry = {
     last_updated: string;
     maintainers: Array<{ name: string; slack: string }>;
   };
+  hosting: Record<string, Hosting>;
+  stakeholders: Record<
+    string,
+    { name: string; description?: string | null; contact?: string | null }
+  >;
   business_flows: Record<string, BusinessFlow>;
   data_flows: Record<string, DataFlow>;
   services: Record<string, Service>;
@@ -191,6 +207,24 @@ export const SENSITIVITY_COLORS: Record<Sensitivity, string> = {
   restricted: "#ef4444",
 };
 
+export const ALL_HOSTING_ENVIRONMENTS: HostingEnvironment[] = [
+  "cloud",
+  "on_premises",
+  "dmz",
+  "private_cloud",
+  "colocation",
+  "edge",
+];
+
+export const HOSTING_ENVIRONMENT_COLORS: Record<HostingEnvironment, string> = {
+  cloud: "#3b82f6",
+  on_premises: "#6b7280",
+  dmz: "#f59e0b",
+  private_cloud: "#8b5cf6",
+  colocation: "#14b8a6",
+  edge: "#ec4899",
+};
+
 export const TABS: Array<{ key: Mode; label: string }> = [
   { key: "overview", label: "Overview" },
   { key: "impact", label: "Dependency Impact" },
@@ -201,74 +235,7 @@ export const TABS: Array<{ key: Mode; label: string }> = [
 export const GRAPH_MODES: Mode[] = ["overview", "impact", "flow"];
 export const REGISTRY_URL_CANDIDATES = ["/service_registry.yaml", "/service-registry.yaml"];
 export const LOCAL_STORAGE_DRAFT_KEY = "green-room.registry-draft";
-export const DEFAULT_REGISTRY_TEMPLATE = `metadata:
-  team: Platform Engineering
-  team_id: platform_engineering
-  last_updated: 2026-04-06
-  maintainers:
-    - name: Jane Doe
-      slack: "@jane"
-
-business_flows:
-  example_flow:
-    name: Example Flow
-    description: Replace this placeholder with a real business journey.
-    priority: P1
-    stakeholders:
-      - Product
-
-data_flows:
-  example_data_flow:
-    name: Example Data Flow
-    description: Describe how data moves between services.
-    business_flow: example_flow
-    data_type: event
-    sensitivity: internal
-    freshness: near-real-time
-    stages:
-      - service: example_ui
-        action: produces
-        format: JSON
-      - service: example_api
-        action: processes
-        process_kind: transform
-        format: JSON
-
-services:
-  example_ui:
-    name: Example UI
-    description: User-facing application.
-    type: frontend
-    status: active
-    upstream:
-      - service: example_api
-        protocol: HTTPS
-        criticality: hard
-    business_flows:
-      - example_flow
-    owner: platform_engineering
-    runbook: https://example.com/runbooks/example-ui
-    health_check: https://example.com/health/example-ui
-    port: 443
-    # Optional on-call fields — add these to make the registry useful during incidents:
-    # dashboard: https://grafana.example.com/d/example-ui
-    # on_call: Example UI PagerDuty
-    # incident_channel: "#incidents-platform"
-    # slo: "99.9%"
-
-  example_api:
-    name: Example API
-    description: Backend API for the example flow.
-    type: backend
-    status: active
-    upstream: []
-    business_flows:
-      - example_flow
-    owner: platform_engineering
-    runbook: https://example.com/runbooks/example-api
-    health_check: https://example.com/health/example-api
-    port: 8080
-`;
+export const DEFAULT_REGISTRY_TEMPLATE = DEFAULT_REGISTRY_TEMPLATE_RAW;
 
 const ajv = new Ajv2020({
   allErrors: true,
@@ -422,8 +389,34 @@ function validateCrossReferences(
   const issues: ValidationIssue[] = [];
   const businessFlowKeys = new Set(Object.keys(registry.business_flows));
   const serviceKeys = new Set(Object.keys(registry.services));
+  const hostingKeys = new Set(Object.keys(registry.hosting ?? {}));
+  const stakeholderKeys = new Set(Object.keys(registry.stakeholders ?? {}));
+
+  for (const [flowKey, flow] of Object.entries(registry.business_flows)) {
+    for (const [index, stakeholderKey] of (flow.stakeholders ?? []).entries()) {
+      if (!stakeholderKeys.has(stakeholderKey)) {
+        addReferenceIssue(
+          issues,
+          locations,
+          rootLocation,
+          ["business_flows", flowKey, "stakeholders", String(index)],
+          `Unknown stakeholder "${stakeholderKey}".`,
+        );
+      }
+    }
+  }
 
   for (const [serviceKey, service] of Object.entries(registry.services)) {
+    if (service.hosting && !hostingKeys.has(service.hosting)) {
+      addReferenceIssue(
+        issues,
+        locations,
+        rootLocation,
+        ["services", serviceKey, "hosting"],
+        `Unknown hosting config "${service.hosting}".`,
+      );
+    }
+
     for (const [index, flowKey] of (service.business_flows ?? []).entries()) {
       if (!businessFlowKeys.has(flowKey)) {
         addReferenceIssue(
@@ -518,6 +511,8 @@ function buildChecklist(raw: unknown): ChecklistGroup[] {
     {
       title: "Sections",
       items: [
+        { label: "hosting (min 1)", checked: hasEntries("hosting") },
+        { label: "stakeholders (min 1)", checked: hasEntries("stakeholders") },
         { label: "business_flows (min 1)", checked: hasEntries("business_flows") },
         { label: "data_flows (min 1)", checked: hasEntries("data_flows") },
         { label: "services (min 1)", checked: hasEntries("services") },
