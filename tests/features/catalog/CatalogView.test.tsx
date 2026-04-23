@@ -59,6 +59,29 @@ describe("CatalogView", () => {
     expect(screen.getByRole("button", { name: /filter business flows/i })).toBeInTheDocument();
   });
 
+  it("shows hosting toggle in graph workspace controls and not in footer legend", async () => {
+    render(
+      <CatalogView
+        onEditRegistry={() => {}}
+        onToggleTheme={() => {}}
+        registry={registry}
+        sourceLabel="service_registry.yaml"
+        theme="dark"
+      />,
+    );
+
+    const graphWorkspace = screen.getByTestId("graph-workspace");
+    const hostingToggle = within(graphWorkspace).getByRole("button", {
+      name: /toggle hosting boxes/i,
+    });
+    expect(hostingToggle).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "☁ hosting" })).not.toBeInTheDocument();
+
+    const initialPressed = hostingToggle.getAttribute("aria-pressed");
+    await userEvent.click(hostingToggle);
+    expect(hostingToggle).toHaveAttribute("aria-pressed", initialPressed === "true" ? "false" : "true");
+  });
+
   it("expands data flow details and renders pipeline stages", async () => {
     render(
       <CatalogView

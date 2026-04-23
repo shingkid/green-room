@@ -114,6 +114,18 @@ export function CatalogView({
   const handleSetUpstreamDirection = useCallback(() => {
     setImpactDirection("upstream");
   }, [setImpactDirection]);
+  const showHostingControl = viewModel.isGraphMode && viewModel.mode !== "flow";
+  const graphControls = showHostingControl ? (
+    <button
+      aria-label="Toggle hosting boxes"
+      aria-pressed={viewModel.showHosting}
+      className={`${styles.graphControlButton}${viewModel.showHosting ? ` ${styles.graphControlButtonActive}` : ""}`}
+      onClick={viewModel.handleToggleHosting}
+      type="button"
+    >
+      Hosting boxes
+    </button>
+  ) : null;
 
   return (
     <div className="app-shell" data-theme={theme}>
@@ -258,7 +270,7 @@ export function CatalogView({
 
       {viewModel.isGraphMode ? (
         <GraphWorkspace
-          controls={null}
+          controls={graphControls}
           details={
             <section className={`${styles.panel} ${styles.detailsPanel}`}>
               <div className={styles.detailsHeader}>
@@ -545,18 +557,6 @@ export function CatalogView({
                   {icon} {type}
                 </button>
               )),
-              ...(viewModel.mode !== "flow"
-                ? [
-                    <button
-                      className={`${styles.legendItem} ${styles.legendToggle}${viewModel.showHosting ? "" : ` ${styles.legendToggleOff}`}`}
-                      key="hosting-view"
-                      onClick={viewModel.handleToggleHosting}
-                      type="button"
-                    >
-                      ☁ hosting
-                    </button>,
-                  ]
-                : []),
             ]
           : ACTION_COLOR_ENTRIES.map(([action, color]) => (
               <span className={styles.legendItem} key={action}>
