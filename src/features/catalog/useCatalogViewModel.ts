@@ -277,16 +277,21 @@ export function useCatalogViewModel(registry: Registry) {
 
   useEffect(() => {
     let cancelled = false;
-    computeLayout(visibleServices, services, graph, showHosting, registry.hosting, layoutDirection).then(
-      ({ rfNodes: nodes }) => {
-        if (!cancelled) setRfNodes(nodes);
-      },
-    );
+    computeLayout(
+      visibleServices,
+      services,
+      graph,
+      showHosting,
+      registry.hosting,
+      layoutDirection,
+    ).then(({ rfNodes: nodes }) => {
+      if (!cancelled) setRfNodes(nodes);
+    });
     return () => {
       cancelled = true;
     };
-  // layoutDirection is derived from mode; using it here instead of mode means the effect only
-  // re-runs when the layout actually changes (e.g. overview→impact both map to TB: no recompute).
+    // layoutDirection is derived from mode; using it here instead of mode means the effect only
+    // re-runs when the layout actually changes (e.g. overview→impact both map to TB: no recompute).
   }, [graph, layoutDirection, registry.hosting, services, showHosting, visibleServices]);
 
   const rfEdges = useMemo<Edge<ServiceEdgeData>[]>(() => {

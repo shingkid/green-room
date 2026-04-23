@@ -49,7 +49,7 @@ GraphCanvas  (ReactFlow component)
 // Remove: Layout with positions/svgW/svgH/nodeW/nodeH
 // Add:
 export type Layout = {
-  rfNodes: Node[];   // @xyflow/react Node
+  rfNodes: Node[]; // @xyflow/react Node
 };
 // rfEdges assembled in viewmodel (depends on affectedSet/mode which live there)
 ```
@@ -92,6 +92,7 @@ This avoids ELK compound graph complexity — ELK still sees a flat graph; group
 **`src/features/catalog/components/nodes/ServiceNode.tsx`**
 
 React Flow custom node. Data shape:
+
 ```typescript
 type ServiceNodeData = {
   service: Service;
@@ -103,6 +104,7 @@ type ServiceNodeData = {
   onSelect: (id: string) => void;
 };
 ```
+
 Internally: same SVG as existing `ServiceNode` (status fill, hosting stripe, ownership stripe overlay, icon + name text). Outer `<g transform>` removed — React Flow applies the transform. Wrapped in a `<div style={{ width: 140, height: 56 }}>` so React Flow can measure it.
 
 **`src/features/catalog/components/nodes/HostingGroupNode.tsx`**
@@ -110,6 +112,7 @@ Internally: same SVG as existing `ServiceNode` (status fill, hosting stripe, own
 ```typescript
 type HostingGroupNodeData = { hostingKey: string; color: string };
 ```
+
 Renders the dashed rounded rect and label using the node's `style.width`/`style.height` (set during layout). No `NodeResizer` for now — keep simple.
 
 **`src/features/catalog/components/edges/ServiceEdge.tsx`**
@@ -121,6 +124,7 @@ The SVG `<defs>` for `externalNodeStripe` and the `arrow` marker move into the r
 ### Modified files
 
 **`GraphCanvas.tsx`** — replace `<svg>` with:
+
 ```tsx
 import { ReactFlow, useNodesState, useEdgesState, Controls } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -144,15 +148,18 @@ export function GraphCanvas({ rfNodes, rfEdges, ... }) {
   );
 }
 ```
+
 Remove: `hostingBubbles` memo, `renderedEdges`/`renderedNodes` memos, SVG wrapper and defs.
 
 **`useCatalogViewModel.ts`**
+
 - Add `const [showHosting, setShowHosting] = useState(false)`
 - Pass `showHosting` to `computeLayout`; add to `useEffect` deps
 - Assemble `rfEdges: Edge[]` from existing edge data (convert to React Flow format with `type: "serviceEdge"`, `data: { protocol, criticality, isActive }`)
 - Expose `showHosting` and `setShowHosting`
 
 **`CatalogView.tsx`**
+
 - Add hosting toggle button in the footer legend section, styled consistently with existing status/type toggles
 
 ---

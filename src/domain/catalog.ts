@@ -1,7 +1,14 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 
 import type { Node } from "@xyflow/react";
-import type { DataFlow, DependencyCriticality, Hosting, Registry, Service, ServiceType } from "./registry";
+import type {
+  DataFlow,
+  DependencyCriticality,
+  Hosting,
+  Registry,
+  Service,
+  ServiceType,
+} from "./registry";
 import { getStageSubtypeLabel, HOSTING_ENVIRONMENT_COLORS } from "./registry";
 
 const elk = new ELK();
@@ -190,9 +197,7 @@ export async function computeLayout(
     if (h) hostingFrequency.set(h, (hostingFrequency.get(h) ?? 0) + 1);
   }
   const hostingRank = new Map(
-    [...hostingFrequency.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([h], i) => [h, i]),
+    [...hostingFrequency.entries()].sort((a, b) => b[1] - a[1]).map(([h], i) => [h, i]),
   );
   const ungroupedPartition = hostingRank.size;
 

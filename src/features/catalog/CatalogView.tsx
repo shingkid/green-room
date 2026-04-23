@@ -256,10 +256,7 @@ export function CatalogView({
       </section>
 
       {viewModel.isGraphMode ? (
-        <GraphCanvas
-          rfEdges={viewModel.rfEdges}
-          rfNodes={enrichedNodes}
-        />
+        <GraphCanvas rfEdges={viewModel.rfEdges} rfNodes={enrichedNodes} />
       ) : null}
 
       {viewModel.mode === "data" ? (
