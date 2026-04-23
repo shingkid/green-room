@@ -8,23 +8,19 @@ export type HostingGroupNodeData = {
 
 export const HostingGroupNode = memo(function HostingGroupNode({
   data,
-  style,
-}: NodeProps & { data: HostingGroupNodeData; style?: React.CSSProperties }) {
-  const width = typeof style?.width === "number" ? style.width : 0;
-  const height = typeof style?.height === "number" ? style.height : 0;
-
+}: NodeProps & { data: HostingGroupNodeData }) {
   return (
-    <svg height={height} width={width}>
+    <svg height="100%" width="100%">
       <rect
         fill={data.color}
         fillOpacity={0.07}
-        height={height}
+        height="100%"
         rx={14}
         stroke={data.color}
         strokeDasharray="6 3"
         strokeOpacity={0.25}
         strokeWidth={1.5}
-        width={width}
+        width="100%"
         x={0}
         y={0}
       />
