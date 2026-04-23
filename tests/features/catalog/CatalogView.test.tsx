@@ -27,6 +27,7 @@ describe("CatalogView", () => {
     expect(screen.getByRole("button", { name: "Dependency Impact" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Business Flow" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Data Lineage" })).toBeInTheDocument();
+    expect(screen.getByTestId("graph-workspace")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Dependency Impact" }));
     expect(screen.getByText("Downstream")).toBeInTheDocument();
