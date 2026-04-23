@@ -18,9 +18,58 @@ vi.mock("@uiw/react-codemirror", () => {
 
 describe("App", () => {
   beforeEach(() => {
-    const clearLocalStorage = window.localStorage?.clear;
+    const localStorageRef = window.localStorage as Partial<Storage> | undefined;
+    const storage = new Map<string, string>();
+    const shim: Pick<Storage, "getItem" | "setItem" | "removeItem" | "clear"> = {
+      getItem: (key) => storage.get(String(key)) ?? null,
+      setItem: (key, value) => {
+        storage.set(String(key), String(value));
+      },
+      removeItem: (key) => {
+        storage.delete(String(key));
+      },
+      clear: () => {
+        storage.clear();
+      },
+    };
+
+    if (!localStorageRef) {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: shim,
+      });
+      return;
+    }
+
+    const hasAllStorageMethods =
+      typeof localStorageRef.getItem === "function" &&
+      typeof localStorageRef.setItem === "function" &&
+      typeof localStorageRef.removeItem === "function" &&
+      typeof localStorageRef.clear === "function";
+
+    let nativeStorageUsable = false;
+    if (hasAllStorageMethods) {
+      try {
+        const probeKey = "__app_test_local_storage_probe__";
+        localStorageRef.setItem?.(probeKey, "ok");
+        nativeStorageUsable = localStorageRef.getItem?.(probeKey) === "ok";
+        localStorageRef.removeItem?.(probeKey);
+      } catch {
+        nativeStorageUsable = false;
+      }
+    }
+
+    if (!hasAllStorageMethods || !nativeStorageUsable) {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: shim,
+      });
+      return;
+    }
+
+    const clearLocalStorage = localStorageRef.clear;
     if (typeof clearLocalStorage === "function") {
-      clearLocalStorage.call(window.localStorage);
+      clearLocalStorage.call(localStorageRef);
     }
   });
 
