@@ -8,7 +8,13 @@ import registrySchema from "../../service_registry.schema.json";
 
 export type ServiceStatus = "active" | "experimental" | "migrating" | "deprecated";
 export type ServiceType = "frontend" | "backend" | "worker" | "datastore" | "infrastructure";
-export type HostingEnvironment = "cloud" | "on_premises" | "dmz" | "private_cloud" | "colocation" | "edge";
+export type HostingEnvironment =
+  | "cloud"
+  | "on_premises"
+  | "dmz"
+  | "private_cloud"
+  | "colocation"
+  | "edge";
 export type Hosting = { environment: HostingEnvironment; provider?: string; account?: string };
 export type DependencyCriticality = "hard" | "soft";
 export type DataFlowAction = "produces" | "queues" | "processes" | "stores" | "serves" | "consumes";
@@ -81,7 +87,10 @@ export type Registry = {
     maintainers: Array<{ name: string; slack: string }>;
   };
   hosting: Record<string, Hosting>;
-  stakeholders: Record<string, { name: string; description?: string | null; contact?: string | null }>;
+  stakeholders: Record<
+    string,
+    { name: string; description?: string | null; contact?: string | null }
+  >;
   business_flows: Record<string, BusinessFlow>;
   data_flows: Record<string, DataFlow>;
   services: Record<string, Service>;

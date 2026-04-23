@@ -12,23 +12,24 @@
 
 ## File Map
 
-| Path | Action | Responsibility |
-|------|--------|----------------|
-| `src/domain/catalog.ts` | Modify | `Layout` type → `{ rfNodes: Node[] }`; `computeLayout` gains `showHosting` + `hostingMap` params |
-| `tests/domain/catalog.test.ts` | Modify | Update existing `computeLayout` test; add compact + hosting mode tests |
-| `src/features/catalog/components/nodes/ServiceNode.tsx` | Create | React Flow custom node — port of existing SVG ServiceNode |
-| `src/features/catalog/components/nodes/HostingGroupNode.tsx` | Create | Hosting bubble container (dashed rect + label) |
-| `src/features/catalog/components/edges/ServiceEdge.tsx` | Create | Custom edge with Bezier path, protocol label, active/dimmed |
-| `src/features/catalog/components/GraphCanvas.tsx` | Modify | Replace `<svg>` with `<ReactFlow>`; remove bubble/edge/node memos |
-| `src/features/catalog/components/GraphCanvas.module.css` | Modify | Set explicit height for React Flow container |
-| `src/features/catalog/useCatalogViewModel.ts` | Modify | Add `showHosting` state; build `rfEdges`; expose toggle |
-| `src/features/catalog/CatalogView.tsx` | Modify | Add hosting toggle button in footer; update GraphCanvas props |
+| Path                                                         | Action | Responsibility                                                                                   |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------ |
+| `src/domain/catalog.ts`                                      | Modify | `Layout` type → `{ rfNodes: Node[] }`; `computeLayout` gains `showHosting` + `hostingMap` params |
+| `tests/domain/catalog.test.ts`                               | Modify | Update existing `computeLayout` test; add compact + hosting mode tests                           |
+| `src/features/catalog/components/nodes/ServiceNode.tsx`      | Create | React Flow custom node — port of existing SVG ServiceNode                                        |
+| `src/features/catalog/components/nodes/HostingGroupNode.tsx` | Create | Hosting bubble container (dashed rect + label)                                                   |
+| `src/features/catalog/components/edges/ServiceEdge.tsx`      | Create | Custom edge with Bezier path, protocol label, active/dimmed                                      |
+| `src/features/catalog/components/GraphCanvas.tsx`            | Modify | Replace `<svg>` with `<ReactFlow>`; remove bubble/edge/node memos                                |
+| `src/features/catalog/components/GraphCanvas.module.css`     | Modify | Set explicit height for React Flow container                                                     |
+| `src/features/catalog/useCatalogViewModel.ts`                | Modify | Add `showHosting` state; build `rfEdges`; expose toggle                                          |
+| `src/features/catalog/CatalogView.tsx`                       | Modify | Add hosting toggle button in footer; update GraphCanvas props                                    |
 
 ---
 
 ### Task 1: Install @xyflow/react
 
 **Files:**
+
 - Modify: `package.json` (via npm)
 
 - [ ] **Step 1: Install the package**
@@ -59,6 +60,7 @@ git commit -m "deps: add @xyflow/react"
 ### Task 2: Update `catalog.ts` — Layout type and `computeLayout`
 
 **Files:**
+
 - Modify: `src/domain/catalog.ts`
 - Modify: `tests/domain/catalog.test.ts`
 
@@ -73,6 +75,7 @@ import type { Service } from "@domain/registry";
 ```
 
 Replace this test:
+
 ```typescript
 it("computes layout even when a cycle exists", async () => {
   const cyclicServices: Record<string, Service> = {
@@ -89,6 +92,7 @@ it("computes layout even when a cycle exists", async () => {
 ```
 
 With:
+
 ```typescript
 it("compact mode: produces flat serviceNodes for all visible services", async () => {
   const cyclicServices: Record<string, Service> = {
@@ -143,6 +147,7 @@ Expected: FAIL — `layout.rfNodes` is not defined (old API still in place), `la
 - [ ] **Step 3: Update `src/domain/catalog.ts`**
 
 At the top of the file, change imports:
+
 ```typescript
 // Before:
 import ELK from "elkjs/lib/elk.bundled.js";
@@ -152,11 +157,19 @@ import { getStageSubtypeLabel } from "./registry";
 // After:
 import ELK from "elkjs/lib/elk.bundled.js";
 import type { Node } from "@xyflow/react";
-import type { DataFlow, DependencyCriticality, Hosting, Registry, Service, ServiceType } from "./registry";
+import type {
+  DataFlow,
+  DependencyCriticality,
+  Hosting,
+  Registry,
+  Service,
+  ServiceType,
+} from "./registry";
 import { getStageSubtypeLabel, HOSTING_ENVIRONMENT_COLORS } from "./registry";
 ```
 
 Replace the `Layout` type (lines 19–25):
+
 ```typescript
 export type Layout = {
   rfNodes: Node[];
@@ -164,6 +177,7 @@ export type Layout = {
 ```
 
 Replace the entire `computeLayout` function (lines 78–157) with:
+
 ```typescript
 export async function computeLayout(
   visibleServices: Set<string>,
@@ -226,9 +240,7 @@ export async function computeLayout(
     if (h) hostingFrequency.set(h, (hostingFrequency.get(h) ?? 0) + 1);
   }
   const hostingRank = new Map(
-    [...hostingFrequency.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([h], i) => [h, i]),
+    [...hostingFrequency.entries()].sort((a, b) => b[1] - a[1]).map(([h], i) => [h, i]),
   );
   const ungroupedPartition = hostingRank.size;
 
@@ -379,6 +391,7 @@ git commit -m "feat: update computeLayout to return rfNodes with compact and hos
 ### Task 3: Create `ServiceNode.tsx`
 
 **Files:**
+
 - Create: `src/features/catalog/components/nodes/ServiceNode.tsx`
 
 - [ ] **Step 1: Create the file**
@@ -432,11 +445,7 @@ export const ServiceNode = memo(function ServiceNode({
       onClick={() => onSelect(serviceKey)}
       style={{ opacity: isDimmed ? 0.15 : 1, cursor: "pointer", width: nodeW, height: nodeH }}
     >
-      <Handle
-        position={Position.Top}
-        style={{ opacity: 0, pointerEvents: "none" }}
-        type="target"
-      />
+      <Handle position={Position.Top} style={{ opacity: 0, pointerEvents: "none" }} type="target" />
       <svg height={nodeH} width={nodeW}>
         <defs>
           <pattern
@@ -530,6 +539,7 @@ git commit -m "feat: add ServiceNode React Flow custom node"
 ### Task 4: Create `HostingGroupNode.tsx`
 
 **Files:**
+
 - Create: `src/features/catalog/components/nodes/HostingGroupNode.tsx`
 
 - [ ] **Step 1: Create the file**
@@ -602,6 +612,7 @@ git commit -m "feat: add HostingGroupNode React Flow custom node"
 ### Task 5: Create `ServiceEdge.tsx`
 
 **Files:**
+
 - Create: `src/features/catalog/components/edges/ServiceEdge.tsx`
 
 - [ ] **Step 1: Create the file**
@@ -688,6 +699,7 @@ git commit -m "feat: add ServiceEdge React Flow custom edge"
 ### Task 6: Rewrite `GraphCanvas.tsx` and update CSS
 
 **Files:**
+
 - Modify: `src/features/catalog/components/GraphCanvas.tsx`
 - Modify: `src/features/catalog/components/GraphCanvas.module.css`
 
@@ -791,6 +803,7 @@ git commit -m "feat: replace SVG canvas with React Flow in GraphCanvas"
 ### Task 7: Update `useCatalogViewModel.ts`
 
 **Files:**
+
 - Modify: `src/features/catalog/useCatalogViewModel.ts`
 
 - [ ] **Step 1: Add `showHosting` state and wire `computeLayout`**
@@ -911,6 +924,7 @@ npm run typecheck
 ```
 
 Fix any remaining errors in this file. Common issues:
+
 - `registry.hosting` — the `registry` variable is already in scope as `useCatalogViewModel(registry: Registry)` param
 - Import path for `ServiceEdgeData` — use `"@features/catalog/components/edges/ServiceEdge"` (check that `@features` alias is in `vite.config.js`)
 
@@ -926,6 +940,7 @@ git commit -m "feat: add showHosting state and rfNodes/rfEdges to catalog viewmo
 ### Task 8: Update `CatalogView.tsx`
 
 **Files:**
+
 - Modify: `src/features/catalog/CatalogView.tsx`
 
 - [ ] **Step 1: Find the GraphCanvas usage in CatalogView**
@@ -950,10 +965,7 @@ Search for `<GraphCanvas` in the file. It will look something like:
 Replace with:
 
 ```tsx
-<GraphCanvas
-  rfEdges={viewModel.rfEdges}
-  rfNodes={viewModel.rfNodes}
-/>
+<GraphCanvas rfEdges={viewModel.rfEdges} rfNodes={viewModel.rfNodes} />
 ```
 
 Note: interaction props (`onSelect`, `isHighlight`, etc.) are now passed via node `data` — this is handled when we update `rfNodes` enrichment in Step 2 below.
@@ -986,8 +998,7 @@ const enrichedNodes = useMemo(
           isInternal: viewModel.getOwnershipKind(service) === "internal",
           isHighlight: serviceKey === viewModel.highlightKey,
           isAffected: viewModel.affectedSet.has(serviceKey),
-          isDimmed:
-            viewModel.mode !== "overview" && !viewModel.affectedSet.has(serviceKey),
+          isDimmed: viewModel.mode !== "overview" && !viewModel.affectedSet.has(serviceKey),
           onSelect: viewModel.handleServiceClick,
         },
       };
@@ -1008,10 +1019,7 @@ const enrichedNodes = useMemo(
 Update the `<GraphCanvas>` call to use `enrichedNodes`:
 
 ```tsx
-<GraphCanvas
-  rfEdges={viewModel.rfEdges}
-  rfNodes={enrichedNodes}
-/>
+<GraphCanvas rfEdges={viewModel.rfEdges} rfNodes={enrichedNodes} />
 ```
 
 - [ ] **Step 3: Add the hosting toggle button to the footer**
@@ -1061,6 +1069,7 @@ git commit -m "feat: wire React Flow GraphCanvas and add hosting toggle to Catal
 - [ ] **Step 1: Confirm dev server is running at http://localhost:5173/green-room/**
 
 If not running:
+
 ```bash
 npm run dev
 ```
@@ -1105,6 +1114,7 @@ git commit -m "fix: address visual regressions from React Flow migration"
 ## Self-Review Notes
 
 **Spec coverage check:**
+
 - ✅ Compact layout (no bubbles, dependency-driven) — Task 2 compact mode
 - ✅ Hosting layout (grouped bubbles, toggle) — Tasks 2 + 8
 - ✅ Draggable nodes — React Flow `useNodesState` handles automatically
@@ -1113,6 +1123,7 @@ git commit -m "fix: address visual regressions from React Flow migration"
 - ✅ Filters still work — `visibleServices` dep unchanged
 
 **Type consistency across tasks:**
+
 - `ServiceNodeData` defined in `ServiceNode.tsx`, used in `CatalogView.tsx` enrichment
 - `ServiceEdgeData` defined in `ServiceEdge.tsx`, used in `useCatalogViewModel.ts`
 - `HostingGroupNodeData` defined in `HostingGroupNode.tsx`, consumed by `catalog.ts`

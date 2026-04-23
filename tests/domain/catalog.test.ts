@@ -82,13 +82,9 @@ describe("catalog domain helpers", () => {
       c: { name: "C", description: "", type: "datastore", status: "active" },
     };
     const graph = buildGraph(hostedServices);
-    const layout = await computeLayout(
-      new Set(["a", "b", "c"]),
-      hostedServices,
-      graph,
-      true,
-      { cloud_prod: { environment: "cloud" as const, provider: "AWS" } },
-    );
+    const layout = await computeLayout(new Set(["a", "b", "c"]), hostedServices, graph, true, {
+      cloud_prod: { environment: "cloud" as const, provider: "AWS" },
+    });
 
     const groupNodes = layout.rfNodes.filter((n) => n.type === "hostingGroupNode");
     expect(groupNodes).toHaveLength(1);
