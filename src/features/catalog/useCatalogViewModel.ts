@@ -207,15 +207,15 @@ export function useCatalogViewModel(registry: Registry) {
     }
   }, [isGraphMode, isServiceVisibleInGraph, selectedService, services]);
 
-  const { affectedSet, highlightKey, visibleServices } = useMemo(() => {
+  const visibleServices = useMemo(() => {
     const allServices = new Set(
       serviceEntries
         .filter(([, service]) => isServiceVisibleInGraph(service))
         .map(([serviceKey]) => serviceKey),
     );
 
-    if (mode === "flow") {
-      const flowServices = new Set(
+    if (mode === "flow" && (selectedFlow || selectedStakeholder)) {
+      return new Set(
         serviceEntries
           .filter(([, service]) => {
             if (!isServiceVisibleInGraph(service)) {
@@ -228,22 +228,20 @@ export function useCatalogViewModel(registry: Registry) {
               return flowKeys.includes(selectedFlow);
             }
 
-            if (selectedStakeholder) {
-              return flowKeys.some((flowKey) => eligibleFlowKeys.has(flowKey));
-            }
-
-            return true;
+            return flowKeys.some((flowKey) => eligibleFlowKeys.has(flowKey));
           })
           .map(([key]) => key),
       );
+    }
 
-      return {
-        affectedSet: flowServices,
-        highlightKey: null,
-        // Business Flow mode narrows the graph itself to the selected flow context rather than
-        // merely highlighting matching services within the full topology.
-        visibleServices: selectedFlow || selectedStakeholder ? flowServices : allServices,
-      };
+    return allServices;
+  }, [eligibleFlowKeys, isServiceVisibleInGraph, mode, selectedFlow, selectedStakeholder, serviceEntries]);
+
+  const { affectedSet, highlightKey } = useMemo(() => {
+    if (mode === "flow") {
+      // Business Flow mode narrows the graph itself to the selected flow context rather than
+      // merely highlighting matching services within the full topology.
+      return { affectedSet: visibleServices, highlightKey: null };
     }
 
     if (mode === "impact" && selectedService && impactedServices) {
@@ -252,25 +250,11 @@ export function useCatalogViewModel(registry: Registry) {
         // to drive emphasis instead of removing unrelated services from the layout.
         affectedSet: impactedServices,
         highlightKey: selectedService,
-        visibleServices: allServices,
       };
     }
 
-    return {
-      affectedSet: allServices,
-      highlightKey: null,
-      visibleServices: allServices,
-    };
-  }, [
-    eligibleFlowKeys,
-    impactedServices,
-    mode,
-    selectedFlow,
-    selectedService,
-    selectedStakeholder,
-    serviceEntries,
-    isServiceVisibleInGraph,
-  ]);
+    return { affectedSet: visibleServices, highlightKey: null };
+  }, [impactedServices, mode, selectedService, visibleServices]);
 
   const layoutDirection: LayoutDirection = mode === "flow" ? "LR" : "TB";
   const [rfNodes, setRfNodes] = useState<Node[]>([]);
