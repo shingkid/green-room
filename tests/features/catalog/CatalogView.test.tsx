@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { DEFAULT_REGISTRY_TEMPLATE, validateRegistryText } from "@domain/registry";
@@ -49,6 +49,7 @@ describe("CatalogView", () => {
     );
 
     await userEvent.click(screen.getByRole("button", { name: "Business Flow" }));
+    expect(screen.getByTestId("graph-workspace")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /filter by stakeholder/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /filter business flows/i })).toBeInTheDocument();
   });
@@ -87,7 +88,8 @@ describe("CatalogView", () => {
     await userEvent.click(screen.getByRole("button", { name: /select a service/i }));
     await userEvent.click(screen.getByRole("button", { name: "Example UI" }));
 
-    expect(screen.getByText("Direct dependencies")).toBeInTheDocument();
+    const detailsDock = screen.getByTestId("graph-workspace-dock");
+    expect(within(detailsDock).getByText("Direct dependencies")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Upstream" }));
     expect(screen.getByText(/upstream deps/i)).toBeInTheDocument();

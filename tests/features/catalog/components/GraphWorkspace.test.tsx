@@ -15,7 +15,8 @@ describe("GraphWorkspace", () => {
 
     expect(screen.getByText("graph-canvas")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "hosting-control" })).toBeInTheDocument();
-    expect(screen.getByText("details-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("graph-workspace-dock")).toBeInTheDocument();
+    expect(screen.getByTestId("graph-workspace-dock")).toHaveTextContent("details-panel");
   });
 
   it("hides details dock when showDetails is false", () => {

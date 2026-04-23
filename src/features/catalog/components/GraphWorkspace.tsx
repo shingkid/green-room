@@ -11,7 +11,10 @@ type GraphWorkspaceProps = {
 
 export function GraphWorkspace({ graph, controls, details, showDetails }: GraphWorkspaceProps) {
   return (
-    <section className={styles.workspace} data-testid="graph-workspace">
+    <section
+      className={`${styles.workspace}${showDetails ? ` ${styles.workspaceWithDock}` : ""}`}
+      data-testid="graph-workspace"
+    >
       <div className={styles.graphArea}>
         <div className={styles.controls}>{controls}</div>
         {graph}

@@ -5,6 +5,11 @@
   padding: 0 20px 16px;
 }
 
+.workspaceWithDock {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  align-items: start;
+}
+
 .graphArea {
   position: relative;
 }
@@ -21,4 +26,10 @@
 
 .detailsDock {
   min-width: 0;
+}
+
+@media (max-width: 1080px) {
+  .workspaceWithDock {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
