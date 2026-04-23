@@ -1,4 +1,4 @@
-import { useCallback, type CSSProperties } from "react";
+import { useCallback, useMemo, type CSSProperties } from "react";
 
 import {
   ACTION_COLORS,
@@ -21,6 +21,7 @@ import { SearchableSelect } from "@shared/components/SearchableSelect";
 import { Tag } from "@shared/components/Tag";
 import { DataFlowPipeline } from "./components/DataFlowPipeline";
 import { GraphCanvas } from "./components/GraphCanvas";
+import type { ServiceNodeData } from "./components/nodes/ServiceNode";
 import { useCatalogViewModel } from "./useCatalogViewModel";
 import styles from "./CatalogView.module.css";
 
@@ -47,6 +48,40 @@ export function CatalogView({
   const viewModel = useCatalogViewModel(registry);
   const { setExpandedDataFlow, setImpactDirection, setSelectedDataFlow, setSelectedFlow } =
     viewModel;
+
+  const enrichedNodes = useMemo(
+    () =>
+      viewModel.rfNodes.map((node) => {
+        if (node.type !== "serviceNode") return node;
+        const serviceKey = (node.data as { serviceKey: string }).serviceKey;
+        const service = registry.services[serviceKey];
+        if (!service) return node;
+        const hostingConfig = service.hosting ? registry.hosting[service.hosting] : undefined;
+        return {
+          ...node,
+          data: {
+            serviceKey,
+            service,
+            hostingConfig,
+            isInternal: viewModel.getOwnershipKind(service) === "internal",
+            isHighlight: serviceKey === viewModel.highlightKey,
+            isAffected: viewModel.affectedSet.has(serviceKey),
+            isDimmed: viewModel.mode !== "overview" && !viewModel.affectedSet.has(serviceKey),
+            onSelect: viewModel.handleServiceClick,
+          } satisfies ServiceNodeData,
+        };
+      }),
+    [
+      viewModel.rfNodes,
+      viewModel.affectedSet,
+      viewModel.highlightKey,
+      viewModel.mode,
+      viewModel.getOwnershipKind,
+      viewModel.handleServiceClick,
+      registry.services,
+      registry.hosting,
+    ],
+  );
 
   const handleCopyMermaid = useCallback(async () => {
     if (!viewModel.mermaidExport) {
@@ -219,16 +254,8 @@ export function CatalogView({
 
       {viewModel.isGraphMode ? (
         <GraphCanvas
-          affectedSet={viewModel.affectedSet}
-          edges={viewModel.edges}
-          getOwnershipKind={viewModel.getOwnershipKind}
-          highlightKey={viewModel.highlightKey}
-          hostingMap={registry.hosting}
-          layout={viewModel.layout}
-          mode={viewModel.mode}
-          onSelectService={viewModel.handleServiceClick}
-          services={viewModel.services}
-          visibleServices={viewModel.visibleServices}
+          rfEdges={viewModel.rfEdges}
+          rfNodes={enrichedNodes}
         />
       ) : null}
 
@@ -502,6 +529,14 @@ export function CatalogView({
                   {icon} {type}
                 </button>
               )),
+              <button
+                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.showHosting ? "" : ` ${styles.legendToggleOff}`}`}
+                key="hosting-view"
+                onClick={viewModel.handleToggleHosting}
+                type="button"
+              >
+                ☁ hosting
+              </button>,
             ]
           : ACTION_COLOR_ENTRIES.map(([action, color]) => (
               <span className={styles.legendItem} key={action}>
