@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { Edge, Node } from "@xyflow/react";
+import type { ServiceEdgeData } from "@features/catalog/components/edges/ServiceEdge";
+
 import {
   buildDataFlowMermaid,
   buildGraph,
@@ -7,7 +10,6 @@ import {
   collectReachable,
   computeLayout,
   getAffectedDataFlows,
-  type Layout,
   slugify,
 } from "@domain/catalog";
 import {
@@ -77,6 +79,7 @@ export function useCatalogViewModel(registry: Registry) {
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedDataFlow, setSelectedDataFlow] = useState<string | null>(null);
   const [expandedDataFlow, setExpandedDataFlow] = useState<string | null>(null);
+  const [showHosting, setShowHosting] = useState(false);
 
   const graph = useMemo(() => buildGraph(services), [services]);
   const impactedServices = useMemo(() => {
@@ -268,51 +271,46 @@ export function useCatalogViewModel(registry: Registry) {
     isServiceVisibleInGraph,
   ]);
 
-  const emptyLayout: Layout = { positions: {}, svgW: 800, svgH: 200, nodeW: 140, nodeH: 56 };
-  const [layout, setLayout] = useState<Layout>(emptyLayout);
+  const [rfNodes, setRfNodes] = useState<Node[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    computeLayout(visibleServices, services, graph).then((result) => {
-      if (!cancelled) setLayout(result);
-    });
+    computeLayout(visibleServices, services, graph, showHosting, registry.hosting).then(
+      ({ rfNodes: nodes }) => {
+        if (!cancelled) setRfNodes(nodes);
+      },
+    );
     return () => {
       cancelled = true;
     };
-  }, [graph, services, visibleServices]);
+  }, [graph, registry.hosting, services, showHosting, visibleServices]);
 
-  const edges = useMemo(() => {
-    const result: Array<{
-      key: string;
-      from: string;
-      to: string;
-      protocol?: string;
-      criticality?: "hard" | "soft";
-      isActive: boolean;
-    }> = [];
+  const rfEdges = useMemo<Edge<ServiceEdgeData>[]>(() => {
+    const result: Edge<ServiceEdgeData>[] = [];
 
     for (const [serviceKey, service] of serviceEntries) {
       for (const [index, dependency] of (service.upstream ?? []).entries()) {
-        if (
-          visibleServices.has(serviceKey) &&
-          visibleServices.has(dependency.service) &&
-          layout.positions[serviceKey] &&
-          layout.positions[dependency.service]
-        ) {
-          result.push({
-            criticality: dependency.criticality,
-            from: dependency.service,
-            isActive: affectedSet.has(serviceKey) && affectedSet.has(dependency.service),
-            key: `${serviceKey}:${index}:${dependency.service}`,
-            protocol: dependency.protocol,
-            to: serviceKey,
-          });
+        if (!visibleServices.has(serviceKey) || !visibleServices.has(dependency.service)) {
+          continue;
         }
+        const isActive = affectedSet.has(serviceKey) && affectedSet.has(dependency.service);
+        result.push({
+          id: `${serviceKey}:${index}:${dependency.service}`,
+          source: dependency.service,
+          target: serviceKey,
+          type: "serviceEdge",
+          data: {
+            protocol: dependency.protocol,
+            criticality: dependency.criticality,
+            isActive,
+            isDimmed: mode !== "overview" && !isActive,
+          },
+        });
       }
     }
 
     return result;
-  }, [affectedSet, layout.positions, serviceEntries, visibleServices]);
+  }, [affectedSet, mode, serviceEntries, visibleServices]);
 
   const affectedBusinessFlows = useMemo(() => {
     if (!selectedService || mode === "overview" || mode === "data") {
@@ -355,10 +353,16 @@ export function useCatalogViewModel(registry: Registry) {
   const selectedServiceDetails = selectedService ? services[selectedService] : null;
   const mermaidExport = useMemo(() => {
     const teamSlug = slugify(registry.metadata.team) || "green-room";
+    const mermaidEdges = rfEdges.map((e) => ({
+      from: e.source,
+      to: e.target,
+      protocol: e.data?.protocol,
+      criticality: e.data?.criticality,
+    }));
 
     if (mode === "overview") {
       return buildGraphMermaid({
-        edges,
+        edges: mermaidEdges,
         filenameStem: `${teamSlug}-overview`,
         registry,
         serviceKeys: visibleServices,
@@ -379,7 +383,7 @@ export function useCatalogViewModel(registry: Registry) {
       // Export only the reachable subgraph, even though the on-screen impact view keeps unrelated
       // nodes dimmed for context.
       return buildGraphMermaid({
-        edges: edges.filter(
+        edges: mermaidEdges.filter(
           (edge) => impactedServices.has(edge.from) && impactedServices.has(edge.to),
         ),
         filenameStem: `${teamSlug}-impact-${slugify(selectedServiceName) || slugify(selectedService) || "service"}-${impactDirection}`,
@@ -397,7 +401,7 @@ export function useCatalogViewModel(registry: Registry) {
           : "business flows";
 
       return buildGraphMermaid({
-        edges,
+        edges: mermaidEdges,
         filenameStem: `${teamSlug}-flow-${slugify(flowLabel) || "all"}`,
         registry,
         serviceKeys: visibleServices,
@@ -424,11 +428,11 @@ export function useCatalogViewModel(registry: Registry) {
     affectedSet,
     businessFlows,
     dataFlows,
-    edges,
     filteredDataFlows,
     impactDirection,
     mode,
     registry,
+    rfEdges,
     selectedDataFlow,
     selectedFlow,
     selectedService,
@@ -506,6 +510,10 @@ export function useCatalogViewModel(registry: Registry) {
     });
   }, []);
 
+  const handleToggleHosting = useCallback(() => {
+    setShowHosting((prev) => !prev);
+  }, []);
+
   return {
     affectedBusinessFlows,
     affectedDataFlows,
@@ -515,21 +523,22 @@ export function useCatalogViewModel(registry: Registry) {
     dataBusinessFlowOptions,
     dataFlowOptions,
     dataFlows,
-    edges,
     expandedDataFlow,
     filteredDataFlows,
     getOwnershipKind,
     handleServiceClick,
     handleTabChange,
+    handleToggleHosting,
     handleToggleOwnership,
     handleToggleStatus,
     handleToggleType,
     highlightKey,
     impactDirection,
     isGraphMode,
-    layout,
     mermaidExport,
     mode,
+    rfEdges,
+    rfNodes,
     selectedDataFlow,
     selectedFlow,
     selectedService,
@@ -543,6 +552,7 @@ export function useCatalogViewModel(registry: Registry) {
     setSelectedFlow,
     setSelectedService,
     setSelectedStakeholder,
+    showHosting,
     stakeholderOptions,
     visibleOwnershipSet,
     visibleServices,
