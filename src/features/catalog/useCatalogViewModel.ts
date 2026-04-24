@@ -56,7 +56,7 @@ function compareBusinessFlowEntries(
   return left[0].localeCompare(right[0]);
 }
 
-export function useCatalogViewModel(registry: Registry) {
+export function useCatalogViewModel(registry: Registry, initialMode: Mode = "overview") {
   const services = registry.services;
   const businessFlows = registry.business_flows;
   const dataFlows = registry.data_flows;
@@ -64,7 +64,7 @@ export function useCatalogViewModel(registry: Registry) {
   const businessFlowEntries = useMemo(() => Object.entries(businessFlows), [businessFlows]);
   const dataFlowEntries = useMemo(() => Object.entries(dataFlows), [dataFlows]);
 
-  const [mode, setMode] = useState<Mode>("overview");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [impactDirection, setImpactDirection] = useState<ImpactDirection>("downstream");
   const [visibleStatuses, setVisibleStatuses] = useState<Set<ServiceStatus>>(
     () => new Set(ALL_SERVICE_STATUSES),

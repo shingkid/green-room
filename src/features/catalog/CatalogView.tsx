@@ -6,6 +6,7 @@ import {
   FLOW_COLORS,
   getStageSubtypeLabel,
   HOSTING_ENVIRONMENT_COLORS,
+  type Mode,
   type Registry,
   type ServiceStatus,
   SENSITIVITY_COLORS,
@@ -36,6 +37,9 @@ type CatalogViewProps = {
   sourceLabel: string | null;
   onEditRegistry: () => void;
   onToggleTheme: () => void;
+  /** When provided the shell (header + tab nav) is hidden; parent controls layout */
+  initialMode?: Mode;
+  hideShell?: boolean;
 };
 
 export function CatalogView({
@@ -44,9 +48,11 @@ export function CatalogView({
   sourceLabel,
   onEditRegistry,
   onToggleTheme,
+  initialMode,
+  hideShell = false,
 }: CatalogViewProps) {
   const explorerTitle = getExplorerTitle(registry.metadata.team);
-  const viewModel = useCatalogViewModel(registry);
+  const viewModel = useCatalogViewModel(registry, initialMode ?? "overview");
   const { setExpandedDataFlow, setImpactDirection, setSelectedDataFlow, setSelectedFlow } =
     viewModel;
 
@@ -141,54 +147,58 @@ export function CatalogView({
 
   return (
     <div className="app-shell" data-theme={theme}>
-      <header className="app-header">
-        <div className="header-row">
-          <div>
-            <div className="app-title">{explorerTitle}</div>
-            <div className="app-subtitle">
-              {sourceLabel
-                ? `Loaded from ${sourceLabel}. Edit the registry to validate and preview changes in-browser.`
-                : "Click a service for dependency impact and affected data flows."}
+      {!hideShell && (
+        <>
+          <header className="app-header">
+            <div className="header-row">
+              <div>
+                <div className="app-title">{explorerTitle}</div>
+                <div className="app-subtitle">
+                  {sourceLabel
+                    ? `Loaded from ${sourceLabel}. Edit the registry to validate and preview changes in-browser.`
+                    : "Click a service for dependency impact and affected data flows."}
+                </div>
+              </div>
+              <div className="header-actions">
+                <button
+                  className="secondary-button"
+                  disabled={!viewModel.mermaidExport}
+                  onClick={() => {
+                    void handleCopyMermaid();
+                  }}
+                  type="button"
+                >
+                  {copied ? "Copied!" : "Copy Mermaid"}
+                </button>
+                <button className="secondary-button" onClick={onEditRegistry} type="button">
+                  Edit registry
+                </button>
+                <button
+                  aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+                  aria-pressed={theme === "dark"}
+                  className="secondary-button theme-toggle-button"
+                  onClick={onToggleTheme}
+                  type="button"
+                >
+                  <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="header-actions">
-            <button
-              className="secondary-button"
-              disabled={!viewModel.mermaidExport}
-              onClick={() => {
-                void handleCopyMermaid();
-              }}
-              type="button"
-            >
-              {copied ? "Copied!" : "Copy Mermaid"}
-            </button>
-            <button className="secondary-button" onClick={onEditRegistry} type="button">
-              Edit registry
-            </button>
-            <button
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-              aria-pressed={theme === "dark"}
-              className="secondary-button theme-toggle-button"
-              onClick={onToggleTheme}
-              type="button"
-            >
-              <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
-            </button>
-          </div>
-        </div>
-      </header>
+          </header>
 
-      <nav className={styles.tabs}>
-        {TABS.map((tab) => (
-          <button
-            className={`${styles.tab}${viewModel.mode === tab.key ? ` ${styles.tabActive}` : ""}`}
-            key={tab.key}
-            onClick={() => viewModel.handleTabChange(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+          <nav className={styles.tabs}>
+            {TABS.map((tab) => (
+              <button
+                className={`${styles.tab}${viewModel.mode === tab.key ? ` ${styles.tabActive}` : ""}`}
+                key={tab.key}
+                onClick={() => viewModel.handleTabChange(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </>
+      )}
 
       <section className={styles.controlBar}>
         {viewModel.mode === "flow" || viewModel.mode === "data" ? (

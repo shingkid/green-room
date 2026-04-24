@@ -1,101 +1,71 @@
+/* Legacy CSS variable aliases — all values flow from Phase 1 token system.
+   applyTheme() writes --color-* vars to :root; these aliases cascade through
+   so existing catalog/editor components re-skin automatically on theme change.
+   No data-theme overrides needed here — Phase 1 ThemeProvider owns that. */
+
 :root {
-  color-scheme: dark;
-  color: #e2e8f0;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-  background: #0f172a;
-  --app-bg: #0f172a;
-  --surface-raised: #111827;
-  --surface-panel: #1e293b;
-  --surface-panel-strong: #0f172a;
-  --surface-hover: #1e293b;
-  --border-subtle: #1e293b;
-  --border-default: #334155;
-  --border-strong: #475569;
-  --text-primary: #e2e8f0;
-  --text-strong: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-subtle: #64748b;
-  --text-on-accent: #eff6ff;
-  --accent-primary: #2563eb;
-  --accent-primary-strong: #3b82f6;
-  --focus-ring: rgba(59, 130, 246, 0.25);
-  --menu-shadow: 0 10px 30px rgba(2, 6, 23, 0.45);
-  --tag-text: #e2e8f0;
-  --tag-neutral: #334155;
-  --tag-muted: #44403c;
-  --tag-critical: #991b1b;
-  --graph-arrow: #94a3b8;
-  --graph-edge: #94a3b8;
-  --graph-edge-active: #f97316;
-  --graph-edge-label: #94a3b8;
-  --graph-external-stripe: #f59e0b;
-  --pipeline-stage-bg: #0f172a;
-  --pipeline-stage-bg-selected: #1e293b;
-  --pipeline-stage-stroke: #334155;
-  --pipeline-stage-stroke-selected: #f97316;
-  --pipeline-arrow: #475569;
-  --table-row-text: #cbd5e1;
-  --link-tag-border: #475569;
-  --load-error-border: #7f1d1d;
-  --load-error-bg: #450a0a;
-  --load-error-text: #fecaca;
-  --validation-item-border: #3f3f46;
-  --validation-item-bg: #18181b;
-  --validation-severity: #fca5a5;
-  --validation-success: #86efac;
-}
+  /* ── Colour scheme + base ── */
+  color-scheme: light dark;
 
-:root[data-theme="light"] {
-  color-scheme: light;
-  color: #0f172a;
-  background: #f8fafc;
-  --app-bg: #f8fafc;
-  --surface-raised: #ffffff;
-  --surface-panel: #ffffff;
-  --surface-panel-strong: #f8fafc;
-  --surface-hover: #eff6ff;
-  --border-subtle: #dbe4f0;
-  --border-default: #cbd5e1;
-  --border-strong: #94a3b8;
-  --text-primary: #0f172a;
-  --text-strong: #020617;
-  --text-muted: #475569;
-  --text-subtle: #64748b;
-  --text-on-accent: #eff6ff;
-  --accent-primary: #2563eb;
-  --accent-primary-strong: #1d4ed8;
-  --focus-ring: rgba(37, 99, 235, 0.2);
-  --menu-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-  --tag-text: #eff6ff;
-  --tag-neutral: #64748b;
-  --tag-muted: #78716c;
-  --tag-critical: #b91c1c;
-  --graph-arrow: #64748b;
-  --graph-edge: #64748b;
-  --graph-edge-active: #ea580c;
-  --graph-edge-label: #475569;
-  --graph-external-stripe: #ea580c;
-  --pipeline-stage-bg: #f8fafc;
-  --pipeline-stage-bg-selected: #dbeafe;
-  --pipeline-stage-stroke: #cbd5e1;
-  --pipeline-stage-stroke-selected: #ea580c;
-  --pipeline-arrow: #94a3b8;
-  --table-row-text: #334155;
-  --link-tag-border: #94a3b8;
-  --load-error-border: #fecaca;
-  --load-error-bg: #fef2f2;
-  --load-error-text: #991b1b;
-  --validation-item-border: #e4e4e7;
-  --validation-item-bg: #fafafa;
-  --validation-severity: #b91c1c;
-  --validation-success: #15803d;
-}
+  /* ── Backgrounds ── */
+  --app-bg:               var(--color-bg-base);
+  --surface-raised:       var(--color-bg-surface);
+  --surface-panel:        var(--color-bg-elevated);
+  --surface-panel-strong: var(--color-bg-base);
+  --surface-hover:        var(--color-bg-elevated);
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
+  /* ── Borders ── */
+  --border-subtle:  var(--color-border);
+  --border-default: var(--color-border);
+  --border-strong:  var(--color-border-strong);
+
+  /* ── Text ── */
+  --text-primary:   var(--color-text-primary);
+  --text-strong:    var(--color-text-primary);
+  --text-muted:     var(--color-text-muted);
+  --text-subtle:    var(--color-text-muted);
+  --text-on-accent: #ffffff;
+
+  /* ── Accent ── */
+  --accent-primary:        var(--color-accent);
+  --accent-primary-strong: var(--color-accent-hover);
+  --focus-ring:            var(--color-accent-subtle);
+
+  /* ── Shadow ── */
+  --menu-shadow: 0 10px 30px var(--color-shadow);
+
+  /* ── Tags ── */
+  --tag-text:     var(--color-text-primary);
+  --tag-neutral:  var(--color-bg-elevated);
+  --tag-muted:    var(--color-bg-elevated);
+  --tag-critical: var(--color-badge-crit-bg);
+
+  /* ── Graph ── */
+  --graph-arrow:           var(--color-text-muted);
+  --graph-edge:            var(--color-text-muted);
+  --graph-edge-active:     var(--color-accent);
+  --graph-edge-label:      var(--color-text-muted);
+  --graph-external-stripe: var(--color-status-warn);
+
+  /* ── Pipeline ── */
+  --pipeline-stage-bg:              var(--color-bg-base);
+  --pipeline-stage-bg-selected:     var(--color-bg-elevated);
+  --pipeline-stage-stroke:          var(--color-border);
+  --pipeline-stage-stroke-selected: var(--color-accent);
+  --pipeline-arrow:                 var(--color-border-strong);
+
+  /* ── Table / tags ── */
+  --table-row-text: var(--color-text-secondary);
+  --link-tag-border: var(--color-border-strong);
+
+  /* ── Load errors ── */
+  --load-error-border: var(--color-border-aff);
+  --load-error-bg:     var(--color-badge-crit-bg);
+  --load-error-text:   var(--color-badge-crit-fg);
+
+  /* ── Validation ── */
+  --validation-item-border: var(--color-border);
+  --validation-item-bg:     var(--color-bg-surface);
+  --validation-severity:    var(--color-badge-crit-fg);
+  --validation-success:     var(--color-status-ok);
 }

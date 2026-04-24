@@ -1,18 +1,28 @@
 import './index.css'
-import { lazy, Suspense, useState, useEffect, useMemo } from 'react'
-import { ThemeProvider } from '@themes/ThemeContext'
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, type ChangeEvent } from 'react'
+import { ThemeProvider, useTheme } from '@themes/ThemeContext'
 import { ThemeSwitcher } from '@components/ThemeSwitcher'
 import {
   DEFAULT_REGISTRY_TEMPLATE,
   LOCAL_STORAGE_DRAFT_KEY,
   loadInitialRegistrySource,
   validateRegistryText,
+  getExplorerTitle,
+  REGISTRY_URL_CANDIDATES,
   type Mode,
   type Registry,
+  type Theme,
 } from '@domain/registry'
 import { buildGraph } from '@domain/catalog'
+import { downloadTextFile } from '@shared/browser'
 import styles from './App.module.css'
 
+const CatalogView = lazy(() =>
+  import('@features/catalog/CatalogView').then(m => ({ default: m.CatalogView }))
+)
+const RegistryEditor = lazy(() =>
+  import('@features/editor/RegistryEditor').then(m => ({ default: m.RegistryEditor }))
+)
 const DependencyGraph = lazy(() =>
   import('@features/graph/DependencyGraph').then(m => ({ default: m.DependencyGraph }))
 )
@@ -24,74 +34,242 @@ const TABS: { id: Mode; label: string }[] = [
   { id: 'data',     label: 'Data Lineage' },
 ]
 
-// ─── Registry loader hook ─────────────────────────────────────────────────────
+// ─── Startup helpers (mirrors old App logic) ──────────────────────────────────
 
-function useRegistry() {
-  const [registry, setRegistry]       = useState<Registry | null>(null)
-  const [sourceLabel, setSourceLabel] = useState<string | null>(null)
-  const [isLoading, setIsLoading]     = useState(true)
-  const [loadError, setLoadError]     = useState<string | null>(null)
+type StartupState = {
+  appliedRegistry: Registry | null
+  draftText: string
+  loadError: string | null
+  showEditor: boolean
+  sourceLabel: string | null
+}
 
+function buildTemplateState(loadError: string | null): StartupState {
+  return {
+    appliedRegistry: null,
+    draftText: DEFAULT_REGISTRY_TEMPLATE,
+    loadError,
+    showEditor: true,
+    sourceLabel: null,
+  }
+}
+
+function resolveStartup(
+  source: Awaited<ReturnType<typeof loadInitialRegistrySource>>,
+  storedDraft: string | null,
+): StartupState {
+  if (storedDraft) {
+    const { registry } = validateRegistryText(storedDraft)
+    return {
+      appliedRegistry: registry,
+      draftText: storedDraft,
+      loadError: null,
+      showEditor: !registry,
+      sourceLabel: 'local draft',
+    }
+  }
+  if (source) {
+    const { registry } = validateRegistryText(source.sourceText)
+    return {
+      appliedRegistry: registry,
+      draftText: source.sourceText,
+      loadError: null,
+      showEditor: !registry,
+      sourceLabel: source.sourceLabel,
+    }
+  }
+  return buildTemplateState(null)
+}
+
+// ─── Theme bridge: Phase 1 ↔ old Theme type ──────────────────────────────────
+
+function useThemeBridge(): { theme: Theme; toggleTheme: () => void } {
+  const { themeId, setThemeId } = useTheme()
+  const theme: Theme = themeId.includes('dark') ? 'dark' : 'light'
+
+  const toggleTheme = useCallback(() => {
+    const pairs: Record<string, string> = {
+      'd-light': 'd-dark', 'd-dark': 'd-light',
+      'c-light': 'c-dark', 'c-dark': 'c-light',
+    }
+    setThemeId(pairs[themeId] ?? 'd-light')
+  }, [themeId, setThemeId])
+
+  return { theme, toggleTheme }
+}
+
+// ─── Main app content (inside ThemeProvider) ──────────────────────────────────
+
+function AppContent() {
+  const { theme, toggleTheme } = useThemeBridge()
+
+  // ── Registry state ──
+  const [appliedRegistry, setAppliedRegistry] = useState<Registry | null>(null)
+  const [draftText, setDraftText]             = useState('')
+  const [validationText, setValidationText]   = useState('')
+  const [sourceLabel, setSourceLabel]         = useState<string | null>(null)
+  const [showEditor, setShowEditor]           = useState(false)
+  const [isLoading, setIsLoading]             = useState(true)
+  const [loadError, setLoadError]             = useState<string | null>(null)
+
+  // ── Tab state ──
+  const [mode, setMode] = useState<Mode>('overview')
+
+  // ── Validation (debounced) ──
+  const validation = useMemo(() => validateRegistryText(validationText), [validationText])
+  const currentRegistry = validation.registry ?? appliedRegistry
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setValidationText(draftText), 180)
+    return () => window.clearTimeout(t)
+  }, [draftText])
+
+  // ── Draft persistence ──
+  useEffect(() => {
+    if (!draftText) { localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY); return }
+    localStorage.setItem(LOCAL_STORAGE_DRAFT_KEY, draftText)
+  }, [draftText])
+
+  // ── Document title ──
+  useEffect(() => {
+    document.title = getExplorerTitle(currentRegistry?.metadata.team)
+  }, [currentRegistry])
+
+  // ── Initial load ──
   useEffect(() => {
     let cancelled = false
 
     async function load() {
-      try {
-        const draft = localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY)
+      const storedDraft = localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY)
 
-        let text: string
-        let label: string | null
-
-        if (draft) {
-          text  = draft
-          label = 'local draft'
-        } else {
-          const source = await loadInitialRegistrySource()
-          text  = source?.sourceText ?? DEFAULT_REGISTRY_TEMPLATE
-          label = source?.sourceLabel ?? null
+      if (storedDraft) {
+        if (!cancelled) {
+          const s = resolveStartup(null, storedDraft)
+          apply(s)
+          setIsLoading(false)
         }
+        return
+      }
 
-        if (cancelled) return
-
-        const { registry: parsed } = validateRegistryText(text)
-        setRegistry(parsed)
-        setSourceLabel(label)
+      try {
+        const source = await loadInitialRegistrySource()
+        if (!cancelled) {
+          apply(resolveStartup(source, null))
+        }
       } catch (err) {
-        if (cancelled) return
-        setLoadError(err instanceof Error ? err.message : 'Failed to load registry')
-        const { registry: fallback } = validateRegistryText(DEFAULT_REGISTRY_TEMPLATE)
-        setRegistry(fallback)
+        if (!cancelled) {
+          const msg = err instanceof Error ? err.message : 'Failed to load registry.'
+          apply(buildTemplateState(msg))
+        }
       } finally {
         if (!cancelled) setIsLoading(false)
       }
+    }
+
+    function apply(s: StartupState) {
+      setAppliedRegistry(s.appliedRegistry)
+      setDraftText(s.draftText)
+      setValidationText(s.draftText)
+      setSourceLabel(s.sourceLabel)
+      setShowEditor(s.showEditor)
+      setLoadError(s.loadError)
     }
 
     void load()
     return () => { cancelled = true }
   }, [])
 
-  return { registry, sourceLabel, isLoading, loadError }
-}
+  // ── Handlers ──
+  const handleApply = useCallback(() => {
+    if (!validation.registry) return
+    setAppliedRegistry(validation.registry)
+    setShowEditor(false)
+    if (!sourceLabel) {
+      setSourceLabel('in-browser draft')
+    } else if (!REGISTRY_URL_CANDIDATES.includes(sourceLabel as typeof REGISTRY_URL_CANDIDATES[number])) {
+      setSourceLabel(sourceLabel)
+    } else {
+      setSourceLabel(`${sourceLabel} (edited in browser)`)
+    }
+  }, [validation.registry, sourceLabel])
 
-// ─── App shell ───────────────────────────────────────────────────────────────
+  const handleImport = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const text = await file.text()
+    setDraftText(text)
+    setValidationText(text)
+    setSourceLabel(file.name)
+    setShowEditor(true)
+    event.target.value = ''
+  }, [])
 
-function AppShell({ registry, sourceLabel, loadError }: {
-  registry: Registry | null
-  sourceLabel: string | null
-  loadError: string | null
-}) {
-  const [mode, setMode] = useState<Mode>('overview')
+  const handleDownload = useCallback(() => {
+    downloadTextFile('service_registry.yaml', draftText, 'text/yaml;charset=utf-8')
+  }, [draftText])
 
-  const services = registry?.services ?? {}
-  const graph    = useMemo(() => buildGraph(services), [services])
+  const handleEditRegistry = useCallback(() => setShowEditor(true), [])
+  const handleCloseEditor   = useCallback(() => setShowEditor(false), [])
 
+  // ── Graph data (for DependencyGraph) ──
+  const services    = currentRegistry?.services ?? {}
+  const graph       = useMemo(() => buildGraph(services), [services])
   const serviceCount = Object.keys(services).length
   const edgeCount    = useMemo(
     () => Object.values(graph.upstream).reduce((n, arr) => n + arr.length, 0),
     [graph]
   )
 
-  const showGraph = (mode === 'overview' || mode === 'impact') && registry !== null
+  if (isLoading) {
+    return (
+      <div className={styles.loadingShell}>
+        <div className={styles.loadingCard}>
+          <div className={styles.logo}>◈ green-room</div>
+          <div className={styles.loadingHint}>Loading registry…</div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Editor mode ──
+  if (showEditor) {
+    return (
+      <div className={styles.shell}>
+        <header className={styles.header}>
+          <div className={styles.headerLeft}>
+            <span className={styles.logo}>◈ green-room</span>
+            {sourceLabel && <span className={styles.sourceChip}>{sourceLabel}</span>}
+          </div>
+          <div className={styles.headerRight}>
+            <ThemeSwitcher />
+          </div>
+        </header>
+        {loadError && <div className={styles.errorBanner} role="alert">{loadError}</div>}
+        <div className={styles.body}>
+          <Suspense fallback={<div className={styles.graphLoading} />}>
+            <RegistryEditor
+              theme={theme}
+              title={getExplorerTitle(currentRegistry?.metadata.team)}
+              checklist={validation.checklist}
+              draftText={draftText}
+              issues={validation.issues}
+              onApply={handleApply}
+              onChange={setDraftText}
+              onClose={handleCloseEditor}
+              onDownload={handleDownload}
+              onImport={handleImport}
+              onToggleTheme={toggleTheme}
+              canApply={!!validation.registry}
+              sourceLabel={sourceLabel}
+            />
+          </Suspense>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Catalog mode ──
+  const useNewGraph = mode === 'overview' || mode === 'impact'
 
   return (
     <div className={styles.shell}>
@@ -101,21 +279,17 @@ function AppShell({ registry, sourceLabel, loadError }: {
         <div className={styles.headerLeft}>
           <span className={styles.logo}>◈ green-room</span>
           <span className={styles.subtitle}>service dependency explorer</span>
-          {sourceLabel && (
-            <span className={styles.sourceChip}>{sourceLabel}</span>
-          )}
+          {sourceLabel && <span className={styles.sourceChip}>{sourceLabel}</span>}
         </div>
         <div className={styles.headerRight}>
+          <button className={styles.actionBtn} onClick={handleEditRegistry}>
+            Edit registry
+          </button>
           <ThemeSwitcher />
         </div>
       </header>
 
-      {/* ── Error banner ── */}
-      {loadError && (
-        <div className={styles.errorBanner} role="alert">
-          {loadError}
-        </div>
-      )}
+      {loadError && <div className={styles.errorBanner} role="alert">{loadError}</div>}
 
       {/* ── Tab nav ── */}
       <nav className={styles.tabs} role="tablist">
@@ -132,19 +306,44 @@ function AppShell({ registry, sourceLabel, loadError }: {
         ))}
       </nav>
 
-      {/* ── Main ── */}
+      {/* ── Content ── */}
       <main className={styles.body}>
-        {showGraph ? (
-          <Suspense fallback={<div className={styles.graphLoading} />}>
-            <DependencyGraph services={services} graph={graph} />
-          </Suspense>
-        ) : (
-          <div className={styles.placeholder}>
-            <div className={styles.placeholderLabel}>
-              {TABS.find(t => t.id === mode)?.label}
+        {useNewGraph ? (
+          /* Phase 3 graph for Overview + Dependency Impact */
+          currentRegistry ? (
+            <Suspense fallback={<div className={styles.graphLoading} />}>
+              <DependencyGraph services={services} graph={graph} />
+            </Suspense>
+          ) : (
+            <div className={styles.placeholder}>
+              <div className={styles.placeholderLabel}>No registry loaded</div>
+              <div className={styles.placeholderHint}>
+                <button className={styles.placeholderAction} onClick={handleEditRegistry}>
+                  Open registry editor
+                </button>
+              </div>
             </div>
-            <div className={styles.placeholderHint}>Coming in a future phase</div>
-          </div>
+          )
+        ) : (
+          /* Existing CatalogView for Business Flow + Data Lineage */
+          currentRegistry ? (
+            <Suspense fallback={<div className={styles.graphLoading} />}>
+              <CatalogView
+                key={mode}
+                theme={theme}
+                registry={currentRegistry}
+                sourceLabel={sourceLabel}
+                onEditRegistry={handleEditRegistry}
+                onToggleTheme={toggleTheme}
+                initialMode={mode}
+                hideShell
+              />
+            </Suspense>
+          ) : (
+            <div className={styles.placeholder}>
+              <div className={styles.placeholderLabel}>No registry loaded</div>
+            </div>
+          )
         )}
       </main>
 
@@ -161,9 +360,7 @@ function AppShell({ registry, sourceLabel, loadError }: {
           </span>
         </span>
         <span className={styles.statusRight}>
-          <span className={styles.statusMode}>
-            {TABS.find(t => t.id === mode)?.label ?? mode}
-          </span>
+          <span className={styles.statusMode}>{TABS.find(t => t.id === mode)?.label}</span>
         </span>
       </footer>
     </div>
@@ -173,24 +370,9 @@ function AppShell({ registry, sourceLabel, loadError }: {
 // ─── Root ────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { registry, sourceLabel, isLoading, loadError } = useRegistry()
-
   return (
     <ThemeProvider defaultThemeId="d-light">
-      {isLoading ? (
-        <div className={styles.loadingShell}>
-          <div className={styles.loadingCard}>
-            <div className={styles.logo}>◈ green-room</div>
-            <div className={styles.loadingHint}>Loading registry…</div>
-          </div>
-        </div>
-      ) : (
-        <AppShell
-          registry={registry}
-          sourceLabel={sourceLabel}
-          loadError={loadError}
-        />
-      )}
+      <AppContent />
     </ThemeProvider>
   )
 }
