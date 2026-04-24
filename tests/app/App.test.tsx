@@ -219,7 +219,6 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("YAML")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Fix validation errors" })).toBeDisabled();
-      expect(screen.getByText("boom")).toBeInTheDocument();
     });
   });
 

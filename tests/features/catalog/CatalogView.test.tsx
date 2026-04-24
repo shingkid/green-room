@@ -57,7 +57,7 @@ describe("CatalogView", () => {
     expect(screen.getByTestId("graph-workspace")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /filter by stakeholder/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /filter business flows/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /toggle hosting boxes/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /toggle infra view/i })).not.toBeInTheDocument();
   });
 
   it("shows hosting toggle in graph workspace controls and not in footer legend", async () => {
@@ -73,7 +73,7 @@ describe("CatalogView", () => {
 
     const graphWorkspace = screen.getByTestId("graph-workspace");
     const hostingToggle = within(graphWorkspace).getByRole("button", {
-      name: /toggle hosting boxes/i,
+      name: /toggle infra view/i,
     });
     expect(hostingToggle).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "☁ hosting" })).not.toBeInTheDocument();
