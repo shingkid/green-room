@@ -295,6 +295,14 @@ export function CatalogView({
                             ? `${viewModel.affectedSet.size - 1} downstream affected`
                             : `${viewModel.affectedSet.size - 1} upstream deps`}
                         </Badge>
+                        <button
+                          aria-label="Close service details"
+                          className={styles.detailsCloseButton}
+                          onClick={() => viewModel.setSelectedService(null)}
+                          type="button"
+                        >
+                          ×
+                        </button>
                       </div>
 
                       {hostingConfig ? (

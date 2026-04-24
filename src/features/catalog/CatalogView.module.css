@@ -183,6 +183,21 @@
   gap: 8px;
 }
 
+.detailsCloseButton {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  align-self: flex-start;
+}
+
+.detailsCloseButton:hover {
+  color: var(--text-primary);
+}
+
 .detailsTitle {
   font-size: 14px;
   font-weight: 600;
