@@ -39,10 +39,10 @@ Styling: no background, no border, icon-weight, flush with the header's top-righ
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `src/features/catalog/CatalogView.tsx` | Button label rename; close button added to detail panel header |
-| `src/features/catalog/useCatalogViewModel.ts` | Toggle logic in `handleServiceClick` |
+| File                                          | Change                                                         |
+| --------------------------------------------- | -------------------------------------------------------------- |
+| `src/features/catalog/CatalogView.tsx`        | Button label rename; close button added to detail panel header |
+| `src/features/catalog/useCatalogViewModel.ts` | Toggle logic in `handleServiceClick`                           |
 
 ## Verification
 
