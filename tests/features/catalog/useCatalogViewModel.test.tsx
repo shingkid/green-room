@@ -110,4 +110,58 @@ describe("useCatalogViewModel business flow sorting", () => {
     expect(result.current.selectedFlow).toBeNull();
     expect(result.current.selectedDataFlow).toBeNull();
   });
+
+  it("resets only legend filter sets", () => {
+    const { result } = renderHook(() => useCatalogViewModel(getDefaultRegistry()));
+    const selectedStakeholder = result.current.stakeholderOptions[0]?.value ?? null;
+
+    act(() => {
+      result.current.handleTabChange("impact");
+      result.current.setSelectedService("example_ui");
+    });
+
+    if (selectedStakeholder) {
+      act(() => {
+        result.current.setSelectedStakeholder(selectedStakeholder);
+      });
+    }
+
+    const selectedFlow = result.current.businessFlowOptions[0]?.value ?? null;
+    if (selectedFlow) {
+      act(() => {
+        result.current.setSelectedFlow(selectedFlow);
+      });
+    }
+
+    const selectedDataFlow = result.current.dataFlowOptions[0]?.value ?? null;
+    if (selectedDataFlow) {
+      act(() => {
+        result.current.setSelectedDataFlow(selectedDataFlow);
+      });
+    }
+
+    act(() => {
+      result.current.handleToggleStatus("deprecated");
+      result.current.handleToggleType("backend");
+      result.current.handleToggleOwnership("external");
+    });
+
+    expect(result.current.visibleStatusSet.has("deprecated")).toBe(false);
+    expect(result.current.visibleTypeSet.has("backend")).toBe(false);
+    expect(result.current.visibleOwnershipSet.has("external")).toBe(false);
+
+    act(() => {
+      result.current.resetLegendFilters();
+    });
+
+    expect(result.current.visibleStatusSet.has("deprecated")).toBe(true);
+    expect(result.current.visibleTypeSet.has("backend")).toBe(true);
+    expect(result.current.visibleOwnershipSet.has("external")).toBe(true);
+    expect(result.current.selectedService).toBe("example_ui");
+    expect(result.current.selectedStakeholder).toBe(selectedStakeholder);
+    expect(result.current.selectedFlow).toBe(selectedFlow);
+    if (selectedDataFlow) {
+      expect(result.current.selectedDataFlow).toBe(selectedDataFlow);
+    }
+  });
 });

@@ -444,6 +444,11 @@ export function useCatalogViewModel(registry: Registry) {
 
   const handleServiceClick = useCallback(
     (serviceKey: string) => {
+      if (selectedService === serviceKey) {
+        setSelectedService(null);
+        return;
+      }
+
       if (mode === "overview") {
         setMode("impact");
         setImpactDirection("downstream");
@@ -451,7 +456,7 @@ export function useCatalogViewModel(registry: Registry) {
 
       setSelectedService(serviceKey);
     },
-    [mode],
+    [mode, selectedService],
   );
 
   const handleTabChange = useCallback((nextMode: Mode) => {
@@ -510,6 +515,11 @@ export function useCatalogViewModel(registry: Registry) {
       return nextKinds;
     });
   }, []);
+  const handleResetLegendFilters = useCallback(() => {
+    setVisibleStatuses(new Set(ALL_SERVICE_STATUSES));
+    setVisibleTypes(new Set(ALL_SERVICE_TYPES));
+    setVisibleOwnershipKinds(new Set(ALL_OWNERSHIP_KINDS));
+  }, []);
 
   const handleToggleHosting = useCallback(() => {
     setShowHosting((prev) => !prev);
@@ -545,6 +555,7 @@ export function useCatalogViewModel(registry: Registry) {
     selectedService,
     selectedServiceDetails,
     selectedStakeholder,
+    resetLegendFilters: handleResetLegendFilters,
     serviceOptions,
     services,
     setExpandedDataFlow,

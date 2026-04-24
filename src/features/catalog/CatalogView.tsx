@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type CSSProperties } from "react";
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import {
   ACTION_COLORS,
@@ -21,6 +21,7 @@ import { SearchableSelect } from "@shared/components/SearchableSelect";
 import { Tag } from "@shared/components/Tag";
 import { DataFlowPipeline } from "./components/DataFlowPipeline";
 import { GraphCanvas } from "./components/GraphCanvas";
+import { GraphWorkspace } from "./components/GraphWorkspace";
 import type { ServiceNodeData } from "./components/nodes/ServiceNode";
 import { useCatalogViewModel } from "./useCatalogViewModel";
 import styles from "./CatalogView.module.css";
@@ -86,12 +87,24 @@ export function CatalogView({
     ],
   );
 
+  const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleCopyMermaid = useCallback(async () => {
     if (!viewModel.mermaidExport) {
       return;
     }
 
     await navigator.clipboard.writeText(viewModel.mermaidExport.source);
+
+    if (copiedTimerRef.current !== null) {
+      clearTimeout(copiedTimerRef.current);
+    }
+    setCopied(true);
+    copiedTimerRef.current = setTimeout(() => {
+      setCopied(false);
+      copiedTimerRef.current = null;
+    }, 2000);
   }, [viewModel.mermaidExport]);
   const handleDataBusinessFlowChange = useCallback(
     (value: string | null) => {
@@ -113,6 +126,18 @@ export function CatalogView({
   const handleSetUpstreamDirection = useCallback(() => {
     setImpactDirection("upstream");
   }, [setImpactDirection]);
+  const showHostingControl = viewModel.isGraphMode && viewModel.mode !== "flow";
+  const graphControls = showHostingControl ? (
+    <button
+      aria-label="Toggle infra view"
+      aria-pressed={viewModel.showHosting}
+      className={`${styles.graphControlButton}${viewModel.showHosting ? ` ${styles.graphControlButtonActive}` : ""}`}
+      onClick={viewModel.handleToggleHosting}
+      type="button"
+    >
+      Infra view
+    </button>
+  ) : null;
 
   return (
     <div className="app-shell" data-theme={theme}>
@@ -135,7 +160,7 @@ export function CatalogView({
               }}
               type="button"
             >
-              Copy Mermaid
+              {copied ? "Copied!" : "Copy Mermaid"}
             </button>
             <button className="secondary-button" onClick={onEditRegistry} type="button">
               Edit registry
@@ -226,18 +251,18 @@ export function CatalogView({
             />
             <div aria-label="impact direction" className={styles.directionToggle} role="group">
               <button
-                className={`${styles.directionToggleButton}${viewModel.impactDirection === "downstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
-                onClick={handleSetDownstreamDirection}
-                type="button"
-              >
-                Downstream
-              </button>
-              <button
                 className={`${styles.directionToggleButton}${viewModel.impactDirection === "upstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
                 onClick={handleSetUpstreamDirection}
                 type="button"
               >
                 Upstream
+              </button>
+              <button
+                className={`${styles.directionToggleButton}${viewModel.impactDirection === "downstream" ? ` ${styles.directionToggleButtonActive}` : ""}`}
+                onClick={handleSetDownstreamDirection}
+                type="button"
+              >
+                Downstream
               </button>
             </div>
           </>
@@ -256,10 +281,149 @@ export function CatalogView({
       </section>
 
       {viewModel.isGraphMode ? (
-        <GraphCanvas
-          layoutNodes={viewModel.rfNodes}
-          rfEdges={viewModel.rfEdges}
-          rfNodes={enrichedNodes}
+        <GraphWorkspace
+          controls={graphControls}
+          showDetails={Boolean(viewModel.selectedServiceDetails && viewModel.mode === "impact")}
+          details={
+            viewModel.selectedServiceDetails && viewModel.mode === "impact" ? (
+              <section className={`${styles.panel} ${styles.detailsPanel}`}>
+                {(() => {
+                  const svc = viewModel.selectedServiceDetails;
+                  const hostingKey = svc.hosting;
+                  const hostingConfig = hostingKey ? registry.hosting?.[hostingKey] : undefined;
+                  return (
+                    <>
+                      <div className={styles.detailsHeader}>
+                        <div>
+                          <div className={styles.detailsTitle}>{svc.name}</div>
+                          <div className={styles.detailsMeta}>
+                            {svc.type} · {svc.status} · {viewModel.getOwnershipKind(svc)}
+                          </div>
+                        </div>
+                        <Badge
+                          color={viewModel.impactDirection === "downstream" ? "#dc2626" : "#2563eb"}
+                        >
+                          {viewModel.impactDirection === "downstream"
+                            ? `${viewModel.affectedSet.size - 1} downstream affected`
+                            : `${viewModel.affectedSet.size - 1} upstream deps`}
+                        </Badge>
+                        <button
+                          aria-label="Close service details"
+                          className={styles.detailsCloseButton}
+                          onClick={() => viewModel.setSelectedService(null)}
+                          type="button"
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      {hostingConfig ? (
+                        <div className={styles.detailsSection}>
+                          <div className={styles.overline}>Hosting</div>
+                          <div className={styles.tagRow}>
+                            <Tag
+                              color={
+                                HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ??
+                                "var(--tag-neutral)"
+                              }
+                            >
+                              {hostingConfig.environment}
+                            </Tag>
+                            {hostingConfig.provider ? <Tag>{hostingConfig.provider}</Tag> : null}
+                            {hostingConfig.account ? (
+                              <Tag>acct: {hostingConfig.account}</Tag>
+                            ) : null}
+                            <Tag color="var(--tag-muted)">{hostingKey}</Tag>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {(svc.upstream?.length ?? 0) > 0 ? (
+                        <div className={styles.detailsSection}>
+                          <div className={styles.overline}>Direct dependencies</div>
+                          <div className={styles.tagRow}>
+                            {svc.upstream?.map((dependency) => (
+                              <Tag
+                                color={
+                                  dependency.criticality === "hard"
+                                    ? "var(--tag-critical)"
+                                    : "var(--tag-muted)"
+                                }
+                                key={`${viewModel.selectedService}-${dependency.service}`}
+                              >
+                                {dependency.service} ({dependency.protocol},{" "}
+                                {dependency.criticality})
+                              </Tag>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {viewModel.affectedDataFlows.length > 0 ? (
+                        <div className={styles.detailsSection}>
+                          <div className={styles.overline}>Data flows through this service</div>
+                          <div className={styles.tagRow}>
+                            {viewModel.affectedDataFlows.map(([flowKey, dataFlow]) => (
+                              <button
+                                className={styles.linkTag}
+                                key={flowKey}
+                                onClick={() => {
+                                  viewModel.handleTabChange("data");
+                                  viewModel.setSelectedDataFlow(flowKey);
+                                  viewModel.setExpandedDataFlow(flowKey);
+                                }}
+                                type="button"
+                              >
+                                {DATA_TYPE_ICONS[dataFlow.data_type] ?? "?"} {dataFlow.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {(() => {
+                        const links: Array<{ label: string; href: string }> = [];
+                        if (svc.runbook) links.push({ label: "Runbook", href: svc.runbook });
+                        if (svc.health_check)
+                          links.push({ label: "Health check", href: svc.health_check });
+                        if (svc.dashboard) links.push({ label: "Dashboard", href: svc.dashboard });
+                        if (svc.on_call) links.push({ label: "On-call", href: svc.on_call });
+                        if (links.length === 0 && !svc.incident_channel && !svc.slo) return null;
+                        return (
+                          <div className={styles.detailsSection}>
+                            <div className={styles.overline}>Operations</div>
+                            <div className={styles.tagRow}>
+                              {links.map(({ label, href }) => (
+                                <a
+                                  className={styles.linkTag}
+                                  href={href}
+                                  key={label}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  {label} ↗
+                                </a>
+                              ))}
+                              {svc.incident_channel ? <Tag>{svc.incident_channel}</Tag> : null}
+                              {svc.slo ? <Tag>SLO {svc.slo}</Tag> : null}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  );
+                })()}
+              </section>
+            ) : null
+          }
+          graph={
+            <GraphCanvas
+              layoutNodes={viewModel.rfNodes}
+              panelOpen={Boolean(viewModel.selectedServiceDetails && viewModel.mode === "impact")}
+              rfEdges={viewModel.rfEdges}
+              rfNodes={enrichedNodes}
+            />
+          }
         />
       ) : null}
 
@@ -368,124 +532,13 @@ export function CatalogView({
         </section>
       ) : null}
 
-      {viewModel.selectedServiceDetails && viewModel.isGraphMode && viewModel.mode === "impact" ? (
-        <section className={`${styles.panel} ${styles.detailsPanel}`}>
-          <div className={styles.detailsHeader}>
-            <div>
-              <div className={styles.detailsTitle}>{viewModel.selectedServiceDetails.name}</div>
-              <div className={styles.detailsMeta}>
-                {viewModel.selectedServiceDetails.type} · {viewModel.selectedServiceDetails.status}{" "}
-                · {viewModel.getOwnershipKind(viewModel.selectedServiceDetails)}
-              </div>
-            </div>
-            <Badge color={viewModel.impactDirection === "downstream" ? "#dc2626" : "#2563eb"}>
-              {viewModel.impactDirection === "downstream"
-                ? `${viewModel.affectedSet.size - 1} downstream affected`
-                : `${viewModel.affectedSet.size - 1} upstream deps`}
-            </Badge>
-          </div>
-
-          {(() => {
-            const hostingKey = viewModel.selectedServiceDetails.hosting;
-            const hostingConfig = hostingKey ? registry.hosting?.[hostingKey] : undefined;
-            if (!hostingConfig) return null;
-            return (
-              <div className={styles.detailsSection}>
-                <div className={styles.overline}>Hosting</div>
-                <div className={styles.tagRow}>
-                  <Tag
-                    color={
-                      HOSTING_ENVIRONMENT_COLORS[hostingConfig.environment] ?? "var(--tag-neutral)"
-                    }
-                  >
-                    {hostingConfig.environment}
-                  </Tag>
-                  {hostingConfig.provider ? <Tag>{hostingConfig.provider}</Tag> : null}
-                  {hostingConfig.account ? <Tag>acct: {hostingConfig.account}</Tag> : null}
-                  <Tag color="var(--tag-muted)">{hostingKey}</Tag>
-                </div>
-              </div>
-            );
-          })()}
-
-          {(viewModel.selectedServiceDetails.upstream?.length ?? 0) > 0 ? (
-            <div className={styles.detailsSection}>
-              <div className={styles.overline}>Direct dependencies</div>
-              <div className={styles.tagRow}>
-                {viewModel.selectedServiceDetails.upstream?.map((dependency) => (
-                  <Tag
-                    color={
-                      dependency.criticality === "hard" ? "var(--tag-critical)" : "var(--tag-muted)"
-                    }
-                    key={`${viewModel.selectedService}-${dependency.service}`}
-                  >
-                    {dependency.service} ({dependency.protocol}, {dependency.criticality})
-                  </Tag>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {viewModel.affectedDataFlows.length > 0 ? (
-            <div className={styles.detailsSection}>
-              <div className={styles.overline}>Data flows through this service</div>
-              <div className={styles.tagRow}>
-                {viewModel.affectedDataFlows.map(([flowKey, dataFlow]) => (
-                  <button
-                    className={styles.linkTag}
-                    key={flowKey}
-                    onClick={() => {
-                      viewModel.handleTabChange("data");
-                      viewModel.setSelectedDataFlow(flowKey);
-                      viewModel.setExpandedDataFlow(flowKey);
-                    }}
-                    type="button"
-                  >
-                    {DATA_TYPE_ICONS[dataFlow.data_type] ?? "?"} {dataFlow.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {(() => {
-            const svc = viewModel.selectedServiceDetails;
-            const links: Array<{ label: string; href: string }> = [];
-            if (svc?.runbook) links.push({ label: "Runbook", href: svc.runbook });
-            if (svc?.health_check) links.push({ label: "Health check", href: svc.health_check });
-            if (svc?.dashboard) links.push({ label: "Dashboard", href: svc.dashboard });
-            if (svc?.on_call) links.push({ label: "On-call", href: svc.on_call });
-            if (links.length === 0) return null;
-            return (
-              <div className={styles.detailsSection}>
-                <div className={styles.overline}>On-call</div>
-                <div className={styles.tagRow}>
-                  {links.map(({ label, href }) => (
-                    <a
-                      className={styles.linkTag}
-                      href={href}
-                      key={label}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      {label} ↗
-                    </a>
-                  ))}
-                  {svc?.incident_channel ? <Tag>{svc.incident_channel}</Tag> : null}
-                  {svc?.slo ? <Tag>SLO {svc.slo}</Tag> : null}
-                </div>
-              </div>
-            );
-          })()}
-        </section>
-      ) : null}
-
       <footer className={styles.footer}>
         {viewModel.mode !== "data"
           ? [
               ...STATUS_STYLE_ENTRIES.map(([status, style]) => (
                 <button
-                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleStatusSet.has(status as ServiceStatus) ? "" : ` ${styles.legendToggleOff}`}`}
+                  aria-pressed={viewModel.visibleStatusSet.has(status as ServiceStatus)}
+                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleStatusSet.has(status as ServiceStatus) ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                   key={status}
                   onClick={() => viewModel.handleToggleStatus(status as ServiceStatus)}
                   type="button"
@@ -498,7 +551,8 @@ export function CatalogView({
                 </button>
               )),
               <button
-                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("internal") ? "" : ` ${styles.legendToggleOff}`}`}
+                aria-pressed={viewModel.visibleOwnershipSet.has("internal")}
+                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("internal") ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                 key="internal-owner"
                 onClick={() => viewModel.handleToggleOwnership("internal")}
                 type="button"
@@ -507,7 +561,8 @@ export function CatalogView({
                 team-owned
               </button>,
               <button
-                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("external") ? "" : ` ${styles.legendToggleOff}`}`}
+                aria-pressed={viewModel.visibleOwnershipSet.has("external")}
+                className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleOwnershipSet.has("external") ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                 key="external-owner"
                 onClick={() => viewModel.handleToggleOwnership("external")}
                 type="button"
@@ -525,7 +580,8 @@ export function CatalogView({
               </span>,
               ...TYPE_ICON_ENTRIES.map(([type, icon]) => (
                 <button
-                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleTypeSet.has(type as ServiceType) ? "" : ` ${styles.legendToggleOff}`}`}
+                  aria-pressed={viewModel.visibleTypeSet.has(type as ServiceType)}
+                  className={`${styles.legendItem} ${styles.legendToggle}${viewModel.visibleTypeSet.has(type as ServiceType) ? ` ${styles.legendToggleOn}` : ` ${styles.legendToggleOff}`}`}
                   key={type}
                   onClick={() => viewModel.handleToggleType(type as ServiceType)}
                   type="button"
@@ -533,18 +589,14 @@ export function CatalogView({
                   {icon} {type}
                 </button>
               )),
-              ...(viewModel.mode !== "flow"
-                ? [
-                    <button
-                      className={`${styles.legendItem} ${styles.legendToggle}${viewModel.showHosting ? "" : ` ${styles.legendToggleOff}`}`}
-                      key="hosting-view"
-                      onClick={viewModel.handleToggleHosting}
-                      type="button"
-                    >
-                      ☁ hosting
-                    </button>,
-                  ]
-                : []),
+              <button
+                className={`${styles.legendItem} ${styles.legendResetButton}`}
+                key="reset-legend-filters"
+                onClick={viewModel.resetLegendFilters}
+                type="button"
+              >
+                Reset filters
+              </button>,
             ]
           : ACTION_COLOR_ENTRIES.map(([action, color]) => (
               <span className={styles.legendItem} key={action}>

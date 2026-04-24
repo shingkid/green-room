@@ -29,12 +29,25 @@ type RegistryEditorProps = {
   sourceLabel: string | null;
 };
 
-type SectionKey = "services" | "business_flows" | "data_flows";
-const SECTION_CHECKLIST_LABEL_TO_KEY: Record<string, SectionKey> = {
-  "business_flows (min 1)": "business_flows",
-  "data_flows (min 1)": "data_flows",
-  "services (min 1)": "services",
-};
+const SECTION_JUMPS = [
+  { checklistLabel: "hosting (min 1)", key: "hosting" },
+  { checklistLabel: "stakeholders (min 1)", key: "stakeholders" },
+  { checklistLabel: "business_flows (min 1)", key: "business_flows" },
+  { checklistLabel: "data_flows (min 1)", key: "data_flows" },
+  { checklistLabel: "services (min 1)", key: "services" },
+];
+
+type SectionJumpConfig = (typeof SECTION_JUMPS)[number];
+type SectionLabel = SectionJumpConfig["checklistLabel"];
+type SectionKey = SectionJumpConfig["key"];
+
+const SECTION_CHECKLIST_LABEL_TO_KEY = Object.fromEntries(
+  SECTION_JUMPS.map((section) => [section.checklistLabel, section.key]),
+) as Record<SectionLabel, SectionKey>;
+
+function isSectionLabel(value: string): value is SectionLabel {
+  return value in SECTION_CHECKLIST_LABEL_TO_KEY;
+}
 
 function findSectionOffset(sourceText: string, sectionKey: SectionKey) {
   const escapedKey = sectionKey.replaceAll("_", "\\_");
@@ -222,7 +235,7 @@ export function RegistryEditor({
                         </span>
                         <span className={styles.checklistLabel}>{item.label}</span>
                       </div>
-                      {group.title === "Sections" && SECTION_CHECKLIST_LABEL_TO_KEY[item.label] ? (
+                      {group.title === "Sections" && isSectionLabel(item.label) ? (
                         <button
                           aria-label={`Jump to ${SECTION_CHECKLIST_LABEL_TO_KEY[item.label]} section`}
                           className={styles.checklistJumpIconButton}

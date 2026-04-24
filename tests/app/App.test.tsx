@@ -18,7 +18,59 @@ vi.mock("@uiw/react-codemirror", () => {
 
 describe("App", () => {
   beforeEach(() => {
-    window.localStorage.clear();
+    const localStorageRef = window.localStorage as Partial<Storage> | undefined;
+    const storage = new Map<string, string>();
+    const shim: Pick<Storage, "getItem" | "setItem" | "removeItem" | "clear"> = {
+      getItem: (key) => storage.get(String(key)) ?? null,
+      setItem: (key, value) => {
+        storage.set(String(key), String(value));
+      },
+      removeItem: (key) => {
+        storage.delete(String(key));
+      },
+      clear: () => {
+        storage.clear();
+      },
+    };
+
+    if (!localStorageRef) {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: shim,
+      });
+      return;
+    }
+
+    const hasAllStorageMethods =
+      typeof localStorageRef.getItem === "function" &&
+      typeof localStorageRef.setItem === "function" &&
+      typeof localStorageRef.removeItem === "function" &&
+      typeof localStorageRef.clear === "function";
+
+    let nativeStorageUsable = false;
+    if (hasAllStorageMethods) {
+      try {
+        const probeKey = "__app_test_local_storage_probe__";
+        localStorageRef.setItem?.(probeKey, "ok");
+        nativeStorageUsable = localStorageRef.getItem?.(probeKey) === "ok";
+        localStorageRef.removeItem?.(probeKey);
+      } catch {
+        nativeStorageUsable = false;
+      }
+    }
+
+    if (!hasAllStorageMethods || !nativeStorageUsable) {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: shim,
+      });
+      return;
+    }
+
+    const clearLocalStorage = localStorageRef.clear;
+    if (typeof clearLocalStorage === "function") {
+      clearLocalStorage.call(localStorageRef);
+    }
   });
 
   function stubMatchMedia() {
@@ -80,7 +132,7 @@ describe("App", () => {
     });
   });
 
-  it("loads saved local draft into editor mode and validates it", async () => {
+  it("loads saved local draft and uses it as startup source", async () => {
     vi.spyOn(registryDomain, "loadInitialRegistrySource").mockResolvedValue(null);
     window.localStorage.setItem(
       registryDomain.LOCAL_STORAGE_DRAFT_KEY,
@@ -91,8 +143,82 @@ describe("App", () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText("Schema validation passed.")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Use this registry" })).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Loaded from saved local draft. Edit the registry to validate and preview changes in-browser.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("prefers saved local draft over file-backed source on startup", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockResolvedValue({
+      sourceLabel: "/service_registry.yaml",
+      sourceText: registryDomain.DEFAULT_REGISTRY_TEMPLATE,
+    });
+    window.localStorage.setItem(
+      registryDomain.LOCAL_STORAGE_DRAFT_KEY,
+      registryDomain.DEFAULT_REGISTRY_TEMPLATE.replace("Example Team", "Draft Team"),
+    );
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Loaded from saved local draft. Edit the registry to validate and preview changes in-browser.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("prefers saved valid local draft when initial source loading throws", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockRejectedValue(new Error("boom"));
+    window.localStorage.setItem(
+      registryDomain.LOCAL_STORAGE_DRAFT_KEY,
+      registryDomain.DEFAULT_REGISTRY_TEMPLATE.replace("Example Team", "Draft Team"),
+    );
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Copy Mermaid" })).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Loaded from saved local draft. Edit the registry to validate and preview changes in-browser.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("opens editor when saved local draft is invalid even if file-backed source exists", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockResolvedValue({
+      sourceLabel: "/service_registry.yaml",
+      sourceText: registryDomain.DEFAULT_REGISTRY_TEMPLATE,
+    });
+    window.localStorage.setItem(registryDomain.LOCAL_STORAGE_DRAFT_KEY, "metadata:\n  team:");
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText("YAML")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Fix validation errors" })).toBeDisabled();
+    });
+  });
+
+  it("prefers saved invalid local draft when initial source loading throws", async () => {
+    vi.spyOn(registryDomain, "loadInitialRegistrySource").mockRejectedValue(new Error("boom"));
+    window.localStorage.setItem(registryDomain.LOCAL_STORAGE_DRAFT_KEY, "metadata:\n  team:");
+    stubMatchMedia();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText("YAML")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Fix validation errors" })).toBeDisabled();
     });
   });
 

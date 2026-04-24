@@ -24,7 +24,11 @@ const mockView = {
       lines: 1,
       toString: vi.fn(
         () =>
-          `services:
+          `hosting:
+  aws: {}
+stakeholders:
+  platform_team: {}
+services:
   api: {}
 business_flows:
   checkout: {}
@@ -142,6 +146,8 @@ describe("RegistryEditor", () => {
 
   it("does not suppress default Tab behavior in editor key handlers", () => {
     const domEventHandlersMock = EditorView.domEventHandlers as unknown as ReturnType<typeof vi.fn>;
+    domEventHandlersMock.mockClear();
+
     render(
       <RegistryEditor
         canApply
@@ -159,10 +165,7 @@ describe("RegistryEditor", () => {
       />,
     );
 
-    const firstCallArg = domEventHandlersMock.mock.calls[0]?.[0] as
-      | Record<string, unknown>
-      | undefined;
-    expect(firstCallArg).toBeUndefined();
+    expect(domEventHandlersMock).not.toHaveBeenCalled();
   });
 
   it("renders validation issues and optional back button path", () => {
@@ -297,6 +300,8 @@ describe("RegistryEditor", () => {
           {
             title: "Sections",
             items: [
+              { label: "hosting (min 1)", checked: false },
+              { label: "stakeholders (min 1)", checked: false },
               { label: "business_flows (min 1)", checked: false },
               { label: "data_flows (min 1)", checked: false },
               { label: "services (min 1)", checked: false },
@@ -316,11 +321,34 @@ describe("RegistryEditor", () => {
       />,
     );
 
+    mockDispatch.mockClear();
+
+    await userEvent.click(screen.getByRole("button", { name: "Jump to hosting section" }));
+    await userEvent.click(screen.getByRole("button", { name: "Jump to stakeholders section" }));
     await userEvent.click(screen.getByRole("button", { name: "Jump to services section" }));
     await userEvent.click(screen.getByRole("button", { name: "Jump to business_flows section" }));
     await userEvent.click(screen.getByRole("button", { name: "Jump to data_flows section" }));
 
-    expect(mockDispatch).toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenNthCalledWith(1, {
+      selection: { anchor: 0 },
+      effects: { offset: 0 },
+    });
+    expect(mockDispatch).toHaveBeenNthCalledWith(2, {
+      selection: { anchor: 19 },
+      effects: { offset: 19 },
+    });
+    expect(mockDispatch).toHaveBeenNthCalledWith(3, {
+      selection: { anchor: 53 },
+      effects: { offset: 53 },
+    });
+    expect(mockDispatch).toHaveBeenNthCalledWith(4, {
+      selection: { anchor: 73 },
+      effects: { offset: 73 },
+    });
+    expect(mockDispatch).toHaveBeenNthCalledWith(5, {
+      selection: { anchor: 104 },
+      effects: { offset: 104 },
+    });
     expect(mockView.focus).toHaveBeenCalled();
   });
 });
