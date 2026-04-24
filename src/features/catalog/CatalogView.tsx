@@ -407,6 +407,7 @@ export function CatalogView({
           graph={
             <GraphCanvas
               layoutNodes={viewModel.rfNodes}
+              panelOpen={Boolean(viewModel.selectedServiceDetails && viewModel.mode === "impact")}
               rfEdges={viewModel.rfEdges}
               rfNodes={enrichedNodes}
             />

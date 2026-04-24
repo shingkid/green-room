@@ -26,14 +26,14 @@ const edgeTypes: EdgeTypes = {
   serviceEdge: ServiceEdge,
 };
 
-function FitViewOnChange({ layoutNodes }: { layoutNodes: Node[] }) {
+function FitViewOnChange({ layoutNodes, panelOpen }: { layoutNodes: Node[]; panelOpen: boolean }) {
   const { fitView } = useReactFlow();
 
   useEffect(() => {
     requestAnimationFrame(() => {
       fitView({ duration: 200 });
     });
-  }, [layoutNodes, fitView]);
+  }, [layoutNodes, panelOpen, fitView]);
 
   return null;
 }
@@ -42,9 +42,10 @@ type GraphCanvasProps = {
   rfNodes: Node[];
   rfEdges: Edge[];
   layoutNodes: Node[];
+  panelOpen: boolean;
 };
 
-export function GraphCanvas({ rfNodes, rfEdges, layoutNodes }: GraphCanvasProps) {
+export function GraphCanvas({ rfNodes, rfEdges, layoutNodes, panelOpen }: GraphCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
 
@@ -69,7 +70,7 @@ export function GraphCanvas({ rfNodes, rfEdges, layoutNodes }: GraphCanvasProps)
         onEdgesChange={onEdgesChange}
         onNodesChange={onNodesChange}
       >
-        <FitViewOnChange layoutNodes={layoutNodes} />
+        <FitViewOnChange layoutNodes={layoutNodes} panelOpen={panelOpen} />
         <Controls />
       </ReactFlow>
     </section>
