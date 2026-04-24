@@ -117,13 +117,13 @@ export function CatalogView({
   const showHostingControl = viewModel.isGraphMode && viewModel.mode !== "flow";
   const graphControls = showHostingControl ? (
     <button
-      aria-label="Toggle hosting boxes"
+      aria-label="Toggle infra view"
       aria-pressed={viewModel.showHosting}
       className={`${styles.graphControlButton}${viewModel.showHosting ? ` ${styles.graphControlButtonActive}` : ""}`}
       onClick={viewModel.handleToggleHosting}
       type="button"
     >
-      Hosting boxes
+      Infra view
     </button>
   ) : null;
 
