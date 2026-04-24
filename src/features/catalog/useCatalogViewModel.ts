@@ -444,6 +444,11 @@ export function useCatalogViewModel(registry: Registry) {
 
   const handleServiceClick = useCallback(
     (serviceKey: string) => {
+      if (selectedService === serviceKey) {
+        setSelectedService(null);
+        return;
+      }
+
       if (mode === "overview") {
         setMode("impact");
         setImpactDirection("downstream");
@@ -451,7 +456,7 @@ export function useCatalogViewModel(registry: Registry) {
 
       setSelectedService(serviceKey);
     },
-    [mode],
+    [mode, selectedService],
   );
 
   const handleTabChange = useCallback((nextMode: Mode) => {
