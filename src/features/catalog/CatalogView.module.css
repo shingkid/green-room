@@ -192,10 +192,17 @@
   font-size: 16px;
   line-height: 1;
   align-self: flex-start;
+  margin-left: auto;
 }
 
 .detailsCloseButton:hover {
   color: var(--text-primary);
+}
+
+.detailsCloseButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .detailsTitle {
