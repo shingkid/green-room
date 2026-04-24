@@ -19,7 +19,9 @@
       "@domain/*": ["src/domain/*"],
       "@features/*": ["src/features/*"],
       "@shared/*": ["src/shared/*"],
-      "@styles/*": ["src/styles/*"]
+      "@styles/*": ["src/styles/*"],
+      "@themes/*": ["src/themes/*"],
+      "@components/*": ["src/components/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "tests/**/*.ts", "tests/**/*.tsx"]

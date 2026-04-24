@@ -1,0 +1,99 @@
+.node {
+  width: 140px;
+  height: 56px;
+  border-radius: var(--radius-node);
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-bg-node);
+  color: var(--color-text-node);
+  font-family: var(--font-base);
+  font-size: var(--font-size-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 7px 10px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px var(--color-shadow);
+  transition: box-shadow 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.node:hover {
+  border-color: var(--color-accent);
+}
+
+.node[data-state='selected'] {
+  background: var(--color-bg-node-sel);
+  border-color: var(--color-border-sel);
+  border-width: 2px;
+  color: var(--color-text-node-sel);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle), 0 2px 8px var(--color-shadow);
+}
+
+.node[data-state='affected'] {
+  background: var(--color-bg-node-aff);
+  border-color: var(--color-border-aff);
+  border-style: dashed;
+  color: var(--color-text-node-sel);
+}
+
+.node[data-state='dim'] {
+  background: var(--color-bg-node-dim);
+  color: var(--color-text-node-dim);
+  border-color: var(--color-border);
+  opacity: 0.4;
+}
+
+/* ── React Flow handle dots ── */
+.handle {
+  width: 6px !important;
+  height: 6px !important;
+  background: var(--color-border-strong) !important;
+  border: none !important;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.node:hover .handle,
+.node[data-state='selected'] .handle {
+  opacity: 1;
+}
+
+/* ── Content ── */
+.name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.type {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-badge);
+  padding: 1px 4px;
+  font-size: 8px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.badgeActive { background: var(--color-badge-active-bg); color: var(--color-badge-active-fg); }
+.badgeExp    { background: var(--color-badge-exp-bg);    color: var(--color-badge-exp-fg);    }
+.badgeDep    { background: var(--color-badge-dep-bg);    color: var(--color-badge-dep-fg);    }
+.badgeCrit   { background: var(--color-badge-crit-bg);   color: var(--color-badge-crit-fg);   }

@@ -1,2 +1,71 @@
+/* Existing token + base system (used by legacy catalog/editor components) */
 @import "../styles/tokens.css";
 @import "../styles/base.css";
+
+/* ── Phase 1 fallback variables ─────────────────────────────────────────────
+   applyTheme() overrides these at runtime. Mirrors d-light so there's no
+   flash of unstyled content before the ThemeProvider mounts.            */
+:root {
+  --color-bg-base:         #f8fafc;
+  --color-bg-surface:      #ffffff;
+  --color-bg-elevated:     #f1f5f9;
+  --color-bg-header:       #ffffff;
+  --color-bg-panel:        #ffffff;
+  --color-bg-node:         #ffffff;
+  --color-bg-node-sel:     #f0fdf9;
+  --color-bg-node-aff:     #fef2f2;
+  --color-bg-node-dim:     #f8fafc;
+
+  --color-accent:          #059669;
+  --color-accent-hover:    #047857;
+  --color-accent-subtle:   #d1fae5;
+  --color-accent2:         #818cf8;
+
+  --color-border:          #e2e8f0;
+  --color-border-strong:   #cbd5e1;
+  --color-border-sel:      #059669;
+  --color-border-aff:      #dc2626;
+
+  --color-text-primary:    #0f172a;
+  --color-text-secondary:  #475569;
+  --color-text-muted:      #94a3b8;
+  --color-text-node:       #475569;
+  --color-text-node-sel:   #0f172a;
+  --color-text-node-dim:   #cbd5e1;
+
+  --color-status-ok:       #059669;
+  --color-status-warn:     #d97706;
+  --color-status-err:      #dc2626;
+
+  --color-edge-dep:        #818cf8;
+  --color-edge-call:       #059669;
+  --color-edge-dim:        #e2e8f0;
+
+  --color-badge-active-bg: #d1fae5; --color-badge-active-fg: #059669;
+  --color-badge-exp-bg:    #fff7ed; --color-badge-exp-fg:    #ea580c;
+  --color-badge-dep-bg:    #f1f5f9; --color-badge-dep-fg:    #94a3b8;
+  --color-badge-crit-bg:   #fef2f2; --color-badge-crit-fg:   #dc2626;
+
+  --color-shadow:          rgba(0, 0, 0, 0.08);
+
+  --font-base:             system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:             ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-size-xs:          9px;
+  --font-size-sm:          11px;
+  --font-size-md:          13px;
+  --font-size-lg:          15px;
+  --font-weight-normal:    500;
+  --font-weight-bold:      700;
+  --letter-spacing-label:  0.06em;
+
+  --radius-card:           10px;
+  --radius-node:           6px;
+  --radius-badge:          3px;
+  --radius-btn:            5px;
+  --radius-chip:           10px;
+}
+
+/* Smooth theme transitions for Phase 1 components */
+body {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}

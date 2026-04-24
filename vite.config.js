@@ -16,6 +16,8 @@ export default defineConfig({
       "@features": resolve(ROOT_DIR, "src/features"),
       "@shared": resolve(ROOT_DIR, "src/shared"),
       "@styles": resolve(ROOT_DIR, "src/styles"),
+      "@themes": resolve(ROOT_DIR, "src/themes"),
+      "@components": resolve(ROOT_DIR, "src/components"),
     },
   },
   test: {

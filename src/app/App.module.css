@@ -1,0 +1,220 @@
+/* ── Full-height shell ── */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-base);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  height: 52px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-header);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logo {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  letter-spacing: var(--letter-spacing-label);
+  white-space: nowrap;
+}
+
+.sourceChip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--color-border);
+  padding: 2px 7px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Error banner ── */
+.errorBanner {
+  padding: 8px 16px;
+  background: var(--color-badge-crit-bg);
+  color: var(--color-badge-crit-fg);
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--color-border-aff);
+  flex-shrink: 0;
+}
+
+/* ── Tab navigation ── */
+.tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 16px;
+  height: 36px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-base);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  font-family: var(--font-base);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--color-text-secondary);
+}
+
+.tabActive {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ── Body ── */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Graph loading ── */
+.graphLoading {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg-base);
+}
+
+/* ── Placeholder for non-graph tabs ── */
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 6px;
+}
+
+.placeholderLabel {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.placeholderHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* ── Status bar ── */
+.statusBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  height: 28px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.statusLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-status-ok);
+  flex-shrink: 0;
+}
+
+.statusText {
+  color: var(--color-text-secondary);
+}
+
+.statusSep {
+  color: var(--color-border-strong);
+}
+
+.statusRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusMode {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+
+/* ── Loading shell ── */
+.loadingShell {
+  display: grid;
+  place-items: center;
+  height: 100vh;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-base);
+}
+
+.loadingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadingHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
