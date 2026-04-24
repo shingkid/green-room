@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type CSSProperties } from "react";
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import {
   ACTION_COLORS,
@@ -87,12 +87,24 @@ export function CatalogView({
     ],
   );
 
+  const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleCopyMermaid = useCallback(async () => {
     if (!viewModel.mermaidExport) {
       return;
     }
 
     await navigator.clipboard.writeText(viewModel.mermaidExport.source);
+
+    if (copiedTimerRef.current !== null) {
+      clearTimeout(copiedTimerRef.current);
+    }
+    setCopied(true);
+    copiedTimerRef.current = setTimeout(() => {
+      setCopied(false);
+      copiedTimerRef.current = null;
+    }, 2000);
   }, [viewModel.mermaidExport]);
   const handleDataBusinessFlowChange = useCallback(
     (value: string | null) => {
@@ -148,7 +160,7 @@ export function CatalogView({
               }}
               type="button"
             >
-              Copy Mermaid
+              {copied ? "Copied!" : "Copy Mermaid"}
             </button>
             <button className="secondary-button" onClick={onEditRegistry} type="button">
               Edit registry
