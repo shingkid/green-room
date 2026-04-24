@@ -126,16 +126,30 @@ export default function App() {
     async function load() {
       const storedDraft = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
 
+      // Apply any unfinished in-browser draft immediately, without waiting for the remote source.
+      if (storedDraft) {
+        if (!cancelled) {
+          const startupState = resolveStartupState(null, storedDraft);
+          setSourceLabel(startupState.sourceLabel);
+          setDraftText(startupState.draftText);
+          setValidationText(startupState.validationText);
+          setAppliedRegistry(startupState.appliedRegistry);
+          setShowEditor(startupState.showEditor);
+          setLoadError(startupState.loadError);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
-        // Prefer any unfinished in-browser draft first, then checked-in registry sources,
-        // before finally showing the starter template.
+        // No local draft — fetch from checked-in registry sources, then fall back to the starter template.
         const initialSource = await loadInitialRegistrySource();
 
         if (cancelled) {
           return;
         }
 
-        const startupState = resolveStartupState(initialSource, storedDraft);
+        const startupState = resolveStartupState(initialSource, null);
         setSourceLabel(startupState.sourceLabel);
         setDraftText(startupState.draftText);
         setValidationText(startupState.validationText);
@@ -148,15 +162,13 @@ export default function App() {
         }
 
         const errorMessage = error instanceof Error ? error.message : "Failed to load registry.";
-        const startupState = storedDraft
-          ? resolveStartupState(null, storedDraft)
-          : buildTemplateStartupState(errorMessage);
+        const startupState = buildTemplateStartupState(errorMessage);
         setSourceLabel(startupState.sourceLabel);
         setDraftText(startupState.draftText);
         setValidationText(startupState.validationText);
         setAppliedRegistry(startupState.appliedRegistry);
         setShowEditor(startupState.showEditor);
-        setLoadError(startupState.loadError ?? errorMessage);
+        setLoadError(startupState.loadError);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
