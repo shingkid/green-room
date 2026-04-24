@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Green Room — Design Mockups</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 32px 24px 64px;
+  }
+
+  h1 {
+    color: #f0f0f0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .page-subtitle {
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  /* ─── Theme Wrapper ─────────────────────────────── */
+  .theme-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .theme-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .theme-label span {
+    font-weight: 400;
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: none;
+    opacity: 0.6;
+  }
+
+  /* ─── App Shell ─────────────────────────────────── */
+  .app { font-size: 12px; }
+
+  .app-header {
+    padding: 12px 16px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .app-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .app-subtitle-text {
+    font-size: 10px;
+    margin-top: 1px;
+    opacity: 0.45;
+  }
+
+  .header-btns { display: flex; gap: 6px; }
+
+  .btn {
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 16px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .tab {
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+
+  /* ─── Body Layout ───────────────────────────────── */
+  .app-body {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    min-height: 340px;
+  }
+
+  /* ─── Graph Area ────────────────────────────────── */
+  .graph-area {
+    padding: 16px;
+    border-right-width: 1px;
+    border-right-style: solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .graph-area-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.35;
+    margin-bottom: 12px;
+  }
+
+  .nodes-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .node-card {
+    border-radius: 7px;
+    border-width: 1.5px;
+    border-style: solid;
+    padding: 10px 12px;
+    min-width: 120px;
+    position: relative;
+  }
+
+  .node-card.selected {
+    border-width: 2px;
+  }
+
+  .node-name {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .node-meta {
+    font-size: 10px;
+    opacity: 0.55;
+    margin-bottom: 6px;
+  }
+
+  .badge-row { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .edge-hint {
+    font-size: 10px;
+    opacity: 0.3;
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  /* ─── Pipeline ──────────────────────────────────── */
+  .pipeline {
+    display: flex;
+    gap: 0;
+    align-items: center;
+    padding: 10px 16px;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .pipe-stage {
+    border-radius: 5px;
+    border-width: 1px;
+    border-style: solid;
+    padding: 5px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .pipe-stage .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pipe-arrow {
+    padding: 0 5px;
+    opacity: 0.3;
+    font-size: 10px;
+  }
+
+  /* ─── Details Panel ─────────────────────────────── */
+  .details-panel {
+    padding: 14px 12px;
+    font-size: 11px;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .detail-row {
+    margin-bottom: 8px;
+  }
+
+  .detail-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 2px;
+  }
+
+  .detail-value {
+    font-size: 11px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    border-width: 1px;
+    border-style: solid;
+    margin: 1px 2px 1px 0;
+  }
+
+  .validation-panel {
+    padding: 10px 12px;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .validation-row {
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    border-width: 1px;
+    border-style: solid;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .val-icon { flex-shrink: 0; font-size: 10px; }
+
+  /* ================================================================
+     THEME A — TERMINAL GREEN
+     ================================================================ */
+  .theme-a { background: #080d08; }
+  .theme-a .theme-label { background: #0c150c; color: #39d353; border-bottom: 1px solid #1a2e1a; }
+  .theme-a .app { background: #080d08; color: #c8e6c9; }
+  .theme-a .app-header { background: #0c150c; border-color: #1a2e1a; }
+  .theme-a .app-title { color: #39d353; }
+  .theme-a .tabs { background: #080d08; border-color: #1a2e1a; }
+  .theme-a .tab { color: #6b9e6b; }
+  .theme-a .tab.active { color: #39d353; border-bottom-color: #39d353; }
+  .theme-a .btn.primary { background: #16541e; border-color: #39d353; color: #a8d5a2; }
+  .theme-a .btn.secondary { background: #0c150c; border-color: #1e3a1e; color: #6b9e6b; }
+  .theme-a .graph-area { background: #080d08; border-color: #1a2e1a; }
+  .theme-a .node-card { background: #0c150c; border-color: #2a4a2a; color: #a8d5a2; }
+  .theme-a .node-card.selected { background: #111f11; border-color: #39d353; box-shadow: 0 0 0 1px rgba(57,211,83,0.15); }
+  .theme-a .badge.active { background: #0f3a18; color: #39d353; }
+  .theme-a .badge.experimental { background: #2d1e08; color: #d97706; }
+  .theme-a .badge.deprecated { background: #1a1a1a; color: #5a7a5a; }
+  .theme-a .badge.critical { background: #3a0d0d; color: #f87171; }
+  .theme-a .pipeline { background: #0c150c; border-color: #1a2e1a; }
+  .theme-a .pipe-stage { background: #111f11; border-color: #2a4a2a; color: #8dc98d; }
+  .theme-a .pipe-arrow { color: #39d353; }
+  .theme-a .details-panel { background: #0c150c; color: #c8e6c9; }
+  .theme-a .panel-title { color: #39d353; border-color: #1a2e1a; }
+  .theme-a .detail-value { color: #a8d5a2; }
+  .theme-a .tag { background: #111f11; border-color: #2a4a2a; color: #7abf7a; }
+  .theme-a .validation-panel { background: #0a0f0a; border-color: #1a2e1a; }
+  .theme-a .validation-row.error { background: #1a0a0a; border-color: #4a1a1a; color: #f87171; }
+  .theme-a .validation-row.success { background: #0a1f0a; border-color: #1a4a1a; color: #39d353; }
+  .theme-a .pipe-stage .dot.produces { background: #39d353; }
+  .theme-a .pipe-stage .dot.queues { background: #d97706; }
+  .theme-a .pipe-stage .dot.stores { background: #a78bfa; }
+
+  /* ================================================================
+     THEME B — OPS EMERALD
+     ================================================================ */
+  .theme-b { background: #0d1117; }
+  .theme-b .theme-label { background: #161b22; color: #10b981; border-bottom: 1px solid #21262d; }
+  .theme-b .app { background: #0d1117; color: #e6edf3; }
+  .theme-b .app-header { background: #161b22; border-color: #21262d; }
+  .theme-b .app-title { color: #f0f6fc; }
+  .theme-b .tabs { background: #0d1117; border-color: #21262d; }
+  .theme-b .tab { color: #8b949e; }
+  .theme-b .tab.active { color: #10b981; border-bottom-color: #10b981; }
+  .theme-b .btn.primary { background: #065f46; border-color: #10b981; color: #6ee7b7; }
+  .theme-b .btn.secondary { background: #161b22; border-color: #30363d; color: #c9d1d9; }
+  .theme-b .graph-area { background: #0d1117; border-color: #21262d; }
+  .theme-b .node-card { background: #161b22; border-color: #30363d; color: #e6edf3; }
+  .theme-b .node-card.selected { background: #1c2a1f; border-color: #10b981; box-shadow: 0 0 0 1px rgba(16,185,129,0.1); }
+  .theme-b .badge.active { background: #064e3b; color: #34d399; }
+  .theme-b .badge.experimental { background: #451a03; color: #fb923c; }
+  .theme-b .badge.deprecated { background: #21262d; color: #6e7681; }
+  .theme-b .badge.critical { background: #450a0a; color: #f87171; }
+  .theme-b .pipeline { background: #161b22; border-color: #21262d; }
+  .theme-b .pipe-stage { background: #1c2128; border-color: #30363d; color: #adbac7; }
+  .theme-b .pipe-arrow { color: #484f58; }
+  .theme-b .details-panel { background: #161b22; color: #e6edf3; }
+  .theme-b .panel-title { color: #f0f6fc; border-color: #21262d; }
+  .theme-b .detail-value { color: #c9d1d9; }
+  .theme-b .tag { background: #1c2128; border-color: #30363d; color: #8b949e; }
+  .theme-b .validation-panel { background: #0d1117; border-color: #21262d; }
+  .theme-b .validation-row.error { background: #160a0a; border-color: #3d1212; color: #f87171; }
+  .theme-b .validation-row.success { background: #061510; border-color: #0d3320; color: #34d399; }
+  .theme-b .pipe-stage .dot.produces { background: #10b981; }
+  .theme-b .pipe-stage .dot.queues { background: #f59e0b; }
+  .theme-b .pipe-stage .dot.stores { background: #818cf8; }
+
+  /* ================================================================
+     THEME C — BACKSTAGE WARMTH
+     ================================================================ */
+  .theme-c { background: #131108; }
+  .theme-c .theme-label { background: #1c1a0f; color: #a8c5a0; border-bottom: 1px solid #2a2618; }
+  .theme-c .app { background: #131108; color: #e8e4da; }
+  .theme-c .app-header { background: #1c1a0f; border-color: #2a2618; }
+  .theme-c .app-title { color: #f0ede4; }
+  .theme-c .tabs { background: #131108; border-color: #2a2618; }
+  .theme-c .tab { color: #7a7060; }
+  .theme-c .tab.active { color: #a8c5a0; border-bottom-color: #a8c5a0; }
+  .theme-c .btn.primary { background: #2a3d28; border-color: #a8c5a0; color: #c8ddc5; }
+  .theme-c .btn.secondary { background: #1c1a0f; border-color: #3a3626; color: #9a9080; }
+  .theme-c .graph-area { background: #131108; border-color: #2a2618; }
+  .theme-c .node-card { background: #1c1a0f; border-color: #3a3626; color: #d8d4ca; }
+  .theme-c .node-card.selected { background: #22201a; border-color: #d4a853; box-shadow: 0 0 0 1px rgba(212,168,83,0.1); }
+  .theme-c .badge.active { background: #1e2e1a; color: #84a98c; }
+  .theme-c .badge.experimental { background: #2d2010; color: #d4a853; }
+  .theme-c .badge.deprecated { background: #252218; color: #6a6050; }
+  .theme-c .badge.critical { background: #2d1010; color: #e07070; }
+  .theme-c .pipeline { background: #1c1a0f; border-color: #2a2618; }
+  .theme-c .pipe-stage { background: #22201a; border-color: #3a3626; color: #b0a898; }
+  .theme-c .pipe-arrow { color: #d4a853; opacity: 0.6; }
+  .theme-c .details-panel { background: #1c1a0f; color: #e8e4da; }
+  .theme-c .panel-title { color: #f0ede4; border-color: #2a2618; }
+  .theme-c .detail-value { color: #c8c4b8; }
+  .theme-c .tag { background: #22201a; border-color: #3a3626; color: #8a8070; }
+  .theme-c .validation-panel { background: #161410; border-color: #2a2618; }
+  .theme-c .validation-row.error { background: #1e1010; border-color: #3a1a1a; color: #e07070; }
+  .theme-c .validation-row.success { background: #131a10; border-color: #2a3a20; color: #84a98c; }
+  .theme-c .pipe-stage .dot.produces { background: #84a98c; }
+  .theme-c .pipe-stage .dot.queues { background: #d4a853; }
+  .theme-c .pipe-stage .dot.stores { background: #a89cc8; }
+
+  /* ================================================================
+     THEME D — MIDNIGHT MINT
+     ================================================================ */
+  .theme-d { background: #0f172a; }
+  .theme-d .theme-label { background: #111827; color: #34d399; border-bottom: 1px solid #1e293b; }
+  .theme-d .app { background: #0f172a; color: #f1f5f9; }
+  .theme-d .app-header { background: #111827; border-color: #1e293b; }
+  .theme-d .app-title { color: #f8fafc; }
+  .theme-d .tabs { background: #0f172a; border-color: #1e293b; }
+  .theme-d .tab { color: #64748b; }
+  .theme-d .tab.active { color: #34d399; border-bottom-color: #34d399; }
+  .theme-d .btn.primary { background: #065f46; border-color: #34d399; color: #a7f3d0; }
+  .theme-d .btn.secondary { background: #111827; border-color: #334155; color: #cbd5e1; }
+  .theme-d .graph-area { background: #0f172a; border-color: #1e293b; }
+  .theme-d .node-card { background: #111827; border-color: #334155; color: #e2e8f0; }
+  .theme-d .node-card.selected { background: #0f2a1f; border-color: #34d399; box-shadow: 0 0 0 1px rgba(52,211,153,0.12); }
+  .theme-d .badge.active { background: #052e16; color: #34d399; }
+  .theme-d .badge.experimental { background: #431407; color: #fb923c; }
+  .theme-d .badge.deprecated { background: #1e293b; color: #64748b; }
+  .theme-d .badge.critical { background: #450a0a; color: #f87171; }
+  .theme-d .pipeline { background: #111827; border-color: #1e293b; }
+  .theme-d .pipe-stage { background: #1e293b; border-color: #334155; color: #94a3b8; }
+  .theme-d .pipe-arrow { color: #334155; }
+  .theme-d .details-panel { background: #111827; color: #e2e8f0; }
+  .theme-d .panel-title { color: #f8fafc; border-color: #1e293b; }
+  .theme-d .detail-value { color: #cbd5e1; }
+  .theme-d .tag { background: #1e293b; border-color: #334155; color: #64748b; }
+  .theme-d .validation-panel { background: #0f172a; border-color: #1e293b; }
+  .theme-d .validation-row.error { background: #1c0a0a; border-color: #3d1212; color: #f87171; }
+  .theme-d .validation-row.success { background: #041c12; border-color: #0a3322; color: #34d399; }
+  .theme-d .pipe-stage .dot.produces { background: #34d399; }
+  .theme-d .pipe-stage .dot.queues { background: #f59e0b; }
+  .theme-d .pipe-stage .dot.stores { background: #818cf8; }
+</style>
+</head>
+<body>
+
+<h1>Green Room — Design Direction Mockups</h1>
+<p class="page-subtitle">Open in browser · Pick a direction · All four are dark-mode only previews</p>
+
+<div class="grid">
+
+  <!-- ── THEME A ── -->
+  <div class="theme-card theme-a">
+    <div class="theme-label">A — Terminal Green <span>phosphor · old terminal meets modern SRE</span></div>
+    <div class="app">
+      <div class="app-header">
+        <div>
+          <div class="app-title">◈ green-room</div>
+          <div class="app-subtitle-text">service dependency explorer</div>
+        </div>
+        <div class="header-btns">
+          <button class="btn secondary">Edit Registry</button>
+          <button class="btn primary">Export</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Dependency Impact</div>
+        <div class="tab">Business Flow</div>
+        <div class="tab">Data Lineage</div>
+      </div>
+      <div class="app-body">
+        <div class="graph-area">
+          <div class="graph-area-label">Service Graph</div>
+          <div class="nodes-row">
+            <div class="node-card selected">
+              <div class="node-name">api-gateway</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+                <span class="badge">v2.4.1</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">auth-service</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">ml-pipeline</div>
+              <div class="node-meta">data · on-prem</div>
+              <div class="badge-row">
+                <span class="badge experimental">experimental</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">legacy-ingester</div>
+              <div class="node-meta">data · colocation</div>
+              <div class="badge-row">
+                <span class="badge deprecated">deprecated</span>
+              </div>
+            </div>
+          </div>
+          <div class="edge-hint">↳ 3 downstream · 1 upstream · click node for details</div>
+        </div>
+        <div>
+          <div class="details-panel">
+            <div class="panel-title">api-gateway</div>
+            <div class="detail-row">
+              <div class="detail-label">Owner</div>
+              <div class="detail-value">platform-team</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Status</div>
+              <div class="detail-value"><span class="badge active">active</span></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Tags</div>
+              <div>
+                <span class="tag">http</span>
+                <span class="tag">grpc</span>
+                <span class="tag">public</span>
+              </div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Upstream</div>
+              <div class="detail-value">auth-service</div>
+            </div>
+          </div>
+          <div class="validation-panel">
+            <div class="validation-row success"><span class="val-icon">✓</span> Schema valid</div>
+            <div class="validation-row error"><span class="val-icon">✕</span> Missing runbook: ml-pipeline</div>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline">
+        <div class="pipe-stage"><span class="dot produces"></span>ingest</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot queues"></span>queue</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot stores"></span>store</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot produces"></span>serve</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THEME B ── -->
+  <div class="theme-card theme-b">
+    <div class="theme-label">B — Ops Emerald <span>professional devops · grafana/datadog energy</span></div>
+    <div class="app">
+      <div class="app-header">
+        <div>
+          <div class="app-title">◈ green-room</div>
+          <div class="app-subtitle-text">service dependency explorer</div>
+        </div>
+        <div class="header-btns">
+          <button class="btn secondary">Edit Registry</button>
+          <button class="btn primary">Export</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Dependency Impact</div>
+        <div class="tab">Business Flow</div>
+        <div class="tab">Data Lineage</div>
+      </div>
+      <div class="app-body">
+        <div class="graph-area">
+          <div class="graph-area-label">Service Graph</div>
+          <div class="nodes-row">
+            <div class="node-card selected">
+              <div class="node-name">api-gateway</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+                <span class="badge">v2.4.1</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">auth-service</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">ml-pipeline</div>
+              <div class="node-meta">data · on-prem</div>
+              <div class="badge-row">
+                <span class="badge experimental">experimental</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">legacy-ingester</div>
+              <div class="node-meta">data · colocation</div>
+              <div class="badge-row">
+                <span class="badge deprecated">deprecated</span>
+              </div>
+            </div>
+          </div>
+          <div class="edge-hint">↳ 3 downstream · 1 upstream · click node for details</div>
+        </div>
+        <div>
+          <div class="details-panel">
+            <div class="panel-title">api-gateway</div>
+            <div class="detail-row">
+              <div class="detail-label">Owner</div>
+              <div class="detail-value">platform-team</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Status</div>
+              <div class="detail-value"><span class="badge active">active</span></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Tags</div>
+              <div>
+                <span class="tag">http</span>
+                <span class="tag">grpc</span>
+                <span class="tag">public</span>
+              </div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Upstream</div>
+              <div class="detail-value">auth-service</div>
+            </div>
+          </div>
+          <div class="validation-panel">
+            <div class="validation-row success"><span class="val-icon">✓</span> Schema valid</div>
+            <div class="validation-row error"><span class="val-icon">✕</span> Missing runbook: ml-pipeline</div>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline">
+        <div class="pipe-stage"><span class="dot produces"></span>ingest</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot queues"></span>queue</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot stores"></span>store</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot produces"></span>serve</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THEME C ── -->
+  <div class="theme-card theme-c">
+    <div class="theme-label">C — Backstage Warmth <span>theatrical green room · cozy + precise</span></div>
+    <div class="app">
+      <div class="app-header">
+        <div>
+          <div class="app-title">◈ green-room</div>
+          <div class="app-subtitle-text">service dependency explorer</div>
+        </div>
+        <div class="header-btns">
+          <button class="btn secondary">Edit Registry</button>
+          <button class="btn primary">Export</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Dependency Impact</div>
+        <div class="tab">Business Flow</div>
+        <div class="tab">Data Lineage</div>
+      </div>
+      <div class="app-body">
+        <div class="graph-area">
+          <div class="graph-area-label">Service Graph</div>
+          <div class="nodes-row">
+            <div class="node-card selected">
+              <div class="node-name">api-gateway</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+                <span class="badge">v2.4.1</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">auth-service</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">ml-pipeline</div>
+              <div class="node-meta">data · on-prem</div>
+              <div class="badge-row">
+                <span class="badge experimental">experimental</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">legacy-ingester</div>
+              <div class="node-meta">data · colocation</div>
+              <div class="badge-row">
+                <span class="badge deprecated">deprecated</span>
+              </div>
+            </div>
+          </div>
+          <div class="edge-hint">↳ 3 downstream · 1 upstream · click node for details</div>
+        </div>
+        <div>
+          <div class="details-panel">
+            <div class="panel-title">api-gateway</div>
+            <div class="detail-row">
+              <div class="detail-label">Owner</div>
+              <div class="detail-value">platform-team</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Status</div>
+              <div class="detail-value"><span class="badge active">active</span></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Tags</div>
+              <div>
+                <span class="tag">http</span>
+                <span class="tag">grpc</span>
+                <span class="tag">public</span>
+              </div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Upstream</div>
+              <div class="detail-value">auth-service</div>
+            </div>
+          </div>
+          <div class="validation-panel">
+            <div class="validation-row success"><span class="val-icon">✓</span> Schema valid</div>
+            <div class="validation-row error"><span class="val-icon">✕</span> Missing runbook: ml-pipeline</div>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline">
+        <div class="pipe-stage"><span class="dot produces"></span>ingest</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot queues"></span>queue</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot stores"></span>store</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot produces"></span>serve</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THEME D ── -->
+  <div class="theme-card theme-d">
+    <div class="theme-label">D — Midnight Mint <span>upgraded current · comfortable + polished</span></div>
+    <div class="app">
+      <div class="app-header">
+        <div>
+          <div class="app-title">◈ green-room</div>
+          <div class="app-subtitle-text">service dependency explorer</div>
+        </div>
+        <div class="header-btns">
+          <button class="btn secondary">Edit Registry</button>
+          <button class="btn primary">Export</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Dependency Impact</div>
+        <div class="tab">Business Flow</div>
+        <div class="tab">Data Lineage</div>
+      </div>
+      <div class="app-body">
+        <div class="graph-area">
+          <div class="graph-area-label">Service Graph</div>
+          <div class="nodes-row">
+            <div class="node-card selected">
+              <div class="node-name">api-gateway</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+                <span class="badge">v2.4.1</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">auth-service</div>
+              <div class="node-meta">platform · cloud</div>
+              <div class="badge-row">
+                <span class="badge active">active</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">ml-pipeline</div>
+              <div class="node-meta">data · on-prem</div>
+              <div class="badge-row">
+                <span class="badge experimental">experimental</span>
+              </div>
+            </div>
+            <div class="node-card">
+              <div class="node-name">legacy-ingester</div>
+              <div class="node-meta">data · colocation</div>
+              <div class="badge-row">
+                <span class="badge deprecated">deprecated</span>
+              </div>
+            </div>
+          </div>
+          <div class="edge-hint">↳ 3 downstream · 1 upstream · click node for details</div>
+        </div>
+        <div>
+          <div class="details-panel">
+            <div class="panel-title">api-gateway</div>
+            <div class="detail-row">
+              <div class="detail-label">Owner</div>
+              <div class="detail-value">platform-team</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Status</div>
+              <div class="detail-value"><span class="badge active">active</span></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Tags</div>
+              <div>
+                <span class="tag">http</span>
+                <span class="tag">grpc</span>
+                <span class="tag">public</span>
+              </div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Upstream</div>
+              <div class="detail-value">auth-service</div>
+            </div>
+          </div>
+          <div class="validation-panel">
+            <div class="validation-row success"><span class="val-icon">✓</span> Schema valid</div>
+            <div class="validation-row error"><span class="val-icon">✕</span> Missing runbook: ml-pipeline</div>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline">
+        <div class="pipe-stage"><span class="dot produces"></span>ingest</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot queues"></span>queue</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot stores"></span>store</div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage"><span class="dot produces"></span>serve</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
