@@ -26,6 +26,9 @@ const RegistryEditor = lazy(() =>
 const DependencyGraph = lazy(() =>
   import('@features/graph/DependencyGraph').then(m => ({ default: m.DependencyGraph }))
 )
+const OverviewView = lazy(() =>
+  import('@features/overview/OverviewView').then(m => ({ default: m.OverviewView }))
+)
 
 const TABS: { id: Mode; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -269,7 +272,7 @@ function AppContent() {
   }
 
   // ── Catalog mode ──
-  const useNewGraph = mode === 'overview' || mode === 'impact'
+  const validationIssues = validation.issues
 
   return (
     <div className={styles.shell}>
@@ -308,8 +311,29 @@ function AppContent() {
 
       {/* ── Content ── */}
       <main className={styles.body}>
-        {useNewGraph ? (
-          /* Phase 3 graph for Overview + Dependency Impact */
+        {mode === 'overview' && (
+          currentRegistry ? (
+            <Suspense fallback={<div className={styles.graphLoading} />}>
+              <OverviewView
+                registry={currentRegistry}
+                graph={graph}
+                validationIssues={validationIssues}
+                onEditRegistry={handleEditRegistry}
+              />
+            </Suspense>
+          ) : (
+            <div className={styles.placeholder}>
+              <div className={styles.placeholderLabel}>No registry loaded</div>
+              <div className={styles.placeholderHint}>
+                <button className={styles.placeholderAction} onClick={handleEditRegistry}>
+                  Open registry editor
+                </button>
+              </div>
+            </div>
+          )
+        )}
+
+        {mode === 'impact' && (
           currentRegistry ? (
             <Suspense fallback={<div className={styles.graphLoading} />}>
               <DependencyGraph services={services} graph={graph} />
@@ -324,8 +348,9 @@ function AppContent() {
               </div>
             </div>
           )
-        ) : (
-          /* Existing CatalogView for Business Flow + Data Lineage */
+        )}
+
+        {(mode === 'flow' || mode === 'data') && (
           currentRegistry ? (
             <Suspense fallback={<div className={styles.graphLoading} />}>
               <CatalogView
