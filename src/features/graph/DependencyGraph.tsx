@@ -13,17 +13,22 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import { computeLayout, collectReachable, type Graph } from '@domain/catalog'
-import type { Service } from '@domain/registry'
+import type { Hosting, Service } from '@domain/registry'
 import { ServiceNode, type ServiceNodeData, type NodeState } from './nodes/ServiceNode'
+import { HostingGroupNode } from '@features/catalog/components/nodes/HostingGroupNode'
 import styles from './DependencyGraph.module.css'
 
-const NODE_TYPES = { serviceNode: ServiceNode }
+const NODE_TYPES = {
+  serviceNode: ServiceNode,
+  hostingGroupNode: HostingGroupNode,
+}
 
-type ViewMode = 'all' | 'impact' | 'upstream'
+type ViewMode = 'infra' | 'impact' | 'upstream'
 
 interface Props {
   services: Record<string, Service>
   graph: Graph
+  hosting?: Record<string, Hosting>
 }
 
 function nodeState(id: string, selectedId: string | null, affectedIds: Set<string>): NodeState {
@@ -40,29 +45,26 @@ const STATUS_MOD: Record<string, string> = {
   migrating:    'statusMuted',
 }
 
-export function DependencyGraph({ services, graph }: Props) {
+export function DependencyGraph({ services, graph, hosting = {} }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<ServiceNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [selectedId, setSelectedId]       = useState<string | null>(null)
-  const [viewMode, setViewMode]           = useState<ViewMode>('all')
+  const [viewMode, setViewMode]           = useState<ViewMode>('infra')
 
   // Compute affected set based on view mode
   const affectedIds = useMemo(() => {
     if (!selectedId) return new Set<string>()
-
     if (viewMode === 'upstream') {
-      // Show nodes that depend on the selected service
       const down = collectReachable(selectedId, graph.downstream)
       down.delete(selectedId)
       return down
     }
     if (viewMode === 'impact') {
-      // Show what the selected service depends on
       const up = collectReachable(selectedId, graph.upstream)
       up.delete(selectedId)
       return up
     }
-    // All: both directions
+    // infra: both directions for selection highlight
     const up   = collectReachable(selectedId, graph.upstream)
     const down = collectReachable(selectedId, graph.downstream)
     up.delete(selectedId)
@@ -70,11 +72,10 @@ export function DependencyGraph({ services, graph }: Props) {
     return new Set([...up, ...down])
   }, [selectedId, viewMode, graph])
 
-  // Impact table data (direct upstream deps + downstream callers)
-  const upstreamDeps  = useMemo(() => selectedId ? (graph.upstream[selectedId]   ?? []) : [], [selectedId, graph])
+  const upstreamDeps   = useMemo(() => selectedId ? (graph.upstream[selectedId]   ?? []) : [], [selectedId, graph])
   const downstreamDeps = useMemo(() => selectedId ? (graph.downstream[selectedId] ?? []) : [], [selectedId, graph])
 
-  // ELK layout — re-runs when services/graph change
+  // ELK layout — re-runs when services/graph/viewMode change
   useEffect(() => {
     const visible = new Set(Object.keys(services))
     if (visible.size === 0) {
@@ -84,37 +85,43 @@ export function DependencyGraph({ services, graph }: Props) {
       return
     }
 
-    computeLayout(visible, services, graph, false, {}, 'TB')
+    const useInfra = viewMode === 'infra'
+    computeLayout(visible, services, graph, useInfra, hosting, 'TB')
       .then(({ rfNodes }) => {
         setNodes(
-          rfNodes.map(n => ({
-            ...n,
-            type: 'serviceNode',
-            data: { serviceKey: n.id, service: services[n.id], state: 'default' } as ServiceNodeData,
-          }))
+          rfNodes.map(n => {
+            if (n.type === 'hostingGroupNode') return n
+            return {
+              ...n,
+              type: 'serviceNode',
+              data: { serviceKey: n.id, service: services[n.id], state: 'default' } as ServiceNodeData,
+            }
+          })
         )
         setSelectedId(null)
       })
       .catch(console.error)
-  }, [services, graph])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [services, graph, viewMode, hosting])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update node states on selection change
   useEffect(() => {
     setNodes(prev =>
-      prev.map(n => ({
-        ...n,
-        data: {
-          ...(n.data as ServiceNodeData),
-          state: nodeState(n.id, selectedId, affectedIds),
-        },
-      }))
+      prev.map(n => {
+        if (n.type === 'hostingGroupNode') return n
+        return {
+          ...n,
+          data: {
+            ...(n.data as ServiceNodeData),
+            state: nodeState(n.id, selectedId, affectedIds),
+          },
+        }
+      })
     )
   }, [selectedId, affectedIds])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build edges
   useEffect(() => {
     const result: Edge[] = []
-
     for (const [svcKey, upstreams] of Object.entries(graph.upstream)) {
       for (const dep of upstreams) {
         const isDim =
@@ -123,35 +130,27 @@ export function DependencyGraph({ services, graph }: Props) {
           dep.service !== selectedId &&
           !affectedIds.has(svcKey) &&
           !affectedIds.has(dep.service)
-
         const isActive = svcKey === selectedId || dep.service === selectedId
         const variant  = dep.criticality === 'hard' ? 'dep' : 'call'
         const color    = isDim
           ? 'var(--color-edge-dim)'
-          : variant === 'dep'
-            ? 'var(--color-edge-dep)'
-            : 'var(--color-edge-call)'
-
+          : variant === 'dep' ? 'var(--color-edge-dep)' : 'var(--color-edge-call)'
         result.push({
           id:     `${dep.service}->${svcKey}`,
           source: dep.service,
           target: svcKey,
           type:   'smoothstep',
           animated: isActive,
-          style: {
-            stroke:      color,
-            strokeWidth: dep.criticality === 'hard' ? 2 : 1.5,
-            opacity:     isDim ? 0.2 : 1,
-          },
+          style: { stroke: color, strokeWidth: dep.criticality === 'hard' ? 2 : 1.5, opacity: isDim ? 0.2 : 1 },
           markerEnd: { type: MarkerType.ArrowClosed, color },
         })
       }
     }
-
     setEdges(result)
   }, [graph, selectedId, affectedIds])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const onNodeClick: NodeMouseHandler = useCallback((_evt, node) => {
+    if (node.type === 'hostingGroupNode') return
     setSelectedId(prev => (prev === node.id ? null : node.id))
   }, [])
 
@@ -160,18 +159,12 @@ export function DependencyGraph({ services, graph }: Props) {
   const selectedService = selectedId ? services[selectedId] : null
 
   const impactTableRows = useMemo(() => {
-    if (!selectedId || viewMode === 'upstream') {
-      return downstreamDeps.map(dep => ({
-        key: dep.service,
-        svc: services[dep.service],
-        relation: 'caller',
-        criticality: dep.criticality,
-      })).filter(r => r.svc)
-    }
-    return upstreamDeps.map(dep => ({
+    if (!selectedId) return []
+    const deps = viewMode === 'upstream' ? downstreamDeps : upstreamDeps
+    return deps.map(dep => ({
       key: dep.service,
       svc: services[dep.service],
-      relation: 'depends-on',
+      relation: viewMode === 'upstream' ? 'caller' : 'depends-on',
       criticality: dep.criticality,
     })).filter(r => r.svc)
   }, [selectedId, viewMode, upstreamDeps, downstreamDeps, services])
@@ -181,20 +174,19 @@ export function DependencyGraph({ services, graph }: Props) {
       {/* ── Toolbar ── */}
       <div className={styles.toolbar}>
         <span className={styles.toolLabel}>Dependency Graph</span>
-        {(['all', 'impact', 'upstream'] as ViewMode[]).map(m => (
+        {(['infra', 'impact', 'upstream'] as ViewMode[]).map(m => (
           <button
             key={m}
             className={`${styles.tbtn} ${viewMode === m ? styles.tbtnAct : ''}`}
             onClick={() => setViewMode(m)}
           >
-            {m === 'all' ? 'All' : m === 'impact' ? 'Impact' : 'Upstream'}
+            {m === 'infra' ? 'Infrastructure' : m === 'impact' ? 'Impact' : 'Upstream'}
           </button>
         ))}
       </div>
 
       {/* ── Body ── */}
       <div className={styles.body}>
-        {/* ── Main: graph + optional impact table ── */}
         <div className={styles.mainArea}>
           <div className={styles.canvas}>
             <ReactFlow
@@ -214,13 +206,10 @@ export function DependencyGraph({ services, graph }: Props) {
               <Controls />
             </ReactFlow>
             {!selectedId && (
-              <div className={styles.hint}>
-                Click a node to analyse its impact
-              </div>
+              <div className={styles.hint}>Click a node to analyse its impact</div>
             )}
           </div>
 
-          {/* Impact table — only when a node is selected */}
           {selectedId && impactTableRows.length > 0 && (
             <div className={styles.impactTableWrap}>
               <table className={styles.tbl}>
@@ -292,26 +281,11 @@ export function DependencyGraph({ services, graph }: Props) {
 
           <div className={styles.paneSection}>
             <div className={styles.paneHd}>Legend</div>
-            <div className={styles.legRow}>
-              <span className={styles.legLine} data-variant="dep" />
-              <span>depends-on</span>
-            </div>
-            <div className={styles.legRow}>
-              <span className={styles.legLine} data-variant="call" />
-              <span>calls</span>
-            </div>
-            <div className={styles.legRow}>
-              <span className={styles.legDot} data-state="selected" />
-              <span>selected</span>
-            </div>
-            <div className={styles.legRow}>
-              <span className={styles.legDot} data-state="affected" />
-              <span>affected</span>
-            </div>
-            <div className={styles.legRow}>
-              <span className={styles.legDot} data-state="dim" />
-              <span>unrelated</span>
-            </div>
+            <div className={styles.legRow}><span className={styles.legLine} data-variant="dep" /><span>depends-on</span></div>
+            <div className={styles.legRow}><span className={styles.legLine} data-variant="call" /><span>calls</span></div>
+            <div className={styles.legRow}><span className={styles.legDot} data-state="selected" /><span>selected</span></div>
+            <div className={styles.legRow}><span className={styles.legDot} data-state="affected" /><span>affected</span></div>
+            <div className={styles.legRow}><span className={styles.legDot} data-state="dim" /><span>unrelated</span></div>
           </div>
         </div>
       </div>

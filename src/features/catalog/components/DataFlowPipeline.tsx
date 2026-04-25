@@ -1,4 +1,4 @@
-import { ACTION_COLORS, getStageSubtypeLabel, type DataFlow, type Service } from "@domain/registry";
+import { getStageSubtypeLabel, type DataFlow, type Service } from "@domain/registry";
 import { formatServiceLabel } from "@domain/catalog";
 import styles from "./DataFlowPipeline.module.css";
 
@@ -66,7 +66,7 @@ export function DataFlowPipeline({
                   y={4}
                 />
                 <rect
-                  fill={ACTION_COLORS[stage.action] ?? "#64748b"}
+                  fill={`var(--action-${stage.action}, var(--color-text-muted))`}
                   height={16}
                   opacity={0.9}
                   rx={4}
@@ -75,7 +75,7 @@ export function DataFlowPipeline({
                   y={8}
                 />
                 <text
-                  fill="#fff"
+                  fill="var(--color-text-primary)"
                   fontFamily="system-ui"
                   fontSize="9"
                   fontWeight="600"
@@ -86,7 +86,7 @@ export function DataFlowPipeline({
                   {stage.action.toUpperCase()}
                 </text>
                 <text
-                  fill="var(--text-primary)"
+                  fill="var(--color-text-primary)"
                   fontFamily="system-ui"
                   fontSize="10"
                   fontWeight="600"
@@ -97,7 +97,7 @@ export function DataFlowPipeline({
                   {formatServiceLabel(service?.name ?? stage.service, 18)}
                 </text>
                 <text
-                  fill="var(--text-subtle)"
+                  fill="var(--color-text-muted)"
                   fontFamily="system-ui"
                   fontSize="8"
                   textAnchor="middle"

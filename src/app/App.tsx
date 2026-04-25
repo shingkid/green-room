@@ -1,7 +1,6 @@
 import './index.css'
 import { lazy, Suspense, useState, useEffect, useMemo, useCallback, type ChangeEvent } from 'react'
 import { ThemeProvider, useTheme } from '@themes/ThemeContext'
-import { ThemeSwitcher } from '@components/ThemeSwitcher'
 import {
   DEFAULT_REGISTRY_TEMPLATE,
   LOCAL_STORAGE_DRAFT_KEY,
@@ -244,7 +243,9 @@ function AppContent() {
             {sourceLabel && <span className={styles.sourceChip}>{sourceLabel}</span>}
           </div>
           <div className={styles.headerRight}>
-            <ThemeSwitcher />
+            <button className={styles.actionBtn} onClick={toggleTheme}>
+              {theme === 'dark' ? '○ Light' : '● Dark'}
+            </button>
           </div>
         </header>
         {loadError && <div className={styles.errorBanner} role="alert">{loadError}</div>}
@@ -288,7 +289,9 @@ function AppContent() {
           <button className={styles.actionBtn} onClick={handleEditRegistry}>
             Edit registry
           </button>
-          <ThemeSwitcher />
+          <button className={styles.actionBtn} onClick={toggleTheme}>
+            {theme === 'dark' ? '○ Light' : '● Dark'}
+          </button>
         </div>
       </header>
 
@@ -336,7 +339,7 @@ function AppContent() {
         {mode === 'impact' && (
           currentRegistry ? (
             <Suspense fallback={<div className={styles.graphLoading} />}>
-              <DependencyGraph services={services} graph={graph} />
+              <DependencyGraph services={services} graph={graph} hosting={currentRegistry?.hosting ?? {}} />
             </Suspense>
           ) : (
             <div className={styles.placeholder}>
@@ -396,7 +399,7 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider defaultThemeId="d-light">
+    <ThemeProvider defaultThemeId="d-dark">
       <AppContent />
     </ThemeProvider>
   )

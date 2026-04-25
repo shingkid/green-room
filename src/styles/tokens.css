@@ -68,4 +68,12 @@
   --validation-item-bg:     var(--color-bg-surface);
   --validation-severity:    var(--color-badge-crit-fg);
   --validation-success:     var(--color-status-ok);
+
+  /* ── DataFlow action colors (color-theory mapped to theme tokens) ── */
+  --action-produces:  var(--color-accent);          /* publish / emit → primary green */
+  --action-queues:    var(--color-status-warn);     /* buffer / queue → amber */
+  --action-processes: var(--color-accent2);         /* transform      → secondary (indigo/gold) */
+  --action-stores:    var(--color-accent2);         /* persist        → secondary */
+  --action-serves:    var(--color-edge-call);       /* read / serve   → call-edge green */
+  --action-consumes:  var(--color-text-muted);      /* consume / read → neutral muted */
 }
